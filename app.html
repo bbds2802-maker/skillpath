@@ -1,0 +1,1537 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<title>SkillPath App</title>
+<link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+<style>
+/* ── TOKENS ─────────────────────────────────────────────── */
+:root {
+  --bg:        #0d0d14;
+  --card:      #161620;
+  --card2:     #1e1e2c;
+  --border:    #272738;
+  --accent:    #6c63ff;
+  --a-light:   rgba(108,99,255,.15);
+  --green:     #34d399;
+  --pink:      #f472b6;
+  --amber:     #fbbf24;
+  --text:      #f0f0fa;
+  --sub:       #6b6b96;
+  --font:      'Plus Jakarta Sans', sans-serif;
+  --r:         18px;
+  --safe-b:    env(safe-area-inset-bottom, 0px);
+}
+
+/* ── RESET ──────────────────────────────────────────────── */
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; -webkit-tap-highlight-color: transparent; }
+html, body { width: 100%; height: 100%; overflow: hidden; background: #000; }
+body { font-family: var(--font); color: var(--text); display: flex; justify-content: center; align-items: center; }
+
+/* ── PHONE SHELL ─────────────────────────────────────────── */
+.phone {
+  width: min(390px, 100vw);
+  height: min(844px, 100vh);
+  background: var(--bg);
+  border-radius: min(52px, 8vw);
+  overflow: hidden;
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  box-shadow: 0 0 0 10px #1a1a1a, 0 0 0 11px #2a2a2a, 0 40px 80px rgba(0,0,0,.8);
+}
+@media (max-width: 420px) {
+  .phone { border-radius: 0; box-shadow: none; }
+}
+
+/* ── STATUS BAR ──────────────────────────────────────────── */
+.status-bar {
+  flex-shrink: 0;
+  height: 50px;
+  display: flex;
+  align-items: flex-end;
+  justify-content: space-between;
+  padding: 0 28px 8px;
+  font-size: 12px;
+  font-weight: 600;
+  letter-spacing: .02em;
+  color: var(--text);
+  position: relative;
+  z-index: 10;
+}
+.notch {
+  position: absolute;
+  top: 0; left: 50%; transform: translateX(-50%);
+  width: 120px; height: 30px;
+  background: #000;
+  border-radius: 0 0 20px 20px;
+}
+.status-icons { display: flex; gap: 6px; align-items: center; font-size: 11px; }
+
+/* ── SCROLLABLE BODY ────────────────────────────────────── */
+.app-body {
+  flex: 1;
+  overflow: hidden;
+  position: relative;
+}
+
+/* ── BOTTOM NAV ──────────────────────────────────────────── */
+.bottom-nav {
+  flex-shrink: 0;
+  height: calc(64px + var(--safe-b));
+  background: rgba(22,22,32,.96);
+  backdrop-filter: blur(20px);
+  border-top: 1px solid var(--border);
+  display: flex;
+  align-items: flex-start;
+  padding-top: 10px;
+  position: relative;
+  z-index: 20;
+}
+.nav-tab {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 4px;
+  cursor: pointer;
+  opacity: .45;
+  transition: opacity .2s;
+  padding: 2px 0;
+}
+.nav-tab.active { opacity: 1; }
+.nav-tab .nav-icon { font-size: 22px; line-height: 1; }
+.nav-tab .nav-label { font-size: 10px; font-weight: 600; letter-spacing: .04em; }
+.nav-tab.active .nav-label { color: var(--accent); }
+.nav-dot {
+  width: 4px; height: 4px;
+  background: var(--accent);
+  border-radius: 50%;
+  margin-top: 1px;
+  opacity: 0;
+  transition: opacity .2s;
+}
+.nav-tab.active .nav-dot { opacity: 1; }
+
+/* ── SCREENS ─────────────────────────────────────────────── */
+.screen {
+  position: absolute;
+  inset: 0;
+  overflow-y: auto;
+  overflow-x: hidden;
+  -webkit-overflow-scrolling: touch;
+  display: none;
+  flex-direction: column;
+}
+.screen.active { display: flex; }
+.screen::-webkit-scrollbar { display: none; }
+
+/* ── ONBOARDING SCREEN ───────────────────────────────────── */
+#s-onboard {
+  background: var(--bg);
+  padding: 0;
+  justify-content: flex-end;
+}
+
+.onboard-hero {
+  position: absolute;
+  top: 0; left: 0; right: 0;
+  height: 55%;
+  background: linear-gradient(160deg, #1a1030 0%, #0d0d14 60%);
+  overflow: hidden;
+}
+.hero-glow {
+  position: absolute;
+  width: 300px; height: 300px;
+  border-radius: 50%;
+  background: radial-gradient(circle, rgba(108,99,255,.35) 0%, transparent 70%);
+  top: -60px; left: 50%; transform: translateX(-50%);
+  animation: glow-pulse 3s ease-in-out infinite;
+}
+@keyframes glow-pulse {
+  0%,100% { opacity: .7; transform: translateX(-50%) scale(1); }
+  50% { opacity: 1; transform: translateX(-50%) scale(1.1); }
+}
+.hero-icon {
+  position: absolute;
+  top: 50%; left: 50%;
+  transform: translate(-50%, -56%);
+  font-size: 72px;
+  filter: drop-shadow(0 0 30px rgba(108,99,255,.6));
+}
+.hero-wordmark {
+  position: absolute;
+  bottom: 24px; left: 0; right: 0;
+  text-align: center;
+  font-size: 28px;
+  font-weight: 800;
+  letter-spacing: -1px;
+}
+.hero-wordmark span { color: var(--accent); }
+.hero-tagline {
+  position: absolute;
+  bottom: 4px; left: 0; right: 0;
+  text-align: center;
+  font-size: 12px;
+  color: var(--sub);
+  font-weight: 400;
+}
+
+.onboard-sheet {
+  position: relative;
+  background: var(--card);
+  border-radius: 28px 28px 0 0;
+  padding: 28px 24px 32px;
+  margin-top: 50%;
+  min-height: 52%;
+  z-index: 2;
+}
+.sheet-handle {
+  width: 36px; height: 4px;
+  background: var(--border);
+  border-radius: 2px;
+  margin: 0 auto 24px;
+}
+
+/* Step dots */
+.step-dots { display: flex; gap: 6px; margin-bottom: 24px; }
+.sdot {
+  height: 4px; border-radius: 2px;
+  background: var(--border);
+  transition: all .3s;
+  width: 20px;
+}
+.sdot.on { background: var(--accent); width: 32px; }
+.sdot.done { background: var(--green); width: 20px; }
+
+.step-head { font-size: 20px; font-weight: 800; margin-bottom: 6px; letter-spacing: -.4px; }
+.step-desc { font-size: 13px; color: var(--sub); margin-bottom: 20px; line-height: 1.6; }
+
+/* Form elements */
+.field-lbl {
+  font-size: 11px; font-weight: 700;
+  letter-spacing: .1em; text-transform: uppercase;
+  color: var(--sub); margin-bottom: 8px; display: block;
+}
+.field-input {
+  width: 100%;
+  background: var(--card2);
+  border: 1.5px solid var(--border);
+  border-radius: 14px;
+  padding: 14px 16px;
+  color: var(--text);
+  font-family: var(--font);
+  font-size: 15px;
+  outline: none;
+  margin-bottom: 18px;
+  transition: border-color .2s;
+  -webkit-appearance: none;
+}
+.field-input:focus { border-color: var(--accent); }
+select.field-input { appearance: none; background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='8' viewBox='0 0 12 8'%3E%3Cpath d='M1 1l5 5 5-5' stroke='%236b6b96' stroke-width='1.5' fill='none' stroke-linecap='round'/%3E%3C/svg%3E"); background-repeat: no-repeat; background-position: right 16px center; padding-right: 40px; }
+select.field-input option { background: #1e1e2c; }
+
+.chip-row { display: flex; flex-wrap: wrap; gap: 8px; margin-bottom: 18px; }
+.chip {
+  padding: 8px 16px;
+  border-radius: 999px;
+  border: 1.5px solid var(--border);
+  background: transparent;
+  color: var(--sub);
+  font-size: 13px;
+  font-weight: 500;
+  font-family: var(--font);
+  cursor: pointer;
+  transition: all .2s;
+  white-space: nowrap;
+}
+.chip.on { background: var(--a-light); border-color: var(--accent); color: var(--accent); }
+
+.two-col { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-bottom: 18px; }
+.two-col > div > .field-lbl { margin-bottom: 6px; }
+.two-col > div > .field-input { margin-bottom: 0; }
+
+.btn-cta {
+  width: 100%;
+  padding: 17px;
+  background: var(--accent);
+  border: none;
+  border-radius: 16px;
+  color: #fff;
+  font-family: var(--font);
+  font-size: 15px;
+  font-weight: 700;
+  cursor: pointer;
+  transition: all .18s;
+  letter-spacing: .02em;
+  position: relative;
+  overflow: hidden;
+}
+.btn-cta::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(180deg, rgba(255,255,255,.12) 0%, transparent 100%);
+}
+.btn-cta:active { transform: scale(.97); }
+
+.btn-back {
+  background: var(--card2);
+  border: 1.5px solid var(--border);
+  border-radius: 16px;
+  color: var(--sub);
+  font-family: var(--font);
+  font-size: 15px;
+  font-weight: 600;
+  padding: 17px 22px;
+  cursor: pointer;
+}
+.btn-row { display: flex; gap: 10px; }
+.btn-row .btn-cta { flex: 1; }
+
+/* ── LOADING SCREEN ──────────────────────────────────────── */
+#s-loading {
+  justify-content: center;
+  align-items: center;
+  gap: 28px;
+  padding: 40px 32px;
+  background: var(--bg);
+}
+#s-loading.active { display: flex; }
+
+.load-orb {
+  width: 96px; height: 96px;
+  border-radius: 50%;
+  background: conic-gradient(var(--accent), #a78bfa, #f472b6, var(--accent));
+  animation: spin-orb 2s linear infinite;
+  position: relative;
+}
+.load-orb::before {
+  content: '';
+  position: absolute;
+  inset: 6px;
+  background: var(--bg);
+  border-radius: 50%;
+}
+.load-orb::after {
+  content: '✦';
+  position: absolute;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 28px;
+  animation: counter-spin 2s linear infinite;
+}
+@keyframes spin-orb { to { transform: rotate(360deg); } }
+@keyframes counter-spin { to { transform: rotate(-360deg); } }
+
+.load-title { font-size: 20px; font-weight: 800; text-align: center; letter-spacing: -.4px; }
+.load-msg { font-size: 13px; color: var(--sub); text-align: center; line-height: 1.6; min-height: 40px; }
+.load-bar-wrap { width: 200px; height: 3px; background: var(--border); border-radius: 2px; overflow: hidden; }
+.load-bar { height: 100%; background: linear-gradient(90deg, var(--accent), var(--pink)); border-radius: 2px; width: 0%; transition: width .5s ease; }
+
+/* ── HOME (TODAY) SCREEN ─────────────────────────────────── */
+#s-home { padding: 0 0 16px; background: var(--bg); }
+
+.home-header {
+  padding: 16px 22px 0;
+  background: var(--bg);
+  position: sticky; top: 0; z-index: 5;
+}
+.home-header-inner {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  margin-bottom: 16px;
+}
+.home-greeting { font-size: 22px; font-weight: 800; letter-spacing: -.5px; }
+.home-date { font-size: 12px; color: var(--sub); margin-top: 2px; }
+.avatar {
+  width: 40px; height: 40px;
+  border-radius: 50%;
+  background: linear-gradient(135deg, var(--accent), var(--pink));
+  display: flex; align-items: center; justify-content: center;
+  font-size: 18px;
+}
+
+/* Progress strip */
+.progress-strip {
+  background: var(--card);
+  border-radius: var(--r);
+  padding: 16px 18px;
+  margin: 0 0 16px;
+  display: flex;
+  gap: 14px;
+  align-items: center;
+}
+.prog-ring-wrap { position: relative; flex-shrink: 0; }
+.prog-ring { width: 52px; height: 52px; transform: rotate(-90deg); }
+.pr-bg { fill: none; stroke: var(--border); stroke-width: 5; }
+.pr-fill { fill: none; stroke: var(--accent); stroke-width: 5; stroke-linecap: round; stroke-dasharray: 126; stroke-dashoffset: 126; transition: stroke-dashoffset 1s ease; }
+.prog-pct {
+  position: absolute; inset: 0;
+  display: flex; align-items: center; justify-content: center;
+  font-size: 12px; font-weight: 800; color: var(--accent);
+}
+.prog-text { }
+.prog-title { font-size: 14px; font-weight: 700; margin-bottom: 3px; }
+.prog-sub { font-size: 12px; color: var(--sub); }
+.prog-bar-thin { height: 3px; background: var(--border); border-radius: 2px; margin-top: 8px; overflow: hidden; }
+.prog-bar-thin-fill { height: 100%; background: linear-gradient(90deg, var(--accent), var(--pink)); border-radius: 2px; transition: width .8s ease; }
+
+.section-head {
+  font-size: 11px; font-weight: 700; text-transform: uppercase;
+  letter-spacing: .1em; color: var(--sub);
+  padding: 0 22px;
+  margin: 16px 0 10px;
+}
+
+/* Today card */
+.today-card {
+  margin: 0 16px 12px;
+  background: linear-gradient(135deg, #1d1b40 0%, #1a1030 100%);
+  border: 1px solid rgba(108,99,255,.3);
+  border-radius: 20px;
+  padding: 20px;
+  cursor: pointer;
+  transition: transform .15s;
+  position: relative;
+  overflow: hidden;
+}
+.today-card::before {
+  content: '';
+  position: absolute;
+  top: -40px; right: -40px;
+  width: 120px; height: 120px;
+  background: radial-gradient(circle, rgba(108,99,255,.2), transparent 70%);
+}
+.today-card:active { transform: scale(.98); }
+.tc-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  font-size: 10px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: .1em;
+  color: var(--accent);
+  background: var(--a-light);
+  padding: 4px 10px;
+  border-radius: 999px;
+  margin-bottom: 12px;
+}
+.tc-title { font-size: 16px; font-weight: 700; margin-bottom: 6px; line-height: 1.35; }
+.tc-meta { font-size: 12px; color: var(--sub); display: flex; gap: 12px; align-items: center; }
+.tc-arrow {
+  position: absolute;
+  right: 18px; top: 50%;
+  transform: translateY(-50%);
+  font-size: 20px;
+  color: var(--accent);
+  opacity: .5;
+}
+
+/* Upcoming list */
+.upcoming-item {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 13px 22px;
+  cursor: pointer;
+  transition: background .15s;
+  border-radius: 12px;
+  margin: 0 8px;
+}
+.upcoming-item:active { background: var(--card); }
+.up-date-box {
+  width: 42px; flex-shrink: 0; text-align: center;
+  background: var(--card2);
+  border-radius: 12px;
+  padding: 7px 4px;
+}
+.up-day { font-size: 10px; color: var(--sub); font-weight: 600; text-transform: uppercase; }
+.up-num { font-size: 18px; font-weight: 800; line-height: 1; }
+.up-info { flex: 1; min-width: 0; }
+.up-title { font-size: 13px; font-weight: 600; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.up-meta { font-size: 11px; color: var(--sub); margin-top: 2px; }
+.type-dot {
+  width: 8px; height: 8px; border-radius: 50%; flex-shrink: 0;
+}
+.type-basics    { background: var(--accent); }
+.type-technique { background: var(--pink); }
+.type-practice  { background: var(--green); }
+.type-review    { background: var(--amber); }
+
+/* ── CALENDAR SCREEN ─────────────────────────────────────── */
+#s-calendar { padding: 0 0 16px; background: var(--bg); }
+
+.cal-header {
+  padding: 16px 22px 12px;
+  position: sticky; top: 0;
+  background: var(--bg);
+  z-index: 5;
+}
+.cal-header-row {
+  display: flex; justify-content: space-between; align-items: center;
+  margin-bottom: 16px;
+}
+.cal-title-h { font-size: 22px; font-weight: 800; letter-spacing: -.5px; }
+.cal-nav-btns { display: flex; gap: 8px; }
+.cal-nav-btn {
+  width: 36px; height: 36px;
+  background: var(--card);
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  color: var(--text);
+  font-size: 15px;
+  cursor: pointer;
+  display: flex; align-items: center; justify-content: center;
+  transition: border-color .2s;
+}
+.cal-nav-btn:active { border-color: var(--accent); }
+
+/* Weekday labels */
+.cal-day-labels {
+  display: grid;
+  grid-template-columns: repeat(7,1fr);
+  text-align: center;
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: .06em;
+  text-transform: uppercase;
+  color: var(--sub);
+  margin-bottom: 6px;
+}
+
+/* Calendar grid */
+.cal-grid {
+  display: grid;
+  grid-template-columns: repeat(7,1fr);
+  gap: 3px;
+  padding: 0 8px;
+}
+.cal-cell {
+  aspect-ratio: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: flex-start;
+  border-radius: 12px;
+  padding: 4px 2px;
+  cursor: pointer;
+  position: relative;
+  transition: background .15s;
+  gap: 3px;
+}
+.cal-cell:active { background: var(--card2); }
+.cal-cell.other-m { opacity: .3; }
+.cal-cell-num {
+  font-size: 13px; font-weight: 600;
+  width: 28px; height: 28px;
+  display: flex; align-items: center; justify-content: center;
+  border-radius: 50%;
+}
+.cal-cell.is-today .cal-cell-num {
+  background: var(--accent);
+  color: #fff;
+  font-weight: 800;
+}
+.cal-pips { display: flex; gap: 2px; flex-wrap: wrap; justify-content: center; }
+.cal-pip {
+  width: 5px; height: 5px;
+  border-radius: 50%;
+}
+
+/* selected day lessons */
+.day-lessons-panel {
+  margin: 8px 16px 0;
+  background: var(--card);
+  border-radius: 20px;
+  overflow: hidden;
+}
+.dlp-header {
+  padding: 14px 18px;
+  font-size: 13px; font-weight: 700;
+  color: var(--sub);
+  border-bottom: 1px solid var(--border);
+}
+.dlp-item {
+  display: flex; align-items: center; gap: 12px;
+  padding: 13px 18px;
+  border-bottom: 1px solid var(--border);
+  cursor: pointer;
+  transition: background .15s;
+}
+.dlp-item:last-child { border-bottom: none; }
+.dlp-item:active { background: var(--card2); }
+.dlp-color { width: 4px; height: 40px; border-radius: 2px; flex-shrink: 0; }
+.dlp-info { flex: 1; min-width: 0; }
+.dlp-title { font-size: 14px; font-weight: 600; }
+.dlp-meta { font-size: 11px; color: var(--sub); margin-top: 2px; }
+.dlp-chevron { color: var(--sub); font-size: 14px; }
+
+/* ── LESSON DETAIL SCREEN ────────────────────────────────── */
+#s-lesson { padding: 0; background: var(--bg); }
+#s-lesson.active { display: flex; }
+
+.lesson-header {
+  padding: 16px 20px 20px;
+  background: linear-gradient(180deg, #1a1530 0%, var(--bg) 100%);
+  flex-shrink: 0;
+}
+.back-btn {
+  display: inline-flex; align-items: center; gap: 6px;
+  font-size: 14px; font-weight: 600; color: var(--accent);
+  cursor: pointer; margin-bottom: 16px;
+  background: none; border: none;
+}
+.l-type-tag {
+  display: inline-block;
+  padding: 4px 12px;
+  border-radius: 999px;
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: .08em;
+  text-transform: uppercase;
+  margin-bottom: 10px;
+}
+.l-title { font-size: 20px; font-weight: 800; letter-spacing: -.4px; line-height: 1.3; margin-bottom: 8px; }
+.l-date-row { font-size: 12px; color: var(--sub); display: flex; gap: 14px; }
+
+.lesson-body { flex: 1; overflow-y: auto; padding: 0 16px 16px; }
+.lesson-body::-webkit-scrollbar { display: none; }
+
+.l-section-lbl {
+  font-size: 11px; font-weight: 700; text-transform: uppercase;
+  letter-spacing: .1em; color: var(--sub);
+  margin: 20px 0 10px;
+}
+
+/* Video card */
+.vid-card {
+  background: var(--card);
+  border: 1px solid var(--border);
+  border-radius: 18px;
+  overflow: hidden;
+  margin-bottom: 12px;
+  cursor: pointer;
+  transition: transform .15s;
+}
+.vid-card:active { transform: scale(.98); }
+.vid-thumb {
+  width: 100%; height: 130px;
+  display: flex; align-items: center; justify-content: center;
+  position: relative;
+  flex-direction: column; gap: 8px;
+}
+.vid-play {
+  width: 44px; height: 44px;
+  background: rgba(255,255,255,.9);
+  border-radius: 50%;
+  display: flex; align-items: center; justify-content: center;
+  font-size: 16px; color: #111;
+  box-shadow: 0 4px 16px rgba(0,0,0,.4);
+  position: relative; z-index: 1;
+}
+.vid-platform-chip {
+  position: absolute; top: 10px; left: 10px;
+  padding: 3px 8px; border-radius: 999px;
+  font-size: 9px; font-weight: 700; letter-spacing: .08em;
+  text-transform: uppercase;
+}
+.plat-yt  { background: rgba(255,80,80,.2);  color: #ff6060; }
+.plat-ig  { background: rgba(244,114,182,.2); color: var(--pink); }
+.plat-tt  { background: rgba(52,211,153,.2);  color: var(--green); }
+
+.vid-info { padding: 12px 14px; }
+.vid-title { font-size: 13px; font-weight: 600; line-height: 1.4; margin-bottom: 4px; }
+.vid-meta  { font-size: 11px; color: var(--sub); }
+.vid-link  { color: var(--accent); }
+
+/* Tip card */
+.tip-box {
+  background: rgba(52,211,153,.07);
+  border: 1px solid rgba(52,211,153,.2);
+  border-radius: 16px;
+  padding: 16px;
+  font-size: 13px;
+  line-height: 1.7;
+  color: var(--text);
+}
+.tip-box strong { color: var(--green); }
+
+.lesson-footer {
+  padding: 12px 16px;
+  background: var(--bg);
+  border-top: 1px solid var(--border);
+  flex-shrink: 0;
+}
+.done-btn {
+  width: 100%;
+  padding: 17px;
+  background: var(--green);
+  border: none;
+  border-radius: 16px;
+  color: #0a1a14;
+  font-family: var(--font);
+  font-size: 15px;
+  font-weight: 800;
+  cursor: pointer;
+  transition: all .18s;
+  letter-spacing: .02em;
+}
+.done-btn:active { transform: scale(.97); }
+.done-btn.completed { background: var(--card2); color: var(--sub); border: 1.5px solid var(--border); }
+
+/* ── PLAN (LIST) SCREEN ──────────────────────────────────── */
+#s-plan { padding: 0 0 16px; background: var(--bg); }
+.plan-header {
+  padding: 16px 22px 12px;
+  position: sticky; top: 0;
+  background: var(--bg); z-index: 5;
+}
+.plan-header-title { font-size: 22px; font-weight: 800; letter-spacing: -.5px; }
+.plan-header-sub { font-size: 12px; color: var(--sub); margin-top: 3px; }
+
+.week-label {
+  font-size: 11px; font-weight: 700;
+  text-transform: uppercase; letter-spacing: .1em;
+  color: var(--sub);
+  padding: 14px 22px 6px;
+}
+.plan-row {
+  display: flex; align-items: center; gap: 12px;
+  padding: 13px 16px;
+  margin: 0 8px 4px;
+  background: var(--card);
+  border-radius: 16px;
+  cursor: pointer;
+  transition: all .15s;
+}
+.plan-row:active { transform: scale(.98); }
+.plan-row.done-row { opacity: .45; }
+.pr-date {
+  text-align: center;
+  background: var(--card2);
+  border-radius: 12px;
+  padding: 7px 8px;
+  min-width: 44px;
+}
+.pr-day { font-size: 9px; font-weight: 700; text-transform: uppercase; color: var(--sub); }
+.pr-num { font-size: 19px; font-weight: 800; line-height: 1; }
+.pr-info { flex: 1; min-width: 0; }
+.pr-title { font-size: 13px; font-weight: 600; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.pr-meta  { font-size: 11px; color: var(--sub); margin-top: 2px; }
+.pr-check {
+  width: 26px; height: 26px;
+  border: 2px solid var(--border);
+  border-radius: 8px;
+  display: flex; align-items: center; justify-content: center;
+  font-size: 13px;
+  flex-shrink: 0;
+  cursor: pointer;
+  transition: all .2s;
+}
+.pr-check.ck { background: var(--green); border-color: var(--green); color: #0a1a14; font-weight: 800; }
+
+/* ── TOAST ───────────────────────────────────────────────── */
+.toast {
+  position: absolute;
+  bottom: 80px; left: 50%;
+  transform: translateX(-50%) translateY(10px);
+  background: var(--card);
+  border: 1px solid var(--green);
+  border-radius: 14px;
+  padding: 11px 20px;
+  font-size: 13px; font-weight: 600;
+  color: var(--green);
+  white-space: nowrap;
+  opacity: 0;
+  transition: all .3s;
+  z-index: 100;
+  pointer-events: none;
+}
+.toast.show { opacity: 1; transform: translateX(-50%) translateY(0); }
+
+/* ── EMPTY STATE ─────────────────────────────────────────── */
+.empty-state {
+  display: flex; flex-direction: column;
+  align-items: center; justify-content: center;
+  padding: 60px 32px;
+  text-align: center; gap: 12px; color: var(--sub);
+}
+.empty-state .e-icon { font-size: 48px; opacity: .4; }
+.empty-state .e-text { font-size: 14px; line-height: 1.6; }
+</style>
+</head>
+<body>
+
+<div class="phone">
+  <!-- STATUS BAR -->
+  <div class="status-bar">
+    <div class="notch"></div>
+    <span id="status-time">9:41</span>
+    <div class="status-icons">
+      <span>●●●</span>
+      <span>WiFi</span>
+      <span>🔋</span>
+    </div>
+  </div>
+
+  <!-- APP BODY -->
+  <div class="app-body">
+
+    <!-- ░░ ONBOARDING ░░ -->
+    <div class="screen active" id="s-onboard">
+      <div class="onboard-hero">
+        <div class="hero-glow"></div>
+        <div class="hero-icon">🛹</div>
+        <div class="hero-wordmark">Skill<span>Path</span></div>
+        <div class="hero-tagline">Learn anything. No distractions.</div>
+      </div>
+
+      <div class="onboard-sheet">
+        <div class="sheet-handle"></div>
+        <div class="step-dots">
+          <div class="sdot on" id="d0"></div>
+          <div class="sdot"    id="d1"></div>
+          <div class="sdot"    id="d2"></div>
+        </div>
+
+        <!-- STEP 0 -->
+        <div id="ob0">
+          <div class="step-head">What do you want to learn? 🎯</div>
+          <div class="step-desc">Name the skill you want to master. The more specific, the better your plan.</div>
+          <label class="field-lbl">Your skill</label>
+          <input class="field-input" id="inp-skill" type="text" placeholder="e.g. Skateboarding, Guitar, Watercolour…" />
+          <label class="field-lbl">Current level</label>
+          <div class="chip-row" id="cr-level">
+            <button class="chip on" data-v="complete beginner">Complete beginner</button>
+            <button class="chip" data-v="some experience">Some experience</button>
+            <button class="chip" data-v="intermediate">Intermediate</button>
+          </div>
+          <button class="btn-cta" onclick="obNext(1)">Continue →</button>
+        </div>
+
+        <!-- STEP 1 -->
+        <div id="ob1" style="display:none">
+          <div class="step-head">Plan your schedule ⏱</div>
+          <div class="step-desc">We'll spread sessions across your week so progress feels effortless.</div>
+          <div class="two-col">
+            <div>
+              <label class="field-lbl">Duration</label>
+              <select class="field-input" id="sel-dur">
+                <option>2 weeks</option>
+                <option selected>1 month</option>
+                <option>3 months</option>
+                <option>6 months</option>
+              </select>
+            </div>
+            <div>
+              <label class="field-lbl">Per week</label>
+              <select class="field-input" id="sel-freq">
+                <option>2 sessions</option>
+                <option selected>3 sessions</option>
+                <option>4 sessions</option>
+                <option>5 sessions</option>
+              </select>
+            </div>
+          </div>
+          <label class="field-lbl">Session length</label>
+          <div class="chip-row" id="cr-len">
+            <button class="chip" data-v="15 min">15 min</button>
+            <button class="chip on" data-v="30 min">30 min</button>
+            <button class="chip" data-v="45 min">45 min</button>
+            <button class="chip" data-v="60 min">60 min</button>
+          </div>
+          <div class="btn-row">
+            <button class="btn-back" onclick="obNext(0)">←</button>
+            <button class="btn-cta" onclick="obNext(2)">Continue →</button>
+          </div>
+        </div>
+
+        <!-- STEP 2 -->
+        <div id="ob2" style="display:none">
+          <div class="step-head">Your learning style 🎨</div>
+          <div class="step-desc">We'll pick videos that match how you learn best.</div>
+          <label class="field-lbl">Style</label>
+          <div class="chip-row" id="cr-style">
+            <button class="chip on" data-v="visual demos">Visual demos</button>
+            <button class="chip" data-v="step-by-step">Step-by-step</button>
+            <button class="chip" data-v="quick tips">Quick tips</button>
+            <button class="chip" data-v="theory + practice">Theory + practice</button>
+          </div>
+          <label class="field-lbl">Platforms</label>
+          <div class="chip-row" id="cr-plat">
+            <button class="chip on" data-v="YouTube">YouTube</button>
+            <button class="chip" data-v="Instagram">Instagram</button>
+            <button class="chip" data-v="TikTok">TikTok</button>
+          </div>
+          <div class="btn-row" style="margin-top:4px">
+            <button class="btn-back" onclick="obNext(1)">←</button>
+            <button class="btn-cta" onclick="startGenerate()">Build my plan ✦</button>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ░░ LOADING ░░ -->
+    <div class="screen" id="s-loading">
+      <div class="load-orb"></div>
+      <div class="load-title">Building your plan…</div>
+      <div class="load-msg" id="load-msg">Searching for the best tutorials…</div>
+      <div class="load-bar-wrap"><div class="load-bar" id="load-bar"></div></div>
+    </div>
+
+    <!-- ░░ HOME ░░ -->
+    <div class="screen" id="s-home">
+      <div class="home-header">
+        <div class="home-header-inner">
+          <div>
+            <div class="home-greeting">Today</div>
+            <div class="home-date" id="home-date-lbl"></div>
+          </div>
+          <div class="avatar" id="home-avatar">🎯</div>
+        </div>
+        <div class="progress-strip" id="prog-strip">
+          <div class="prog-ring-wrap">
+            <svg class="prog-ring" viewBox="0 0 44 44">
+              <circle class="pr-bg" cx="22" cy="22" r="20"/>
+              <circle class="pr-fill" id="pr-fill" cx="22" cy="22" r="20"/>
+            </svg>
+            <div class="prog-pct" id="prog-pct-lbl">0%</div>
+          </div>
+          <div class="prog-text">
+            <div class="prog-title" id="prog-skill-name">Skill</div>
+            <div class="prog-sub" id="prog-sub-lbl">0 of 0 sessions done</div>
+            <div class="prog-bar-thin"><div class="prog-bar-thin-fill" id="prog-bar-thin" style="width:0%"></div></div>
+          </div>
+        </div>
+      </div>
+
+      <div class="section-head">Up Next</div>
+      <div id="today-card-wrap"></div>
+
+      <div class="section-head">Upcoming</div>
+      <div id="upcoming-list"></div>
+    </div>
+
+    <!-- ░░ CALENDAR ░░ -->
+    <div class="screen" id="s-calendar">
+      <div class="cal-header">
+        <div class="cal-header-row">
+          <div class="cal-title-h" id="cal-month-lbl">March 2026</div>
+          <div class="cal-nav-btns">
+            <button class="cal-nav-btn" onclick="chMonth(-1)">‹</button>
+            <button class="cal-nav-btn" onclick="chMonth(1)">›</button>
+          </div>
+        </div>
+        <div class="cal-day-labels">
+          <div>S</div><div>M</div><div>T</div><div>W</div>
+          <div>T</div><div>F</div><div>S</div>
+        </div>
+      </div>
+      <div class="cal-grid" id="cal-grid"></div>
+      <div id="day-panel"></div>
+    </div>
+
+    <!-- ░░ PLAN LIST ░░ -->
+    <div class="screen" id="s-plan">
+      <div class="plan-header">
+        <div class="plan-header-title">Full Plan</div>
+        <div class="plan-header-sub" id="plan-header-sub">0 sessions</div>
+      </div>
+      <div id="plan-list-wrap"></div>
+    </div>
+
+    <!-- ░░ LESSON DETAIL ░░ -->
+    <div class="screen" id="s-lesson">
+      <div class="lesson-header">
+        <button class="back-btn" id="lesson-back-btn">← Back</button>
+        <div class="l-type-tag" id="l-type-tag">Basics</div>
+        <div class="l-title" id="l-title">Lesson</div>
+        <div class="l-date-row">
+          <span id="l-date">Date</span>
+          <span id="l-dur">30 min</span>
+        </div>
+      </div>
+      <div class="lesson-body">
+        <div class="l-section-lbl">📹 Curated Videos</div>
+        <div id="l-videos"></div>
+        <div class="l-section-lbl">💡 Tips for this session</div>
+        <div id="l-tips"></div>
+      </div>
+      <div class="lesson-footer">
+        <button class="done-btn" id="done-btn" onclick="markDone()">✓ Mark as complete</button>
+      </div>
+    </div>
+
+    <!-- TOAST -->
+    <div class="toast" id="toast"></div>
+  </div>
+
+  <!-- BOTTOM NAV (hidden during onboarding/loading) -->
+  <div class="bottom-nav" id="bottom-nav" style="display:none">
+    <div class="nav-tab active" id="tab-home" onclick="goTab('home')">
+      <div class="nav-icon">🏠</div>
+      <div class="nav-label">Today</div>
+      <div class="nav-dot"></div>
+    </div>
+    <div class="nav-tab" id="tab-calendar" onclick="goTab('calendar')">
+      <div class="nav-icon">📅</div>
+      <div class="nav-label">Calendar</div>
+      <div class="nav-dot"></div>
+    </div>
+    <div class="nav-tab" id="tab-plan" onclick="goTab('plan')">
+      <div class="nav-icon">📋</div>
+      <div class="nav-label">Plan</div>
+      <div class="nav-dot"></div>
+    </div>
+    <div class="nav-tab" id="tab-new" onclick="resetToOnboard()">
+      <div class="nav-icon">＋</div>
+      <div class="nav-label">New Skill</div>
+      <div class="nav-dot"></div>
+    </div>
+  </div>
+</div>
+
+<script>
+// ═══════════════════════════════════════════════════════════
+// STATE
+// ═══════════════════════════════════════════════════════════
+const S = {
+  skill: '', level: 'complete beginner',
+  duration: '1 month', freq: 3, len: '30 min',
+  style: 'visual demos', platforms: ['YouTube'],
+  lessons: [], done: new Set(),
+  curLesson: null, prevTab: 'home',
+  calMonth: new Date().getMonth(), calYear: new Date().getFullYear(),
+  selDay: null,
+};
+
+// ═══════════════════════════════════════════════════════════
+// STATUS BAR CLOCK
+// ═══════════════════════════════════════════════════════════
+function tickClock() {
+  const n = new Date();
+  document.getElementById('status-time').textContent =
+    `${n.getHours()}:${String(n.getMinutes()).padStart(2,'0')}`;
+}
+tickClock(); setInterval(tickClock, 10000);
+
+// ═══════════════════════════════════════════════════════════
+// ONBOARDING
+// ═══════════════════════════════════════════════════════════
+let obStep = 0;
+
+function obNext(n) {
+  if (n === 1) {
+    const v = document.getElementById('inp-skill').value.trim();
+    if (!v) {
+      const el = document.getElementById('inp-skill');
+      el.style.borderColor = 'var(--pink)';
+      setTimeout(() => el.style.borderColor = '', 1500);
+      return;
+    }
+    S.skill = v;
+    S.level = chipVal('cr-level') || 'complete beginner';
+    // update hero icon based on skill
+    const icons = {skate:'🛹',guitar:'🎸',piano:'🎹',cook:'🍳',draw:'🎨',paint:'🖌',swim:'🏊',run:'🏃',yoga:'🧘',code:'💻',photo:'📷',dance:'💃',sing:'🎤',chess:'♟',tennis:'🎾',surf:'🏄',climb:'🧗',box:'🥊'};
+    const kw = S.skill.toLowerCase();
+    const match = Object.keys(icons).find(k => kw.includes(k));
+    if (match) document.querySelector('.hero-icon').textContent = icons[match];
+  }
+  if (n > 1) {
+    S.duration = document.getElementById('sel-dur').value;
+    S.freq = parseInt(document.getElementById('sel-freq').value);
+    S.len = chipVal('cr-len') || '30 min';
+  }
+  document.getElementById(`ob${obStep}`).style.display = 'none';
+  obStep = n;
+  document.getElementById(`ob${n}`).style.display = 'block';
+  for (let i = 0; i < 3; i++) {
+    const d = document.getElementById(`d${i}`);
+    d.className = 'sdot' + (i === n ? ' on' : i < n ? ' done' : '');
+  }
+}
+
+function chipVal(id) {
+  const el = document.querySelector(`#${id} .chip.on`);
+  return el ? el.dataset.v : null;
+}
+
+// Chip toggles
+document.querySelectorAll('.chip-row').forEach(cr => {
+  const multi = cr.id === 'cr-plat';
+  cr.addEventListener('click', e => {
+    if (!e.target.classList.contains('chip')) return;
+    if (multi) {
+      e.target.classList.toggle('on');
+    } else {
+      cr.querySelectorAll('.chip').forEach(c => c.classList.remove('on'));
+      e.target.classList.add('on');
+    }
+  });
+});
+
+// ═══════════════════════════════════════════════════════════
+// GENERATE
+// ═══════════════════════════════════════════════════════════
+function startGenerate() {
+  S.style = chipVal('cr-style') || 'visual demos';
+  S.platforms = [...document.querySelectorAll('#cr-plat .chip.on')].map(c => c.dataset.v);
+  if (!S.platforms.length) S.platforms = ['YouTube'];
+
+  showScreen('loading');
+  document.getElementById('bottom-nav').style.display = 'none';
+
+  const msgs = [
+    'Searching for top-rated tutorials…',
+    'Analysing your skill level…',
+    'Curating the best videos…',
+    'Sequencing your lessons…',
+    'Mapping to your calendar…',
+    'Almost ready!',
+  ];
+  const bar = document.getElementById('load-bar');
+  const msg = document.getElementById('load-msg');
+  bar.style.width = '0%';
+  let i = 0;
+  const iv = setInterval(() => {
+    if (i < msgs.length) {
+      msg.textContent = msgs[i];
+      bar.style.width = `${Math.round(((i+1)/msgs.length)*100)}%`;
+      i++;
+    } else clearInterval(iv);
+  }, 850);
+
+  setTimeout(() => {
+    S.lessons = buildPlan();
+    S.done = new Set();
+    buildMainApp();
+    document.getElementById('bottom-nav').style.display = 'flex';
+    goTab('home');
+  }, 5400);
+}
+
+// ═══════════════════════════════════════════════════════════
+// PLAN BUILDER  (fully self-contained, no API)
+// ═══════════════════════════════════════════════════════════
+function getDurWeeks() {
+  return { '2 weeks':2,'1 month':4,'3 months':12,'6 months':24 }[S.duration] || 4;
+}
+
+function buildPlan() {
+  const weeks = getDurWeeks();
+  const total = Math.min(weeks * S.freq, 48);
+  const dayOffsets = { 2:[0,3], 3:[0,2,4], 4:[0,1,3,4], 5:[0,1,2,3,4] }[S.freq] || [0,2,4];
+
+  const start = new Date(); start.setDate(start.getDate() + 1);
+  const lessons = [];
+  let si = 0, wk = 0;
+
+  while (lessons.length < total) {
+    for (let d = 0; d < dayOffsets.length && lessons.length < total; d++) {
+      const dt = new Date(start);
+      dt.setDate(start.getDate() + wk * 7 + dayOffsets[d]);
+      const pct = si / total;
+      let type = pct < .25 ? 'basics' : pct < .55 ? 'technique' : pct < .80 ? 'practice' : 'review';
+      if (si > 0 && (si + 1) % 5 === 0) type = 'review';
+      lessons.push(makeLesson(S.skill, si, type, dt));
+      si++;
+    }
+    wk++;
+  }
+  return lessons;
+}
+
+function makeLesson(skill, idx, type, date) {
+  const n = idx + 1;
+  const T = {
+    basics:    [`Getting started: ${skill} fundamentals`,`${skill}: Posture & first moves`,`${skill}: Core mechanics`,`Safety & setup for ${skill}`,`${skill}: Your first session`,`Building your ${skill} foundation`],
+    technique: [`${skill}: Mastering key technique`,`${skill}: Precision drills`,`Breaking down the ${skill} motion`,`${skill}: Common mistakes to avoid`,`${skill}: Intermediate move unlocked`,`${skill}: Form & control focus`],
+    practice:  [`${skill}: Open practice session`,`${skill}: Speed & consistency`,`${skill}: Real-world application`,`${skill}: Flow state practice`,`${skill}: Challenge yourself`,`${skill}: Practice under pressure`],
+    review:    [`Week ${Math.ceil(n/S.freq)} review: Progress check`,`${skill}: Reflect & refine`,`${skill}: Video analysis session`,`${skill}: What's working?`,`${skill}: Milestone assessment`],
+  };
+  const Tips = {
+    basics:    [`Film yourself from two angles — video feedback is your best coach.`,`Do 5 min of mental rehearsal before you start.`,`Focus on ONE thing per session.`,`Start slower than feels necessary.`,`Write down 3 things you noticed after each rep.`],
+    technique: [`Isolate the hardest part and drill it 20× before combining.`,`Use a mirror or phone for real-time feedback.`,`When something feels wrong, stop and reset.`,`Slow is smooth, smooth is fast.`,`Nail 5 clean reps in a row before moving on.`],
+    practice:  [`Set a timer and go — flow comes from repetition, not perfection.`,`Try in a slightly different environment today.`,`Film a "best attempt" clip. Mild pressure sharpens focus.`,`Count your successful reps. 20 good ones = session goal.`,`Play music that matches the energy you want.`],
+    review:    [`Watch your earliest clip side-by-side with today's.`,`Write your top 2 breakthroughs and 1 focus for next week.`,`Rest is part of training. Your brain consolidates skills during sleep.`,`Share your progress with one person.`,`Score yourself 1–10 on each skill covered.`],
+  };
+  const Desc = {
+    basics:    `A foundational ${S.len} session. Follow the videos in order, then apply what you watched straight away.`,
+    technique: `A focused technique session. Watch the video first, then drill the specific movement for the rest of your ${S.len}.`,
+    practice:  `Open practice. Put on the videos as background reference and just do the work for ${S.len}.`,
+    review:    `Reflective session. Watch your own attempts, review the videos, and plan next week's focus.`,
+  };
+  const Vids = {
+    basics:    [{t:`${skill} for Absolute Beginners (Start Here)`,c:'SkillPath Tutorials',d:'11:24',q:`${skill} beginner tutorial start from zero`},{t:`How to Learn ${skill} Fast — The Right Way`,c:'LearnAnything',d:'8:05',q:`how to learn ${skill} fast beginner`}],
+    technique: [{t:`${skill} Technique Breakdown — Step by Step`,c:'TechniqueFirst',d:'14:12',q:`${skill} technique breakdown step by step`},{t:`Fix Your ${skill} Form in 10 Minutes`,c:'FormCheck',d:'9:48',q:`${skill} form correction mistakes`}],
+    practice:  [{t:`${skill} Practice Session — Follow Along`,c:'PracticeWithMe',d:'18:30',q:`${skill} practice session follow along`},{t:`${skill}: Real Practice, Real Progress`,c:'RealProgress',d:'10:22',q:`${skill} real practice progress`}],
+    review:    [{t:`How to Review Your ${skill} Progress`,c:'ProgressCoach',d:'8:14',q:`how to review ${skill} progress`},{t:`${skill} Plateau? Here's What to Do`,c:'PlateauBreaker',d:'11:02',q:`${skill} plateau how to improve`}],
+  };
+
+  const tl = T[type]; const tips = Tips[type];
+  const vl = Vids[type];
+  const plats = S.platforms.length ? S.platforms : ['YouTube'];
+  const videos = vl.map((v,i) => ({ ...v, platform: plats[i % plats.length] }));
+
+  return {
+    id: `l${n}`, title: tl[idx % tl.length], type,
+    date: fmtDate(date), duration: S.len,
+    description: Desc[type], tip: tips[idx % tips.length],
+    videos,
+  };
+}
+
+function fmtDate(d) {
+  return `${d.getFullYear()}-${pad(d.getMonth()+1)}-${pad(d.getDate())}`;
+}
+function pad(n) { return String(n).padStart(2,'0'); }
+
+// ═══════════════════════════════════════════════════════════
+// BUILD MAIN APP
+// ═══════════════════════════════════════════════════════════
+function buildMainApp() {
+  // Date label
+  const now = new Date();
+  document.getElementById('home-date-lbl').textContent =
+    now.toLocaleDateString('en-US',{weekday:'long',month:'long',day:'numeric'});
+  document.getElementById('home-avatar').textContent = skillEmoji();
+
+  renderProgress();
+  renderHome();
+  renderCalendar();
+  renderPlanList();
+}
+
+function skillEmoji() {
+  const icons = {skate:'🛹',guitar:'🎸',piano:'🎹',cook:'🍳',draw:'🎨',paint:'🖌',swim:'🏊',run:'🏃',yoga:'🧘',code:'💻',photo:'📷',dance:'💃',sing:'🎤',chess:'♟',tennis:'🎾',surf:'🏄',climb:'🧗',box:'🥊'};
+  const kw = S.skill.toLowerCase();
+  const m = Object.keys(icons).find(k => kw.includes(k));
+  return m ? icons[m] : '🎯';
+}
+
+// ── Progress ─────────────────────────────────────────────
+function renderProgress() {
+  const total = S.lessons.length, done = S.done.size;
+  const pct = total ? Math.round((done/total)*100) : 0;
+  document.getElementById('prog-pct-lbl').textContent = `${pct}%`;
+  document.getElementById('prog-skill-name').textContent = S.skill;
+  document.getElementById('prog-sub-lbl').textContent = `${done} of ${total} sessions done`;
+  document.getElementById('prog-bar-thin').style.width = `${pct}%`;
+  const circ = 2 * Math.PI * 20;
+  const fill = document.getElementById('pr-fill');
+  fill.style.strokeDasharray = circ;
+  fill.style.strokeDashoffset = circ - (pct/100)*circ;
+}
+
+// ── Home screen ───────────────────────────────────────────
+function renderHome() {
+  const today = fmtDate(new Date());
+  const DAYS = ['Sun','Mon','Tue','Wed','Thu','Fri','Sat'];
+
+  // Find next undone lesson
+  const nextLesson = S.lessons.find(l => !S.done.has(l.id));
+  const tcWrap = document.getElementById('today-card-wrap');
+  if (nextLesson) {
+    const d = new Date(nextLesson.date+'T12:00:00');
+    const isToday = nextLesson.date === today;
+    const label = isToday ? '🔥 Today\'s session' : `📅 ${d.toLocaleDateString('en-US',{weekday:'short',month:'short',day:'numeric'})}`;
+    tcWrap.innerHTML = `
+      <div class="today-card" onclick="openLesson('${nextLesson.id}','home')">
+        <div class="tc-badge">${label}</div>
+        <div class="tc-title">${nextLesson.title}</div>
+        <div class="tc-meta">
+          <span>⏱ ${nextLesson.duration}</span>
+          <span>📹 ${nextLesson.videos?.length||0} videos</span>
+          <span class="type-dot ${nextLesson.type}" style="display:inline-block"></span>
+          <span style="text-transform:capitalize">${nextLesson.type}</span>
+        </div>
+        <div class="tc-arrow">›</div>
+      </div>`;
+  } else {
+    tcWrap.innerHTML = `<div class="today-card"><div class="tc-badge">🎉 All done!</div><div class="tc-title">You've completed your ${S.skill} plan!</div></div>`;
+  }
+
+  // Upcoming: next 5 undone lessons after the first
+  const upcoming = S.lessons.filter(l => !S.done.has(l.id) && l !== nextLesson).slice(0, 5);
+  const ul = document.getElementById('upcoming-list');
+  if (!upcoming.length) { ul.innerHTML = '<div style="padding:12px 22px;font-size:13px;color:var(--sub)">Nothing else scheduled yet.</div>'; return; }
+  ul.innerHTML = upcoming.map(l => {
+    const d = new Date(l.date+'T12:00:00');
+    return `
+      <div class="upcoming-item" onclick="openLesson('${l.id}','home')">
+        <div class="up-date-box">
+          <div class="up-day">${DAYS[d.getDay()]}</div>
+          <div class="up-num">${d.getDate()}</div>
+        </div>
+        <div class="up-info">
+          <div class="up-title">${l.title}</div>
+          <div class="up-meta">⏱ ${l.duration} · ${l.videos?.length||0} videos</div>
+        </div>
+        <div class="type-dot ${l.type}"></div>
+      </div>`;
+  }).join('');
+}
+
+// ── Calendar ──────────────────────────────────────────────
+let calSel = null;
+
+function renderCalendar() {
+  const MONTHS = ['January','February','March','April','May','June','July','August','September','October','November','December'];
+  const { calMonth: m, calYear: y } = S;
+  document.getElementById('cal-month-lbl').textContent = `${MONTHS[m]} ${y}`;
+
+  const grid = document.getElementById('cal-grid');
+  grid.innerHTML = '';
+
+  const firstDay = new Date(y, m, 1).getDay();
+  const daysInM  = new Date(y, m+1, 0).getDate();
+  const daysInPrev = new Date(y, m, 0).getDate();
+  const today    = new Date();
+  const todayStr = fmtDate(today);
+  const total    = Math.ceil((firstDay + daysInM) / 7) * 7;
+
+  for (let i = 0; i < total; i++) {
+    let dn, cm, cy;
+    if (i < firstDay) { dn = daysInPrev-firstDay+i+1; cm = m-1; cy = m===0?y-1:y; }
+    else if (i >= firstDay+daysInM) { dn = i-firstDay-daysInM+1; cm = m+1; cy = m===11?y+1:y; }
+    else { dn = i-firstDay+1; cm = m; cy = y; }
+
+    const ds = `${cy}-${pad(cm+1)}-${pad(dn)}`;
+    const lessons = S.lessons.filter(l => l.date === ds);
+    const isToday = ds === todayStr;
+    const isOther = cm !== m;
+    const isSel   = ds === calSel;
+
+    const cell = document.createElement('div');
+    cell.className = 'cal-cell' + (isOther?' other-m':'') + (isToday?' is-today':'');
+    if (isSel) cell.style.background = 'var(--card2)';
+    cell.innerHTML = `<div class="cal-cell-num">${dn}</div>`;
+    if (lessons.length) {
+      const pips = document.createElement('div');
+      pips.className = 'cal-pips';
+      lessons.forEach(l => {
+        const pip = document.createElement('div');
+        pip.className = `cal-pip ${l.type}`;
+        if (S.done.has(l.id)) pip.style.opacity = '.3';
+        pips.appendChild(pip);
+      });
+      cell.appendChild(pips);
+    }
+    cell.addEventListener('click', () => {
+      calSel = ds;
+      renderCalendar();
+      renderDayPanel(ds);
+    });
+    grid.appendChild(cell);
+  }
+
+  renderDayPanel(calSel || todayStr);
+}
+
+function renderDayPanel(ds) {
+  const panel = document.getElementById('day-panel');
+  const lessons = S.lessons.filter(l => l.date === ds);
+  const d = new Date(ds+'T12:00:00');
+  const lbl = d.toLocaleDateString('en-US',{weekday:'long',month:'short',day:'numeric'});
+
+  if (!lessons.length) {
+    panel.innerHTML = `<div class="day-lessons-panel"><div class="dlp-header">${lbl} — No sessions</div></div>`;
+    return;
+  }
+
+  const typeColors = { basics:'var(--accent)', technique:'var(--pink)', practice:'var(--green)', review:'var(--amber)' };
+  panel.innerHTML = `
+    <div class="day-lessons-panel">
+      <div class="dlp-header">${lbl}</div>
+      ${lessons.map(l => `
+        <div class="dlp-item" onclick="openLesson('${l.id}','calendar')">
+          <div class="dlp-color" style="background:${typeColors[l.type]};opacity:${S.done.has(l.id)?'.3':'1'}"></div>
+          <div class="dlp-info">
+            <div class="dlp-title" style="${S.done.has(l.id)?'text-decoration:line-through;opacity:.5':''}">${l.title}</div>
+            <div class="dlp-meta">⏱ ${l.duration} · ${l.videos?.length||0} videos · <span style="text-transform:capitalize">${l.type}</span></div>
+          </div>
+          <div class="dlp-chevron">›</div>
+        </div>`).join('')}
+    </div>`;
+}
+
+function chMonth(dir) {
+  S.calMonth += dir;
+  if (S.calMonth > 11) { S.calMonth = 0; S.calYear++; }
+  if (S.calMonth < 0)  { S.calMonth = 11; S.calYear--; }
+  calSel = null;
+  renderCalendar();
+}
+
+// ── Plan list ─────────────────────────────────────────────
+function renderPlanList() {
+  document.getElementById('plan-header-sub').textContent = `${S.lessons.length} sessions · ${S.duration}`;
+  const wrap = document.getElementById('plan-list-wrap');
+  const DAYS = ['Sun','Mon','Tue','Wed','Thu','Fri','Sat'];
+  let lastW = -1, html = '';
+  S.lessons.forEach((l,i) => {
+    const wk = Math.floor(i / S.freq);
+    if (wk !== lastW) { html += `<div class="week-label">Week ${wk+1}</div>`; lastW = wk; }
+    const d = new Date(l.date+'T12:00:00');
+    const ck = S.done.has(l.id);
+    html += `
+      <div class="plan-row${ck?' done-row':''}" onclick="openLesson('${l.id}','plan')">
+        <div class="pr-date">
+          <div class="pr-day">${DAYS[d.getDay()]}</div>
+          <div class="pr-num">${d.getDate()}</div>
+        </div>
+        <div class="pr-info">
+          <div class="pr-title">${l.title}</div>
+          <div class="pr-meta">⏱ ${l.duration} · ${l.videos?.length||0} videos</div>
+        </div>
+        <div class="pr-check ${ck?'ck':''}" onclick="toggleDone('${l.id}',event)">${ck?'✓':''}</div>
+      </div>`;
+  });
+  wrap.innerHTML = html;
+}
+
+// ── Lesson detail ─────────────────────────────────────────
+function openLesson(id, from) {
+  const l = S.lessons.find(x => x.id === id);
+  if (!l) return;
+  S.curLesson = l;
+  S.prevTab = from || 'home';
+
+  // Back button
+  document.getElementById('lesson-back-btn').onclick = () => {
+    showScreen(S.prevTab === 'plan' ? 'plan' : S.prevTab === 'calendar' ? 'calendar' : 'home');
+    setActiveTab(S.prevTab === 'plan' ? 'plan' : S.prevTab === 'calendar' ? 'calendar' : 'home');
+  };
+
+  const typeColors = { basics:'var(--a-light)', technique:'rgba(244,114,182,.15)', practice:'rgba(52,211,153,.12)', review:'rgba(251,191,36,.12)' };
+  const typeText   = { basics:'var(--accent)', technique:'var(--pink)', practice:'var(--green)', review:'var(--amber)' };
+
+  const tag = document.getElementById('l-type-tag');
+  tag.textContent = l.type.charAt(0).toUpperCase()+l.type.slice(1);
+  tag.style.background = typeColors[l.type];
+  tag.style.color = typeText[l.type];
+
+  document.getElementById('l-title').textContent = l.title;
+  const d = new Date(l.date+'T12:00:00');
+  document.getElementById('l-date').textContent = d.toLocaleDateString('en-US',{weekday:'long',month:'long',day:'numeric'});
+  document.getElementById('l-dur').textContent = `⏱ ${l.duration}`;
+
+  // Videos
+  const platBg = { YouTube:'rgba(255,80,80,.2)', Instagram:'rgba(244,114,182,.2)', TikTok:'rgba(52,211,153,.2)' };
+  const platTx = { YouTube:'#ff6060', Instagram:'var(--pink)', TikTok:'var(--green)' };
+  const gradients = ['linear-gradient(135deg,#1d1b40,#0d1a30)','linear-gradient(135deg,#1a1030,#0a1a1a)','linear-gradient(135deg,#1a0a0a,#1a1030)'];
+
+  document.getElementById('l-videos').innerHTML = (l.videos||[]).map((v,i) => {
+    const pc = v.platform === 'YouTube' ? 'plat-yt' : v.platform === 'Instagram' ? 'plat-ig' : 'plat-tt';
+    const url = `https://www.youtube.com/results?search_query=${encodeURIComponent(v.q||v.t)}`;
+    return `
+      <div class="vid-card" onclick="window.open('${url}','_blank')">
+        <div class="vid-thumb" style="background:${gradients[i%gradients.length]}">
+          <div class="vid-platform-chip ${pc}">${v.platform}</div>
+          <div class="vid-play">▶</div>
+        </div>
+        <div class="vid-info">
+          <div class="vid-title">${v.t}</div>
+          <div class="vid-meta">${v.c} · ${v.d} — <span class="vid-link">Search on ${v.platform} →</span></div>
+        </div>
+      </div>`;
+  }).join('');
+
+  document.getElementById('l-tips').innerHTML = `
+    <div class="tip-box">
+      <strong>Focus:</strong> ${l.description}<br><br>
+      <strong>Practice tip:</strong> ${l.tip}
+    </div>`;
+
+  const btn = document.getElementById('done-btn');
+  if (S.done.has(l.id)) {
+    btn.textContent = '✓ Completed';
+    btn.className = 'done-btn completed';
+  } else {
+    btn.textContent = '✓ Mark as complete';
+    btn.className = 'done-btn';
+  }
+
+  showScreen('lesson');
+  // Don't change active tab when viewing lesson
+}
+
+function markDone() {
+  if (!S.curLesson) return;
+  const id = S.curLesson.id;
+  if (!S.done.has(id)) {
+    S.done.add(id);
+    showToast('🎉 Session complete!');
+    renderProgress();
+    renderHome();
+    renderCalendar();
+    renderPlanList();
+  }
+  document.getElementById('done-btn').textContent = '✓ Completed';
+  document.getElementById('done-btn').className = 'done-btn completed';
+}
+
+function toggleDone(id, e) {
+  e.stopPropagation();
+  if (S.done.has(id)) S.done.delete(id);
+  else { S.done.add(id); showToast('🎉 Done!'); }
+  renderProgress();
+  renderHome();
+  renderCalendar();
+  renderPlanList();
+}
+
+// ═══════════════════════════════════════════════════════════
+// NAVIGATION
+// ═══════════════════════════════════════════════════════════
+const SCREENS = { home:'s-home', calendar:'s-calendar', plan:'s-plan', lesson:'s-lesson', onboard:'s-onboard', loading:'s-loading' };
+const TABS    = { home:'tab-home', calendar:'tab-calendar', plan:'tab-plan' };
+
+function showScreen(name) {
+  Object.values(SCREENS).forEach(id => {
+    const el = document.getElementById(id);
+    if (el) el.classList.remove('active');
+  });
+  const el = document.getElementById(SCREENS[name]);
+  if (el) el.classList.add('active');
+}
+
+function setActiveTab(name) {
+  Object.values(TABS).forEach(id => document.getElementById(id)?.classList.remove('active'));
+  if (TABS[name]) document.getElementById(TABS[name])?.classList.add('active');
+}
+
+function goTab(name) {
+  showScreen(name);
+  setActiveTab(name);
+}
+
+function resetToOnboard() {
+  S.lessons = []; S.done = new Set();
+  obStep = 0;
+  document.getElementById('ob0').style.display = 'block';
+  document.getElementById('ob1').style.display = 'none';
+  document.getElementById('ob2').style.display = 'none';
+  for (let i=0;i<3;i++) document.getElementById(`d${i}`).className = 'sdot'+(i===0?' on':'');
+  document.getElementById('bottom-nav').style.display = 'none';
+  showScreen('onboard');
+}
+
+// ═══════════════════════════════════════════════════════════
+// TOAST
+// ═══════════════════════════════════════════════════════════
+function showToast(msg) {
+  const t = document.getElementById('toast');
+  t.textContent = msg;
+  t.classList.add('show');
+  setTimeout(() => t.classList.remove('show'), 2200);
+}
+</script>
+</body>
+</html>
