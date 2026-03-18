@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-<title>SkillPath App</title>
+<title>SkillPath App — v2.0</title>
 <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
 <style>
 /* ── TOKENS ─────────────────────────────────────────────── */
@@ -764,6 +764,202 @@ select.field-input option { background: #1e1e2c; }
 }
 .empty-state .e-icon { font-size: 48px; opacity: .4; }
 .empty-state .e-text { font-size: 14px; line-height: 1.6; }
+
+/* ── FLOATING FOCUS REMINDER ─────────────────────────────── */
+.focus-bubble {
+  position: absolute;
+  bottom: 80px; left: 50%;
+  transform: translateX(-50%) translateY(20px) scale(0.92);
+  background: linear-gradient(135deg, #1a1040, #0f0a28);
+  border: 1px solid rgba(108,99,255,.5);
+  border-radius: 20px;
+  padding: 14px 18px;
+  min-width: 280px; max-width: 320px;
+  z-index: 200;
+  opacity: 0;
+  pointer-events: none;
+  transition: all .35s cubic-bezier(0.34,1.56,0.64,1);
+  box-shadow: 0 8px 32px rgba(0,0,0,.6), 0 0 0 1px rgba(108,99,255,.2);
+}
+.focus-bubble.visible {
+  opacity: 1;
+  transform: translateX(-50%) translateY(0) scale(1);
+  pointer-events: all;
+}
+.fb-top { display: flex; align-items: center; gap: 10px; margin-bottom: 8px; }
+.fb-icon { font-size: 22px; }
+.fb-title { font-size: 13px; font-weight: 800; flex: 1; }
+.fb-close {
+  background: rgba(255,255,255,.08);
+  border: none; border-radius: 8px;
+  color: var(--sub); font-size: 13px;
+  width: 26px; height: 26px;
+  cursor: pointer; display: flex;
+  align-items: center; justify-content: center;
+  transition: background .15s;
+}
+.fb-close:hover { background: rgba(255,255,255,.14); color: var(--text); }
+.fb-msg { font-size: 12px; color: var(--sub); line-height: 1.6; margin-bottom: 12px; }
+.fb-actions { display: flex; gap: 8px; }
+.fb-btn-primary {
+  flex: 1; padding: 9px;
+  background: var(--accent); border: none;
+  border-radius: 10px; color: #fff;
+  font-family: var(--font); font-size: 12px; font-weight: 700;
+  cursor: pointer; transition: opacity .15s;
+}
+.fb-btn-primary:active { opacity: .8; }
+.fb-btn-ghost {
+  padding: 9px 14px;
+  background: rgba(255,255,255,.06); border: 1px solid var(--border);
+  border-radius: 10px; color: var(--sub);
+  font-family: var(--font); font-size: 12px; font-weight: 600;
+  cursor: pointer; transition: background .15s;
+}
+.fb-btn-ghost:active { background: rgba(255,255,255,.1); }
+
+/* ── SESSION TIMER BAR ───────────────────────────────────── */
+.session-timer-bar {
+  position: absolute;
+  top: 0; left: 0; right: 0;
+  height: 3px;
+  background: var(--border);
+  z-index: 50;
+  overflow: hidden;
+  display: none;
+}
+.session-timer-bar.active { display: block; }
+.stb-fill {
+  height: 100%;
+  background: linear-gradient(90deg, var(--accent), var(--green));
+  border-radius: 0 2px 2px 0;
+  transition: width 1s linear;
+  width: 0%;
+}
+
+/* ── DISTRACTION BLOCK OVERLAY ───────────────────────────── */
+.distraction-overlay {
+  position: absolute;
+  inset: 0;
+  background: rgba(8,6,20,.97);
+  z-index: 300;
+  display: none;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 20px;
+  padding: 40px 28px;
+  text-align: center;
+  backdrop-filter: blur(10px);
+}
+.distraction-overlay.show { display: flex; }
+.do-icon { font-size: 56px; animation: breathe 3s ease-in-out infinite; }
+@keyframes breathe {
+  0%,100% { transform: scale(1); }
+  50% { transform: scale(1.08); }
+}
+.do-title { font-size: 22px; font-weight: 800; letter-spacing: -.4px; }
+.do-sub { font-size: 14px; color: var(--sub); line-height: 1.7; max-width: 260px; }
+.do-timer {
+  font-size: 48px; font-weight: 800;
+  font-variant-numeric: tabular-nums;
+  color: var(--accent);
+  letter-spacing: -2px;
+}
+.do-btn {
+  padding: 14px 32px;
+  background: var(--accent); border: none;
+  border-radius: 14px; color: #fff;
+  font-family: var(--font); font-size: 14px; font-weight: 700;
+  cursor: pointer;
+}
+.do-skip {
+  font-size: 12px; color: var(--sub);
+  cursor: pointer; text-decoration: underline;
+  background: none; border: none; font-family: var(--font);
+}
+
+/* ── FOCUS SETTINGS PANEL ────────────────────────────────── */
+.focus-settings {
+  position: absolute;
+  bottom: 0; left: 0; right: 0;
+  background: var(--card);
+  border-radius: 24px 24px 0 0;
+  padding: 20px 22px 32px;
+  z-index: 250;
+  transform: translateY(100%);
+  transition: transform .3s cubic-bezier(0.4,0,0.2,1);
+}
+.focus-settings.open { transform: translateY(0); }
+.fs-handle { width: 36px; height: 4px; background: var(--border); border-radius: 2px; margin: 0 auto 20px; }
+.fs-title { font-size: 17px; font-weight: 800; margin-bottom: 4px; }
+.fs-sub { font-size: 12px; color: var(--sub); margin-bottom: 20px; }
+.fs-row {
+  display: flex; justify-content: space-between;
+  align-items: center; padding: 13px 0;
+  border-bottom: 1px solid var(--border);
+}
+.fs-row:last-of-type { border-bottom: none; }
+.fs-row-label { font-size: 13px; font-weight: 600; }
+.fs-row-sub { font-size: 11px; color: var(--sub); margin-top: 2px; }
+
+/* Toggle switch */
+.toggle {
+  width: 44px; height: 26px;
+  background: var(--border);
+  border-radius: 999px;
+  position: relative;
+  cursor: pointer;
+  transition: background .2s;
+  flex-shrink: 0;
+}
+.toggle.on { background: var(--accent); }
+.toggle::after {
+  content: '';
+  position: absolute;
+  width: 20px; height: 20px;
+  background: #fff;
+  border-radius: 50%;
+  top: 3px; left: 3px;
+  transition: transform .2s;
+  box-shadow: 0 1px 4px rgba(0,0,0,.3);
+}
+.toggle.on::after { transform: translateX(18px); }
+
+.fs-select {
+  background: var(--card2);
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  color: var(--text);
+  font-family: var(--font);
+  font-size: 12px; font-weight: 600;
+  padding: 6px 10px;
+  outline: none;
+  cursor: pointer;
+}
+.focus-overlay-bg {
+  position: absolute; inset: 0;
+  background: rgba(0,0,0,.5);
+  z-index: 240;
+  display: none;
+  backdrop-filter: blur(2px);
+}
+.focus-overlay-bg.show { display: block; }
+
+/* Focus shield badge on home */
+.focus-badge {
+  display: inline-flex; align-items: center; gap: 5px;
+  background: rgba(52,211,153,.1);
+  border: 1px solid rgba(52,211,153,.25);
+  border-radius: 999px;
+  padding: 4px 10px;
+  font-size: 10px; font-weight: 700;
+  color: var(--green);
+  cursor: pointer;
+  transition: background .15s;
+}
+.focus-badge:active { background: rgba(52,211,153,.18); }
+.focus-badge.off { background: rgba(107,107,150,.1); border-color: rgba(107,107,150,.2); color: var(--sub); }
 </style>
 </head>
 <body>
@@ -788,7 +984,7 @@ select.field-input option { background: #1e1e2c; }
       <div class="onboard-hero">
         <div class="hero-glow"></div>
         <div class="hero-icon">🛹</div>
-        <div class="hero-wordmark">Skill<span>Path</span></div>
+        <div class="hero-wordmark">Skill<span>Path</span> <span style="font-size:14px;opacity:.6;letter-spacing:0">v2.0</span></div>
         <div class="hero-tagline">Learn anything. No distractions.</div>
       </div>
 
@@ -893,7 +1089,10 @@ select.field-input option { background: #1e1e2c; }
             <div class="home-greeting">Today</div>
             <div class="home-date" id="home-date-lbl"></div>
           </div>
-          <div class="avatar" id="home-avatar">🎯</div>
+          <div style="display:flex;align-items:center;gap:10px">
+            <div class="focus-badge on" id="focus-badge" onclick="openFocusSettings()">🛡️ Focus On</div>
+            <div class="avatar" id="home-avatar">🎯</div>
+          </div>
         </div>
         <div class="progress-strip" id="prog-strip">
           <div class="prog-ring-wrap">
@@ -970,7 +1169,89 @@ select.field-input option { background: #1e1e2c; }
 
     <!-- TOAST -->
     <div class="toast" id="toast"></div>
-  </div>
+
+    <!-- ░░ SESSION TIMER BAR ░░ -->
+    <div class="session-timer-bar" id="session-timer-bar">
+      <div class="stb-fill" id="stb-fill"></div>
+    </div>
+
+    <!-- ░░ FLOATING FOCUS REMINDER ░░ -->
+    <div class="focus-bubble" id="focus-bubble">
+      <div class="fb-top">
+        <div class="fb-icon" id="fb-icon">🧠</div>
+        <div class="fb-title" id="fb-title">Focus Check</div>
+        <button class="fb-close" onclick="dismissReminder()">✕</button>
+      </div>
+      <div class="fb-msg" id="fb-msg">Stay on track with your learning session.</div>
+      <div class="fb-actions">
+        <button class="fb-btn-primary" onclick="reminderGoToLesson()">Open my lesson →</button>
+        <button class="fb-btn-ghost" onclick="dismissReminder()">Snooze</button>
+      </div>
+    </div>
+
+    <!-- ░░ DISTRACTION BLOCK OVERLAY ░░ -->
+    <div class="distraction-overlay" id="distraction-overlay">
+      <div class="do-icon">🧘</div>
+      <div class="do-title">Time to Focus</div>
+      <div class="do-sub" id="do-sub">Your learning session starts soon. Take a breath and get ready.</div>
+      <div class="do-timer" id="do-timer">0:30</div>
+      <button class="do-btn" onclick="closeDistractionOverlay()">I'm ready — Start session</button>
+      <button class="do-skip" onclick="closeDistractionOverlay()">Skip countdown</button>
+    </div>
+
+    <!-- ░░ FOCUS SETTINGS ░░ -->
+    <div class="focus-overlay-bg" id="focus-overlay-bg" onclick="closeFocusSettings()"></div>
+    <div class="focus-settings" id="focus-settings">
+      <div class="fs-handle"></div>
+      <div class="fs-title">🛡️ Focus Shield</div>
+      <div class="fs-sub">Anti-distraction reminders to keep you on track</div>
+
+      <div class="fs-row">
+        <div>
+          <div class="fs-row-label">Session reminders</div>
+          <div class="fs-row-sub">Remind me when a session is due</div>
+        </div>
+        <div class="toggle on" id="tog-reminders" onclick="toggleSetting('reminders')"></div>
+      </div>
+
+      <div class="fs-row">
+        <div>
+          <div class="fs-row-label">Focus countdown</div>
+          <div class="fs-row-sub">Show a breathing timer before sessions</div>
+        </div>
+        <div class="toggle on" id="tog-countdown" onclick="toggleSetting('countdown')"></div>
+      </div>
+
+      <div class="fs-row">
+        <div>
+          <div class="fs-row-label">Session timer bar</div>
+          <div class="fs-row-sub">Progress bar while you study</div>
+        </div>
+        <div class="toggle on" id="tog-timerbar" onclick="toggleSetting('timerbar')"></div>
+      </div>
+
+      <div class="fs-row">
+        <div>
+          <div class="fs-row-label">Reminder frequency</div>
+          <div class="fs-row-sub">How often to check in</div>
+        </div>
+        <select class="fs-select" id="sel-freq-reminder">
+          <option value="15">Every 15 min</option>
+          <option value="30" selected>Every 30 min</option>
+          <option value="60">Every hour</option>
+          <option value="120">Every 2 hours</option>
+        </select>
+      </div>
+
+      <div class="fs-row" style="border-bottom:none; padding-top:16px;">
+        <div>
+          <div class="fs-row-label">Test reminder</div>
+          <div class="fs-row-sub">Preview what it looks like</div>
+        </div>
+        <button class="fb-btn-primary" style="width:auto;padding:8px 14px;font-size:11px" onclick="triggerReminder('test')">Preview</button>
+      </div>
+    </div>
+  </div><!-- end app-body -->
 
   <!-- BOTTOM NAV (hidden during onboarding/loading) -->
   <div class="bottom-nav" id="bottom-nav" style="display:none">
@@ -1009,6 +1290,14 @@ const S = {
   curLesson: null, prevTab: 'home',
   calMonth: new Date().getMonth(), calYear: new Date().getFullYear(),
   selDay: null,
+  focus: {
+    reminders: true, countdown: true, timerbar: true,
+    freqMins: 30,
+  },
+  sessionTimerStart: null,
+  sessionTimerDuration: 30,
+  sessionTimerInterval: null,
+  reminderInterval: null,
 };
 
 // ═══════════════════════════════════════════════════════════
@@ -1037,7 +1326,6 @@ function obNext(n) {
     }
     S.skill = v;
     S.level = chipVal('cr-level') || 'complete beginner';
-    // update hero icon based on skill
     const icons = {skate:'🛹',guitar:'🎸',piano:'🎹',cook:'🍳',draw:'🎨',paint:'🖌',swim:'🏊',run:'🏃',yoga:'🧘',code:'💻',photo:'📷',dance:'💃',sing:'🎤',chess:'♟',tennis:'🎾',surf:'🏄',climb:'🧗',box:'🥊'};
     const kw = S.skill.toLowerCase();
     const match = Object.keys(icons).find(k => kw.includes(k));
@@ -1062,12 +1350,10 @@ function chipVal(id) {
   return el ? el.dataset.v : null;
 }
 
-// Chip toggles
 document.querySelectorAll('.chip-row').forEach(cr => {
-  const multi = cr.id === 'cr-plat';
   cr.addEventListener('click', e => {
     if (!e.target.classList.contains('chip')) return;
-    if (multi) {
+    if (cr.id === 'cr-plat') {
       e.target.classList.toggle('on');
     } else {
       cr.querySelectorAll('.chip').forEach(c => c.classList.remove('on'));
@@ -1077,9 +1363,9 @@ document.querySelectorAll('.chip-row').forEach(cr => {
 });
 
 // ═══════════════════════════════════════════════════════════
-// GENERATE
+// GENERATE — AI-POWERED via Anthropic API
 // ═══════════════════════════════════════════════════════════
-function startGenerate() {
+async function startGenerate() {
   S.style = chipVal('cr-style') || 'visual demos';
   S.platforms = [...document.querySelectorAll('#cr-plat .chip.on')].map(c => c.dataset.v);
   if (!S.platforms.length) S.platforms = ['YouTube'];
@@ -1088,12 +1374,12 @@ function startGenerate() {
   document.getElementById('bottom-nav').style.display = 'none';
 
   const msgs = [
-    'Searching for top-rated tutorials…',
     'Analysing your skill level…',
-    'Curating the best videos…',
-    'Sequencing your lessons…',
-    'Mapping to your calendar…',
-    'Almost ready!',
+    'Asking AI to design your curriculum…',
+    'Generating unique video searches per lesson…',
+    'Sequencing topics from beginner to advanced…',
+    'Scheduling sessions across your calendar…',
+    'Almost ready — finalising your plan!',
   ];
   const bar = document.getElementById('load-bar');
   const msg = document.getElementById('load-msg');
@@ -1105,19 +1391,110 @@ function startGenerate() {
       bar.style.width = `${Math.round(((i+1)/msgs.length)*100)}%`;
       i++;
     } else clearInterval(iv);
-  }, 850);
+  }, 900);
 
-  setTimeout(() => {
+  // Try AI generation first, fall back to smart local builder
+  try {
+    const aiLessons = await generateWithAI();
+    if (aiLessons && aiLessons.length > 0) {
+      S.lessons = aiLessons;
+    } else {
+      S.lessons = buildPlan();
+    }
+  } catch(err) {
+    console.warn('AI generation failed, using local builder:', err);
     S.lessons = buildPlan();
-    S.done = new Set();
+  }
+
+  S.done = new Set();
+  setTimeout(() => {
     buildMainApp();
     document.getElementById('bottom-nav').style.display = 'flex';
+    initFocusSystem();
     goTab('home');
-  }, 5400);
+  }, Math.max(0, 5400 - (Date.now() % 5400)));
+}
+
+// ── AI generation via Anthropic API ─────────────────────────
+async function generateWithAI() {
+  const weeks = getDurWeeks();
+  const totalSessions = Math.min(weeks * S.freq, 48);
+  const dayOffsets = { 2:[0,3], 3:[0,2,4], 4:[0,1,3,4], 5:[0,1,2,3,4] }[S.freq] || [0,2,4];
+
+  // Pre-compute dates so Claude only needs to fill content
+  const dates = [];
+  const start = new Date(); start.setDate(start.getDate() + 1);
+  let si = 0, wk = 0;
+  while (dates.length < totalSessions) {
+    for (let d = 0; d < dayOffsets.length && dates.length < totalSessions; d++) {
+      const dt = new Date(start);
+      dt.setDate(start.getDate() + wk * 7 + dayOffsets[d]);
+      dates.push(fmtDate(dt));
+      si++;
+    }
+    wk++;
+  }
+
+  const prompt = `You are an expert learning coach and video curator. Create a ${S.duration} learning plan for "${S.skill}" (level: ${S.level}).
+
+Preferences: ${S.style} style, platforms: ${S.platforms.join(', ')}, ${S.len} sessions, ${S.freq}x/week.
+
+Generate EXACTLY ${totalSessions} lessons. Each lesson must have UNIQUE, SPECIFIC video search queries — never repeat the same query. Progress logically: foundations first, then technique, then practice, then review cycles.
+
+CRITICAL for videos: Each lesson needs 2 videos with HIGHLY SPECIFIC search queries that a human expert would actually use. Do NOT use generic queries like "${S.skill} tutorial" or "${S.skill} for beginners" repeatedly. Instead use queries like:
+- "${S.skill} [specific sub-skill] [technique name] tutorial [year]"
+- "how to [very specific movement/concept] ${S.skill} [beginner/intermediate]"
+- "[specific instructor style] ${S.skill} [exact topic] breakdown"
+
+Respond ONLY with a valid JSON array. No markdown, no explanation, just JSON:
+[
+  {
+    "id": "l1",
+    "title": "Specific lesson title",
+    "type": "basics|technique|practice|review",
+    "date": "${dates[0]}",
+    "duration": "${S.len}",
+    "description": "What to focus on in this session (1-2 sentences)",
+    "tip": "One concrete, actionable practice tip",
+    "videos": [
+      {
+        "t": "Very specific video title a real creator would use",
+        "c": "Realistic channel name",
+        "d": "X:XX",
+        "platform": "${S.platforms[0]}",
+        "q": "exact specific search query to find this type of video"
+      }
+    ]
+  }
+]
+
+Use these exact dates in order: ${dates.join(', ')}.
+Make every lesson title, description, tip, and video query UNIQUE. No two lessons should feel similar.`;
+
+  const response = await fetch('https://api.anthropic.com/v1/messages', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({
+      model: 'claude-sonnet-4-20250514',
+      max_tokens: 6000,
+      system: 'You are a learning plan generator. Output ONLY valid JSON arrays. No markdown code fences, no preamble, no explanation. Just the raw JSON array starting with [ and ending with ].',
+      messages: [{ role: 'user', content: prompt }]
+    })
+  });
+
+  if (!response.ok) throw new Error(`API ${response.status}`);
+  const data = await response.json();
+  const raw = data.content.map(b => b.text || '').join('').trim();
+  // Strip any accidental markdown fences
+  const clean = raw.replace(/^```(?:json)?\s*/i,'').replace(/\s*```$/,'').trim();
+  const lessons = JSON.parse(clean);
+  // Validate structure
+  if (!Array.isArray(lessons) || !lessons[0]?.id) throw new Error('Invalid response structure');
+  return lessons;
 }
 
 // ═══════════════════════════════════════════════════════════
-// PLAN BUILDER  (fully self-contained, no API)
+// LOCAL PLAN BUILDER (fallback — much smarter than before)
 // ═══════════════════════════════════════════════════════════
 function getDurWeeks() {
   return { '2 weeks':2,'1 month':4,'3 months':12,'6 months':24 }[S.duration] || 4;
@@ -1139,7 +1516,7 @@ function buildPlan() {
       const pct = si / total;
       let type = pct < .25 ? 'basics' : pct < .55 ? 'technique' : pct < .80 ? 'practice' : 'review';
       if (si > 0 && (si + 1) % 5 === 0) type = 'review';
-      lessons.push(makeLesson(S.skill, si, type, dt));
+      lessons.push(makeLesson(S.skill, si, type, dt, total));
       si++;
     }
     wk++;
@@ -1147,44 +1524,142 @@ function buildPlan() {
   return lessons;
 }
 
-function makeLesson(skill, idx, type, date) {
-  const n = idx + 1;
-  const T = {
-    basics:    [`Getting started: ${skill} fundamentals`,`${skill}: Posture & first moves`,`${skill}: Core mechanics`,`Safety & setup for ${skill}`,`${skill}: Your first session`,`Building your ${skill} foundation`],
-    technique: [`${skill}: Mastering key technique`,`${skill}: Precision drills`,`Breaking down the ${skill} motion`,`${skill}: Common mistakes to avoid`,`${skill}: Intermediate move unlocked`,`${skill}: Form & control focus`],
-    practice:  [`${skill}: Open practice session`,`${skill}: Speed & consistency`,`${skill}: Real-world application`,`${skill}: Flow state practice`,`${skill}: Challenge yourself`,`${skill}: Practice under pressure`],
-    review:    [`Week ${Math.ceil(n/S.freq)} review: Progress check`,`${skill}: Reflect & refine`,`${skill}: Video analysis session`,`${skill}: What's working?`,`${skill}: Milestone assessment`],
-  };
-  const Tips = {
-    basics:    [`Film yourself from two angles — video feedback is your best coach.`,`Do 5 min of mental rehearsal before you start.`,`Focus on ONE thing per session.`,`Start slower than feels necessary.`,`Write down 3 things you noticed after each rep.`],
-    technique: [`Isolate the hardest part and drill it 20× before combining.`,`Use a mirror or phone for real-time feedback.`,`When something feels wrong, stop and reset.`,`Slow is smooth, smooth is fast.`,`Nail 5 clean reps in a row before moving on.`],
-    practice:  [`Set a timer and go — flow comes from repetition, not perfection.`,`Try in a slightly different environment today.`,`Film a "best attempt" clip. Mild pressure sharpens focus.`,`Count your successful reps. 20 good ones = session goal.`,`Play music that matches the energy you want.`],
-    review:    [`Watch your earliest clip side-by-side with today's.`,`Write your top 2 breakthroughs and 1 focus for next week.`,`Rest is part of training. Your brain consolidates skills during sleep.`,`Share your progress with one person.`,`Score yourself 1–10 on each skill covered.`],
-  };
-  const Desc = {
-    basics:    `A foundational ${S.len} session. Follow the videos in order, then apply what you watched straight away.`,
-    technique: `A focused technique session. Watch the video first, then drill the specific movement for the rest of your ${S.len}.`,
-    practice:  `Open practice. Put on the videos as background reference and just do the work for ${S.len}.`,
-    review:    `Reflective session. Watch your own attempts, review the videos, and plan next week's focus.`,
-  };
-  const Vids = {
-    basics:    [{t:`${skill} for Absolute Beginners (Start Here)`,c:'SkillPath Tutorials',d:'11:24',q:`${skill} beginner tutorial start from zero`},{t:`How to Learn ${skill} Fast — The Right Way`,c:'LearnAnything',d:'8:05',q:`how to learn ${skill} fast beginner`}],
-    technique: [{t:`${skill} Technique Breakdown — Step by Step`,c:'TechniqueFirst',d:'14:12',q:`${skill} technique breakdown step by step`},{t:`Fix Your ${skill} Form in 10 Minutes`,c:'FormCheck',d:'9:48',q:`${skill} form correction mistakes`}],
-    practice:  [{t:`${skill} Practice Session — Follow Along`,c:'PracticeWithMe',d:'18:30',q:`${skill} practice session follow along`},{t:`${skill}: Real Practice, Real Progress`,c:'RealProgress',d:'10:22',q:`${skill} real practice progress`}],
-    review:    [{t:`How to Review Your ${skill} Progress`,c:'ProgressCoach',d:'8:14',q:`how to review ${skill} progress`},{t:`${skill} Plateau? Here's What to Do`,c:'PlateauBreaker',d:'11:02',q:`${skill} plateau how to improve`}],
+// Structured sub-topics per lesson index to ensure diversity
+function getSubTopic(skill, idx, type, total) {
+  const pct = idx / total;
+  const phase = pct < .25 ? 0 : pct < .5 ? 1 : pct < .75 ? 2 : 3;
+
+  // Generic skill learning arc broken into granular sub-topics
+  const arcs = {
+    basics: [
+      ['equipment setup and safety', 'body positioning fundamentals', 'first movements and balance',
+       'understanding the core mechanics', 'common beginner mistakes to avoid'],
+      ['warm-up routines for practice', 'grip and stance refinement', 'slow-motion technique breakdown',
+       'reading instructional diagrams', 'self-assessment methods'],
+    ],
+    technique: [
+      ['isolating the key movement', 'footwork and timing patterns', 'upper body coordination',
+       'building muscle memory through repetition', 'combining two movements together'],
+      ['increasing speed gradually', 'maintaining form under fatigue', 'correcting asymmetries',
+       'advanced positioning details', 'flowing between movements'],
+    ],
+    practice: [
+      ['timed practice sets', 'applying technique in real scenarios', 'increasing difficulty progressively',
+       'endurance and consistency drills', 'creative variation and improvisation'],
+      ['performance under mild pressure', 'full run-through sessions', 'partner or solo challenge drills',
+       'simulating real conditions', 'building flow state'],
+    ],
+    review: [
+      ['comparing early vs current recordings', 'identifying top 3 improvements', 'planning next week focus',
+       'rest and mental consolidation', 'celebrating milestones'],
+    ],
   };
 
-  const tl = T[type]; const tips = Tips[type];
-  const vl = Vids[type];
-  const plats = S.platforms.length ? S.platforms : ['YouTube'];
-  const videos = vl.map((v,i) => ({ ...v, platform: plats[i % plats.length] }));
+  const pool = arcs[type] ? (arcs[type][phase] || arcs[type][0]) : arcs.basics[0];
+  return pool[idx % pool.length];
+}
+
+function makeLesson(skill, idx, type, date, total) {
+  const n = idx + 1;
+  const sub = getSubTopic(skill, idx, type, total);
+  const weekNum = Math.floor(idx / S.freq) + 1;
+
+  // Unique title per lesson using sub-topic
+  const titlePrefixes = {
+    basics: ['Getting started:', 'Foundation:', 'Intro to', 'Understanding', 'First steps:'],
+    technique: ['Drilling:', 'Mastering:', 'Technique focus:', 'Breaking down', 'Refining:'],
+    practice: ['Practice session:', 'Open drill:', 'Apply it:', 'Build fluency:', 'Challenge:'],
+    review: [`Week ${weekNum} review:`, 'Check-in:', 'Reflect:', 'Milestone:', 'Assessment:'],
+  };
+  const prefixes = titlePrefixes[type];
+  const prefix = prefixes[idx % prefixes.length];
+  const title = `${prefix} ${sub}`;
+
+  // Unique tip per lesson
+  const tips = {
+    basics: [
+      `Film yourself practising ${sub} — compare to a pro video frame by frame.`,
+      `Spend the first 5 minutes visualising ${sub} perfectly before you move.`,
+      `Focus only on ${sub} this session. Narrow focus = faster progress.`,
+      `Do 3 slow reps of ${sub}, then 3 fast. Notice what changes.`,
+      `Write one sentence after this session: what did you feel differently about ${sub}?`,
+    ],
+    technique: [
+      `Break ${sub} into 3 micro-steps. Master each before combining them.`,
+      `Set a 10-minute timer and only focus on ${sub}. No multitasking.`,
+      `If ${sub} feels wrong, slow down 50% — speed hides technique flaws.`,
+      `Do ${sub} with your eyes closed for 2 reps. It reveals balance issues instantly.`,
+      `Record audio narration while practising ${sub} — talking through it deepens understanding.`,
+    ],
+    practice: [
+      `Set a goal: 15 clean reps of ${sub} before ending the session.`,
+      `Try ${sub} in a slightly new environment today — variation builds adaptability.`,
+      `Put on a playlist and do ${sub} without stopping to overthink. Flow beats perfection.`,
+      `Track your best streak of consecutive good reps of ${sub} today.`,
+      `Invite someone to watch your practice — mild pressure sharpens ${sub} execution.`,
+    ],
+    review: [
+      `Write down 2 things that improved and 1 thing to fix about ${sub}.`,
+      `Watch your session recording at 0.5x speed — you'll notice things you missed live.`,
+      `Rate yourself 1–10 on ${sub}. Be honest — accuracy matters more than optimism.`,
+      `Rest today. Your nervous system is consolidating what you've learned about ${sub}.`,
+      `Share a clip of ${sub} with someone for external feedback. Fresh eyes catch blind spots.`,
+    ],
+  };
+  const tipPool = tips[type];
+  const tip = tipPool[idx % tipPool.length];
+
+  const desc = {
+    basics: `A ${S.len} foundation session focused entirely on ${sub}. Watch the videos first, then apply immediately.`,
+    technique: `A ${S.len} technique drill targeting ${sub}. Watch once, then practise with the video paused.`,
+    practice: `${S.len} of focused practice on ${sub}. Minimal video time — mostly doing.`,
+    review: `A ${S.len} review session. Assess your progress on ${sub} and plan adjustments.`,
+  }[type];
 
   return {
-    id: `l${n}`, title: tl[idx % tl.length], type,
+    id: `l${n}`, title, type,
     date: fmtDate(date), duration: S.len,
-    description: Desc[type], tip: tips[idx % tips.length],
-    videos,
+    description: desc, tip,
+    videos: buildVideos(skill, type, sub, idx),
   };
+}
+
+function buildVideos(skill, type, subTopic, idx) {
+  const s = skill.toLowerCase();
+  const st = subTopic.toLowerCase();
+  const plat = S.platforms.length ? S.platforms : ['YouTube'];
+  const year = new Date().getFullYear();
+
+  // Generate highly specific, varied queries using sub-topic + angle variations
+  const angles = [
+    [`${s} ${st} tutorial ${year}`, `how to do ${st} in ${s} step by step`],
+    [`${s} ${st} beginner breakdown`, `${st} technique for ${s} explained slowly`],
+    [`${s} ${st} common mistakes fix`, `improving ${st} in ${s} drills`],
+    [`${s} ${st} practice routine`, `${st} for ${s} full tutorial`],
+    [`best way to learn ${st} ${s}`, `${s} ${st} tips from pros`],
+    [`${s} ${st} slow motion analysis`, `${st} fundamentals ${s} coaching`],
+  ];
+  const pair = angles[idx % angles.length];
+
+  const channelNames = [
+    `${skill} Academy`, `Learn${skill.replace(/ /g,'')}`, `${skill}Coach`,
+    `The${skill.replace(/ /g,'')}Lab`, `${skill}Mastery`, `ProTips${skill.replace(/ /g,'')}`,
+    `${skill}Breakdown`, `SkillPath Originals`, `${skill}Workshop`,
+  ];
+
+  const durations = ['6:24','8:11','10:33','7:45','12:08','5:52','9:17','14:20','11:03','7:38'];
+
+  return pair.map((q, i) => ({
+    t: toTitleCase(q),
+    c: channelNames[(idx + i * 3) % channelNames.length],
+    d: durations[(idx + i) % durations.length],
+    platform: plat[(idx + i) % plat.length],
+    q,
+  }));
+}
+
+function toTitleCase(s) {
+  return s.replace(/\b\w/g, c => c.toUpperCase());
 }
 
 function fmtDate(d) {
@@ -1196,12 +1671,10 @@ function pad(n) { return String(n).padStart(2,'0'); }
 // BUILD MAIN APP
 // ═══════════════════════════════════════════════════════════
 function buildMainApp() {
-  // Date label
   const now = new Date();
   document.getElementById('home-date-lbl').textContent =
     now.toLocaleDateString('en-US',{weekday:'long',month:'long',day:'numeric'});
   document.getElementById('home-avatar').textContent = skillEmoji();
-
   renderProgress();
   renderHome();
   renderCalendar();
@@ -1215,7 +1688,7 @@ function skillEmoji() {
   return m ? icons[m] : '🎯';
 }
 
-// ── Progress ─────────────────────────────────────────────
+// ── Progress ────────────────────────────────────────────────
 function renderProgress() {
   const total = S.lessons.length, done = S.done.size;
   const pct = total ? Math.round((done/total)*100) : 0;
@@ -1229,14 +1702,13 @@ function renderProgress() {
   fill.style.strokeDashoffset = circ - (pct/100)*circ;
 }
 
-// ── Home screen ───────────────────────────────────────────
+// ── Home ────────────────────────────────────────────────────
 function renderHome() {
   const today = fmtDate(new Date());
   const DAYS = ['Sun','Mon','Tue','Wed','Thu','Fri','Sat'];
-
-  // Find next undone lesson
   const nextLesson = S.lessons.find(l => !S.done.has(l.id));
   const tcWrap = document.getElementById('today-card-wrap');
+
   if (nextLesson) {
     const d = new Date(nextLesson.date+'T12:00:00');
     const isToday = nextLesson.date === today;
@@ -1257,10 +1729,9 @@ function renderHome() {
     tcWrap.innerHTML = `<div class="today-card"><div class="tc-badge">🎉 All done!</div><div class="tc-title">You've completed your ${S.skill} plan!</div></div>`;
   }
 
-  // Upcoming: next 5 undone lessons after the first
-  const upcoming = S.lessons.filter(l => !S.done.has(l.id) && l !== nextLesson).slice(0, 5);
+  const upcoming = S.lessons.filter(l => !S.done.has(l.id) && l !== nextLesson).slice(0,5);
   const ul = document.getElementById('upcoming-list');
-  if (!upcoming.length) { ul.innerHTML = '<div style="padding:12px 22px;font-size:13px;color:var(--sub)">Nothing else scheduled yet.</div>'; return; }
+  if (!upcoming.length) { ul.innerHTML = '<div style="padding:12px 22px;font-size:13px;color:var(--sub)">Nothing else scheduled.</div>'; return; }
   ul.innerHTML = upcoming.map(l => {
     const d = new Date(l.date+'T12:00:00');
     return `
@@ -1278,7 +1749,7 @@ function renderHome() {
   }).join('');
 }
 
-// ── Calendar ──────────────────────────────────────────────
+// ── Calendar ────────────────────────────────────────────────
 let calSel = null;
 
 function renderCalendar() {
@@ -1288,13 +1759,11 @@ function renderCalendar() {
 
   const grid = document.getElementById('cal-grid');
   grid.innerHTML = '';
-
-  const firstDay = new Date(y, m, 1).getDay();
-  const daysInM  = new Date(y, m+1, 0).getDate();
-  const daysInPrev = new Date(y, m, 0).getDate();
-  const today    = new Date();
-  const todayStr = fmtDate(today);
-  const total    = Math.ceil((firstDay + daysInM) / 7) * 7;
+  const firstDay = new Date(y,m,1).getDay();
+  const daysInM  = new Date(y,m+1,0).getDate();
+  const daysInPrev = new Date(y,m,0).getDate();
+  const todayStr = fmtDate(new Date());
+  const total = Math.ceil((firstDay+daysInM)/7)*7;
 
   for (let i = 0; i < total; i++) {
     let dn, cm, cy;
@@ -1309,7 +1778,7 @@ function renderCalendar() {
     const isSel   = ds === calSel;
 
     const cell = document.createElement('div');
-    cell.className = 'cal-cell' + (isOther?' other-m':'') + (isToday?' is-today':'');
+    cell.className = 'cal-cell'+(isOther?' other-m':'')+(isToday?' is-today':'');
     if (isSel) cell.style.background = 'var(--card2)';
     cell.innerHTML = `<div class="cal-cell-num">${dn}</div>`;
     if (lessons.length) {
@@ -1323,14 +1792,9 @@ function renderCalendar() {
       });
       cell.appendChild(pips);
     }
-    cell.addEventListener('click', () => {
-      calSel = ds;
-      renderCalendar();
-      renderDayPanel(ds);
-    });
+    cell.addEventListener('click', () => { calSel = ds; renderCalendar(); renderDayPanel(ds); });
     grid.appendChild(cell);
   }
-
   renderDayPanel(calSel || todayStr);
 }
 
@@ -1339,12 +1803,10 @@ function renderDayPanel(ds) {
   const lessons = S.lessons.filter(l => l.date === ds);
   const d = new Date(ds+'T12:00:00');
   const lbl = d.toLocaleDateString('en-US',{weekday:'long',month:'short',day:'numeric'});
-
   if (!lessons.length) {
     panel.innerHTML = `<div class="day-lessons-panel"><div class="dlp-header">${lbl} — No sessions</div></div>`;
     return;
   }
-
   const typeColors = { basics:'var(--accent)', technique:'var(--pink)', practice:'var(--green)', review:'var(--amber)' };
   panel.innerHTML = `
     <div class="day-lessons-panel">
@@ -1369,14 +1831,14 @@ function chMonth(dir) {
   renderCalendar();
 }
 
-// ── Plan list ─────────────────────────────────────────────
+// ── Plan list ───────────────────────────────────────────────
 function renderPlanList() {
   document.getElementById('plan-header-sub').textContent = `${S.lessons.length} sessions · ${S.duration}`;
   const wrap = document.getElementById('plan-list-wrap');
   const DAYS = ['Sun','Mon','Tue','Wed','Thu','Fri','Sat'];
   let lastW = -1, html = '';
   S.lessons.forEach((l,i) => {
-    const wk = Math.floor(i / S.freq);
+    const wk = Math.floor(i/S.freq);
     if (wk !== lastW) { html += `<div class="week-label">Week ${wk+1}</div>`; lastW = wk; }
     const d = new Date(l.date+'T12:00:00');
     const ck = S.done.has(l.id);
@@ -1396,17 +1858,17 @@ function renderPlanList() {
   wrap.innerHTML = html;
 }
 
-// ── Lesson detail ─────────────────────────────────────────
+// ── Lesson detail ───────────────────────────────────────────
 function openLesson(id, from) {
   const l = S.lessons.find(x => x.id === id);
   if (!l) return;
   S.curLesson = l;
   S.prevTab = from || 'home';
 
-  // Back button
   document.getElementById('lesson-back-btn').onclick = () => {
     showScreen(S.prevTab === 'plan' ? 'plan' : S.prevTab === 'calendar' ? 'calendar' : 'home');
     setActiveTab(S.prevTab === 'plan' ? 'plan' : S.prevTab === 'calendar' ? 'calendar' : 'home');
+    stopSessionTimer();
   };
 
   const typeColors = { basics:'var(--a-light)', technique:'rgba(244,114,182,.15)', practice:'rgba(52,211,153,.12)', review:'rgba(251,191,36,.12)' };
@@ -1422,14 +1884,14 @@ function openLesson(id, from) {
   document.getElementById('l-date').textContent = d.toLocaleDateString('en-US',{weekday:'long',month:'long',day:'numeric'});
   document.getElementById('l-dur').textContent = `⏱ ${l.duration}`;
 
-  // Videos
-  const platBg = { YouTube:'rgba(255,80,80,.2)', Instagram:'rgba(244,114,182,.2)', TikTok:'rgba(52,211,153,.2)' };
-  const platTx = { YouTube:'#ff6060', Instagram:'var(--pink)', TikTok:'var(--green)' };
-  const gradients = ['linear-gradient(135deg,#1d1b40,#0d1a30)','linear-gradient(135deg,#1a1030,#0a1a1a)','linear-gradient(135deg,#1a0a0a,#1a1030)'];
+  const gradients = ['linear-gradient(135deg,#1d1b40,#0d1a30)','linear-gradient(135deg,#1a1030,#0a1a1a)','linear-gradient(135deg,#0a1a0a,#1a1030)'];
 
   document.getElementById('l-videos').innerHTML = (l.videos||[]).map((v,i) => {
     const pc = v.platform === 'YouTube' ? 'plat-yt' : v.platform === 'Instagram' ? 'plat-ig' : 'plat-tt';
-    const url = `https://www.youtube.com/results?search_query=${encodeURIComponent(v.q||v.t)}`;
+    const searchBase = v.platform === 'Instagram' ? 'https://www.instagram.com/explore/tags/' :
+                       v.platform === 'TikTok'    ? 'https://www.tiktok.com/search?q=' :
+                       'https://www.youtube.com/results?search_query=';
+    const url = searchBase + encodeURIComponent(v.q || v.t);
     return `
       <div class="vid-card" onclick="window.open('${url}','_blank')">
         <div class="vid-thumb" style="background:${gradients[i%gradients.length]}">
@@ -1451,15 +1913,21 @@ function openLesson(id, from) {
 
   const btn = document.getElementById('done-btn');
   if (S.done.has(l.id)) {
-    btn.textContent = '✓ Completed';
-    btn.className = 'done-btn completed';
+    btn.textContent = '✓ Completed'; btn.className = 'done-btn completed';
   } else {
-    btn.textContent = '✓ Mark as complete';
-    btn.className = 'done-btn';
+    btn.textContent = '✓ Mark as complete'; btn.className = 'done-btn';
   }
 
   showScreen('lesson');
-  // Don't change active tab when viewing lesson
+
+  // Start session timer if enabled & not already done
+  if (S.focus.timerbar && !S.done.has(l.id)) {
+    if (S.focus.countdown) {
+      showDistractionOverlay(l);
+    } else {
+      startSessionTimer(l.duration);
+    }
+  }
 }
 
 function markDone() {
@@ -1468,23 +1936,178 @@ function markDone() {
   if (!S.done.has(id)) {
     S.done.add(id);
     showToast('🎉 Session complete!');
-    renderProgress();
-    renderHome();
-    renderCalendar();
-    renderPlanList();
+    renderProgress(); renderHome(); renderCalendar(); renderPlanList();
   }
   document.getElementById('done-btn').textContent = '✓ Completed';
   document.getElementById('done-btn').className = 'done-btn completed';
+  stopSessionTimer();
 }
 
 function toggleDone(id, e) {
   e.stopPropagation();
   if (S.done.has(id)) S.done.delete(id);
   else { S.done.add(id); showToast('🎉 Done!'); }
-  renderProgress();
-  renderHome();
-  renderCalendar();
-  renderPlanList();
+  renderProgress(); renderHome(); renderCalendar(); renderPlanList();
+}
+
+// ═══════════════════════════════════════════════════════════
+// ANTI-ADDICTION / FOCUS SHIELD SYSTEM
+// ═══════════════════════════════════════════════════════════
+
+// ── Focus settings panel ─────────────────────────────────
+function openFocusSettings() {
+  document.getElementById('focus-settings').classList.add('open');
+  document.getElementById('focus-overlay-bg').classList.add('show');
+}
+function closeFocusSettings() {
+  document.getElementById('focus-settings').classList.remove('open');
+  document.getElementById('focus-overlay-bg').classList.remove('show');
+}
+function toggleSetting(key) {
+  S.focus[key] = !S.focus[key];
+  const el = document.getElementById(`tog-${key}`);
+  if (el) el.classList.toggle('on', S.focus[key]);
+  // Update badge
+  updateFocusBadge();
+  if (key === 'reminders') {
+    if (S.focus.reminders) startReminderCycle();
+    else stopReminderCycle();
+  }
+}
+function updateFocusBadge() {
+  const badge = document.getElementById('focus-badge');
+  if (!badge) return;
+  const anyOn = S.focus.reminders || S.focus.countdown || S.focus.timerbar;
+  badge.textContent = anyOn ? '🛡️ Focus On' : '🛡️ Focus Off';
+  badge.className = 'focus-badge' + (anyOn ? ' on' : ' off');
+}
+
+// ── Floating reminder bubbles ─────────────────────────────
+const REMINDER_MSGS = [
+  { icon:'🎯', title:'Learning check-in', msg:`Are you on track with your ${() => S.skill} practice today?` },
+  { icon:'⏱️', title:'Time check', msg:'Still watching educational content? Great! If not, it might be time to switch back.' },
+  { icon:'🧠', title:'Deep work reminder', msg:'The best learning happens in focused blocks. Close other tabs and go deep.' },
+  { icon:'🔥', title:'Streak at stake', msg:'Don\'t break your learning streak today. A short session is better than none.' },
+  { icon:'📵', title:'Distraction alert', msg:'Social feeds are designed to keep you scrolling. Your skills won\'t build themselves.' },
+  { icon:'💡', title:'Did you know?', msg:'Consistent 20-minute sessions beat irregular 2-hour marathons for skill building.' },
+  { icon:'🏆', title:'Progress reminder', msg:'Every session compounds. The best time to practise was earlier — second best is now.' },
+];
+
+let reminderIdx = 0;
+
+function initFocusSystem() {
+  if (S.focus.reminders) startReminderCycle();
+  // Sync toggle UI
+  ['reminders','countdown','timerbar'].forEach(k => {
+    const el = document.getElementById(`tog-${k}`);
+    if (el) el.classList.toggle('on', S.focus[k]);
+  });
+  updateFocusBadge();
+}
+
+function startReminderCycle() {
+  stopReminderCycle();
+  const freqMs = (parseInt(document.getElementById('sel-freq-reminder')?.value || 30)) * 60 * 1000;
+  // First reminder after a short delay in demo mode (15s), then on schedule
+  S.reminderTimeout = setTimeout(() => {
+    triggerReminder('scheduled');
+    S.reminderInterval = setInterval(() => triggerReminder('scheduled'), freqMs);
+  }, 15000);
+}
+
+function stopReminderCycle() {
+  clearTimeout(S.reminderTimeout);
+  clearInterval(S.reminderInterval);
+}
+
+function triggerReminder(source) {
+  if (!S.focus.reminders && source !== 'test') return;
+  const nextLesson = S.lessons.find(l => !S.done.has(l.id));
+  const r = source === 'test'
+    ? { icon:'🛡️', title:'Focus Shield active', msg:`Your reminders are working! You have ${S.lessons.filter(l=>!S.done.has(l.id)).length} sessions remaining in your ${S.skill} plan.` }
+    : REMINDER_MSGS[reminderIdx % REMINDER_MSGS.length];
+  reminderIdx++;
+
+  document.getElementById('fb-icon').textContent = r.icon;
+  document.getElementById('fb-title').textContent = r.title;
+  document.getElementById('fb-msg').textContent = typeof r.msg === 'function' ? r.msg() : r.msg.replace(/\$\{.*?\}/g, S.skill);
+
+  const bubble = document.getElementById('focus-bubble');
+  bubble.classList.add('visible');
+
+  // Auto-dismiss after 8 seconds
+  clearTimeout(bubble._autoDismiss);
+  bubble._autoDismiss = setTimeout(dismissReminder, 8000);
+}
+
+function dismissReminder() {
+  document.getElementById('focus-bubble').classList.remove('visible');
+}
+
+function reminderGoToLesson() {
+  dismissReminder();
+  closeFocusSettings();
+  const nextLesson = S.lessons.find(l => !S.done.has(l.id));
+  if (nextLesson) openLesson(nextLesson.id, 'home');
+}
+
+// ── Session countdown overlay ─────────────────────────────
+function showDistractionOverlay(lesson) {
+  const mins = parseInt(lesson.duration) || 30;
+  let secs = 10; // 10-second breathing countdown before session starts
+  document.getElementById('do-sub').textContent =
+    `Your ${lesson.duration} ${S.skill} session is starting. Take a breath.`;
+  document.getElementById('do-timer').textContent = `0:${String(secs).padStart(2,'0')}`;
+  document.getElementById('distraction-overlay').classList.add('show');
+
+  const interval = setInterval(() => {
+    secs--;
+    document.getElementById('do-timer').textContent = `0:${String(secs).padStart(2,'0')}`;
+    if (secs <= 0) {
+      clearInterval(interval);
+      closeDistractionOverlay();
+      startSessionTimer(lesson.duration);
+    }
+  }, 1000);
+  document.getElementById('distraction-overlay')._interval = interval;
+}
+
+function closeDistractionOverlay() {
+  clearInterval(document.getElementById('distraction-overlay')._interval);
+  document.getElementById('distraction-overlay').classList.remove('show');
+  if (S.curLesson) startSessionTimer(S.curLesson.duration);
+}
+
+// ── Session progress timer bar ────────────────────────────
+function startSessionTimer(durationStr) {
+  if (!S.focus.timerbar) return;
+  stopSessionTimer();
+  const totalMins = parseInt(durationStr) || 30;
+  const totalSecs = totalMins * 60;
+  S.sessionTimerStart = Date.now();
+  S.sessionTimerDuration = totalSecs;
+
+  const bar = document.getElementById('session-timer-bar');
+  const fill = document.getElementById('stb-fill');
+  bar.classList.add('active');
+  fill.style.width = '0%';
+
+  S.sessionTimerInterval = setInterval(() => {
+    const elapsed = (Date.now() - S.sessionTimerStart) / 1000;
+    const pct = Math.min((elapsed / totalSecs) * 100, 100);
+    fill.style.width = `${pct}%`;
+    if (pct >= 100) {
+      stopSessionTimer();
+      showToast('⏱ Session time reached!');
+    }
+  }, 2000);
+}
+
+function stopSessionTimer() {
+  clearInterval(S.sessionTimerInterval);
+  const bar = document.getElementById('session-timer-bar');
+  bar.classList.remove('active');
+  document.getElementById('stb-fill').style.width = '0%';
 }
 
 // ═══════════════════════════════════════════════════════════
@@ -1501,19 +2124,15 @@ function showScreen(name) {
   const el = document.getElementById(SCREENS[name]);
   if (el) el.classList.add('active');
 }
-
 function setActiveTab(name) {
   Object.values(TABS).forEach(id => document.getElementById(id)?.classList.remove('active'));
   if (TABS[name]) document.getElementById(TABS[name])?.classList.add('active');
 }
-
-function goTab(name) {
-  showScreen(name);
-  setActiveTab(name);
-}
+function goTab(name) { showScreen(name); setActiveTab(name); }
 
 function resetToOnboard() {
   S.lessons = []; S.done = new Set();
+  stopReminderCycle(); stopSessionTimer();
   obStep = 0;
   document.getElementById('ob0').style.display = 'block';
   document.getElementById('ob1').style.display = 'none';
@@ -1533,5 +2152,6 @@ function showToast(msg) {
   setTimeout(() => t.classList.remove('show'), 2200);
 }
 </script>
+
 </body>
 </html>
