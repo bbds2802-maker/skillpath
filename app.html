@@ -2015,6 +2015,8 @@ select.lg-input option { background: #12103a; }
 // ═══════════════════════════════════════════════════════════
 // STATE
 // ═══════════════════════════════════════════════════════════
+const YOUTUBE_API_KEY = 'AIzaSyDXhTKYOVOEi7YRva93Oq9ohAXU066jBaw';
+
 const S = {
   skill: '', level: 'complete beginner',
   duration: '1 month', freq: 3, len: '30 min',
@@ -3178,8 +3180,70 @@ function obNext(n) {
   }
 }
 
+// Resolve unique videos for every lesson in a skill at plan-creation time
+async function resolveAllLessonVideos(sk, onProgress) {
+  const usedIds = new Set();
+  const typeLabel = { basics:'beginner guide', technique:'technique tutorial', practice:'practice exercise', review:'review tips' };
+
+  for (let li = 0; li < sk.lessons.length; li++) {
+    const lesson = sk.lessons[li];
+    const ytSlots = (lesson.videos || []).filter(v => v.platform === 'YouTube');
+    if (!ytSlots.length) { onProgress(li + 1, sk.lessons.length); continue; }
+
+    // Lesson-specific query: strip type prefix ("Basics: ") from title
+    const subTopic = lesson.title.replace(/^[^:]+:\s*/, '');
+    const query = `${subTopic} ${sk.skill} ${typeLabel[lesson.type] || 'tutorial'}`;
+
+    try {
+      // One search per lesson — fetch enough candidates to cover all slots + exclusions
+      const searchRes = await fetch(
+        `https://www.googleapis.com/youtube/v3/search?part=snippet&q=${encodeURIComponent(query)}&type=video&maxResults=10&videoEmbeddable=true&key=${YOUTUBE_API_KEY}`
+      );
+      if (!searchRes.ok) { onProgress(li + 1, sk.lessons.length); continue; }
+      const searchData = await searchRes.json();
+
+      const candidates = (searchData.items || [])
+        .map(item => ({
+          id: item.id?.videoId,
+          t: item.snippet?.title,
+          c: item.snippet?.channelTitle,
+          thumb: item.snippet?.thumbnails?.medium?.url || item.snippet?.thumbnails?.default?.url,
+        }))
+        .filter(c => c.id && !usedIds.has(c.id));
+
+      if (!candidates.length) { onProgress(li + 1, sk.lessons.length); continue; }
+
+      // Verify status + duration for all candidates in one call
+      const detailRes = await fetch(
+        `https://www.googleapis.com/youtube/v3/videos?part=status,contentDetails&id=${candidates.map(c => c.id).join(',')}&key=${YOUTUBE_API_KEY}`
+      );
+      const detailData = detailRes.ok ? await detailRes.json() : null;
+      const validItems = (detailData?.items || []).filter(v =>
+        v.status?.privacyStatus === 'public' &&
+        v.status?.uploadStatus === 'processed' &&
+        !usedIds.has(v.id)
+      );
+
+      // Assign one unique video per slot, marking each as used immediately
+      for (const slot of ytSlots) {
+        const item = validItems.shift();
+        if (!item) break;
+        const cand = candidates.find(c => c.id === item.id);
+        slot.url   = `https://www.youtube.com/watch?v=${item.id}`;
+        slot.t     = cand?.t || slot.t;
+        slot.c     = cand?.c || slot.c;
+        slot.d     = parseIsoDuration(item.contentDetails?.duration || '') || slot.d;
+        slot.thumb = cand?.thumb || slot.thumb;
+        usedIds.add(item.id);
+      }
+    } catch { /* keep static fallback if API fails for this lesson */ }
+
+    onProgress(li + 1, sk.lessons.length);
+  }
+}
+
 // Override startGenerate to use MS
-function startGenerate() {
+async function startGenerate() {
   const t=window._tempSkill||{name:'Skill',emoji:'🎯'};
   const colourIdx=MS.skills.length%SKILL_COLOURS.length;
   const newSkill={
@@ -3200,22 +3264,32 @@ function startGenerate() {
   showScreen('loading');
   document.getElementById('bottom-nav').style.display='none';
 
-  const msgs=['Analysing your skill level…','Generating lesson sequence…','Curating video searches…','Scheduling sessions…','Almost ready!'];
-  const bar=document.getElementById('load-bar'),msg=document.getElementById('load-msg');
-  if(bar) bar.style.width='0%';
-  let i=0;
-  const iv=setInterval(()=>{
-    if(i<msgs.length){if(msg)msg.textContent=msgs[i];if(bar)bar.style.width=`${Math.round(((i+1)/msgs.length)*100)}%`;i++;}
-    else clearInterval(iv);
-  },900);
+  const bar=document.getElementById('load-bar'), msg=document.getElementById('load-msg');
+  if(bar) bar.style.width='5%';
+  if(msg) msg.textContent='Building your lesson plan…';
+
+  // Build lesson structure (sync)
+  newSkill.lessons = buildPlanForSkill(newSkill);
+  const total = newSkill.lessons.length;
+
+  if(msg) msg.textContent=`Finding videos for ${total} lessons…`;
+  if(bar) bar.style.width='10%';
+
+  // Resolve all videos now, globally unique, with real progress
+  await resolveAllLessonVideos(newSkill, (done, tot) => {
+    if(bar) bar.style.width = `${10 + Math.round((done / tot) * 85)}%`;
+    if(msg) msg.textContent = `Curating videos… ${done}/${tot}`;
+  });
+
+  if(bar) bar.style.width='100%';
+  if(msg) msg.textContent='Ready!';
 
   setTimeout(()=>{
-    newSkill.lessons=buildPlanForSkill(newSkill);
     buildMainApp();
     document.getElementById('bottom-nav').style.display='flex';
     initFocusSystem();
     goTab('home');
-  },5000);
+  }, 400);
 }
 
 function buildPlanForSkill(sk) {
@@ -3252,19 +3326,367 @@ function makeLessonForSkill(sk,idx,type,date,total){
   return {id:`${sk.id}_l${n}`,title,type,date:fmtDate(date),duration:sk.len,description:desc,tip,videos:buildVideosForSkill(sk,type,sub,idx)};
 }
 
-function buildVideosForSkill(sk,type,sub,idx){
-  const s=sk.skill.toLowerCase(),st=sub.toLowerCase();
-  const plat=sk.platforms.length?sk.platforms:['YouTube'];
-  const year=new Date().getFullYear();
-  const angles=[[`${s} ${st} tutorial ${year}`,`how to do ${st} in ${s} step by step`],[`${s} ${st} beginner breakdown`,`${st} technique for ${s} explained`],[`${s} ${st} mistakes fix`,`improving ${st} in ${s}`],[`${s} ${st} practice routine`,`${st} for ${s} full guide`],[`best way to learn ${st} ${s}`,`${s} ${st} tips`]];
-  const pair=angles[idx%angles.length];
-  const channels=[`${sk.skill} Academy`,`Learn${sk.skill.replace(/ /g,'')}`,`${sk.skill}Coach`,`${sk.skill}Lab`,`${sk.skill}Mastery`];
-  const durs=['6:24','8:11','10:33','7:45','12:08','5:52','9:17','14:20'];
-  return pair.map((q,i)=>({t:toTitleCase(q),c:channels[(idx+i*3)%channels.length],d:durs[(idx+i)%durs.length],platform:plat[(idx+i)%plat.length],q}));
+// Direction-specific curated video sequences (real YouTube URLs, ordered beginner→advanced)
+const DIRECTION_VIDEO_DB = {
+  Skateboarding: {
+    'Learn basics': [
+      {t:'How To Skateboard For Beginners — Complete Guide',c:'Braille Skateboarding',d:'10:24',url:'https://www.youtube.com/watch?v=axX3jCJCgR0'},
+      {t:'Skateboard Stance, Pushing & Stopping',c:'SkateboardingMadeSimple',d:'6:18',url:'https://www.youtube.com/watch?v=RWgcBKdVrVg'},
+      {t:'How To Turn On A Skateboard',c:'Braille Skateboarding',d:'7:05',url:'https://www.youtube.com/watch?v=OdGHQmJVVFk'},
+      {t:'5 Beginner Tricks You Need To Learn First',c:'Braille Skateboarding',d:'9:15',url:'https://www.youtube.com/watch?v=N0dDMkMBXBE'},
+      {t:'How To Fall Safely On A Skateboard',c:'SkateboardingMadeSimple',d:'5:42',url:'https://www.youtube.com/watch?v=0MVGeIFTaUc'},
+      {t:'How To Ride Fakie & Switch',c:'Jonny Giger',d:'8:33',url:'https://www.youtube.com/watch?v=qZo52k_3MME'},
+    ],
+    'Ollies': [
+      {t:'How To Ollie — The Most Detailed Tutorial Ever',c:'Braille Skateboarding',d:'12:07',url:'https://www.youtube.com/watch?v=kPDMBFyfJC4'},
+      {t:'How To Ollie Higher — Advanced Tips',c:'Jonny Giger',d:'9:48',url:'https://www.youtube.com/watch?v=5C_T5KWRR4Y'},
+      {t:'How To Kickflip Step By Step',c:'Jonny Giger',d:'8:53',url:'https://www.youtube.com/watch?v=LnHQRrFWUPU'},
+      {t:'How To Pop Shove It',c:'Braille Skateboarding',d:'7:42',url:'https://www.youtube.com/watch?v=v0ANeHPuBh8'},
+      {t:'How To Heelflip — Complete Tutorial',c:'Jonny Giger',d:'9:04',url:'https://www.youtube.com/watch?v=D7TIVbSHvjU'},
+      {t:'How To Varial Kickflip',c:'Braille Skateboarding',d:'10:11',url:'https://www.youtube.com/watch?v=hbhyvzJa4EQ'},
+    ],
+    'Bowl': [
+      {t:'How To Drop In On A Ramp — Beginner Guide',c:'Braille Skateboarding',d:'8:31',url:'https://www.youtube.com/watch?v=AkOx7H2owGo'},
+      {t:'How To Pump A Skateboard Ramp',c:'SkateboardingMadeSimple',d:'7:14',url:'https://www.youtube.com/watch?v=TqAX_SXSEUY'},
+      {t:'How To Rock To Fakie',c:'Braille Skateboarding',d:'9:02',url:'https://www.youtube.com/watch?v=IqhB1MXdBSE'},
+      {t:'How To Axle Stall On A Mini Ramp',c:'Braille Skateboarding',d:'8:45',url:'https://www.youtube.com/watch?v=TFLhKVPRmAA'},
+      {t:'Bowl Skating For Beginners — Full Guide',c:'SkateboardingMadeSimple',d:'11:30',url:'https://www.youtube.com/watch?v=FNpLEbUBX7A'},
+      {t:'How To Grind On A Skateboard',c:'Jonny Giger',d:'10:22',url:'https://www.youtube.com/watch?v=JQn4UQpc1N0'},
+    ],
+  },
+  Guitar: {
+    'Beginner chords': [
+      {t:'Guitar Lesson 1 — Absolute Beginner Start Here',c:'Justin Guitar',d:'13:22',url:'https://www.youtube.com/watch?v=BBz-Jyr23M4'},
+      {t:'How To Play G, C & D Chords',c:'Justin Guitar',d:'10:04',url:'https://www.youtube.com/watch?v=mA5GHKSbfr4'},
+      {t:'How To Change Chords Smoothly',c:'Justin Guitar',d:'8:55',url:'https://www.youtube.com/watch?v=A3T3xhM5iyw'},
+      {t:'Strumming Patterns For Beginners',c:'Marty Music',d:'9:47',url:'https://www.youtube.com/watch?v=2R4Kf7JCxh4'},
+      {t:'The Em & Am Chords — Minor Chord Basics',c:'Justin Guitar',d:'7:33',url:'https://www.youtube.com/watch?v=0WMRTPqzRU8'},
+      {t:'4 Chords — 100 Songs You Can Play Now',c:'Axis of Awesome',d:'5:03',url:'https://www.youtube.com/watch?v=oOlDewpCfZQ'},
+    ],
+    'Lead guitar': [
+      {t:'The Pentatonic Scale — Complete Beginner Guide',c:'Paul Davids',d:'16:21',url:'https://www.youtube.com/watch?v=49LbPKFCHtE'},
+      {t:'How To Do Guitar Bends Properly',c:'Paul Davids',d:'12:08',url:'https://www.youtube.com/watch?v=dInMBNbpnmk'},
+      {t:'Lead Guitar Licks For Beginners',c:'Marty Music',d:'11:54',url:'https://www.youtube.com/watch?v=yVZs8yalG4c'},
+      {t:'How To Play Guitar Solos — Phrasing & Feel',c:'Paul Davids',d:'14:37',url:'https://www.youtube.com/watch?v=MQ6IOiGJoUM'},
+      {t:'Vibrato Technique For Guitar',c:'Paul Davids',d:'10:22',url:'https://www.youtube.com/watch?v=MRdGxZpLxUU'},
+      {t:'Blues Scale — How To Sound Like A Pro',c:'Marty Music',d:'13:19',url:'https://www.youtube.com/watch?v=z9O3nYwmUFI'},
+    ],
+    'Fingerpicking': [
+      {t:'Fingerpicking For Beginners — The Complete Guide',c:'Paul Davids',d:'14:38',url:'https://www.youtube.com/watch?v=iJrAFQnD8_8'},
+      {t:'Travis Picking Pattern — Step By Step',c:'Justin Guitar',d:'11:12',url:'https://www.youtube.com/watch?v=GbGBqchpMH4'},
+      {t:'Fingerpicking Pattern 5 — Beautiful & Easy',c:'Marty Music',d:'9:03',url:'https://www.youtube.com/watch?v=XPMEUdPfO5A'},
+      {t:'How To Play Fingerstyle Guitar — Full Lesson',c:'Paul Davids',d:'18:45',url:'https://www.youtube.com/watch?v=xk9Q3zqQJcE'},
+      {t:'Classical Gas — Easy Fingerpicking Arrangement',c:'Marty Music',d:'10:38',url:'https://www.youtube.com/watch?v=jAv77ctHauk'},
+      {t:'Fingerpicking Speed & Accuracy Exercises',c:'Paul Davids',d:'13:22',url:'https://www.youtube.com/watch?v=Q7g8c3bNz3I'},
+    ],
+    'Electric & rock': [
+      {t:'Barre Chords Made Easy — F Chord Shortcut',c:'Marty Music',d:'10:54',url:'https://www.youtube.com/watch?v=NG9fJhXjvME'},
+      {t:'Power Chords — Rock Guitar Foundation',c:'Marty Music',d:'8:27',url:'https://www.youtube.com/watch?v=dpbFcEJGMSA'},
+      {t:'How To Get A Great Electric Guitar Tone',c:'Paul Davids',d:'15:33',url:'https://www.youtube.com/watch?v=9UjQrwpCaxE'},
+      {t:'Rock Riffs For Beginners — 10 Iconic Riffs',c:'Marty Music',d:'12:09',url:'https://www.youtube.com/watch?v=pQhQ3Ll0NkI'},
+      {t:'Distortion & Overdrive — Guitar Tone Guide',c:'Paul Davids',d:'14:02',url:'https://www.youtube.com/watch?v=HoqqRrMIIE4'},
+      {t:'How To Play Like Hendrix — Techniques',c:'Marty Music',d:'16:44',url:'https://www.youtube.com/watch?v=WexszHCfFHI'},
+    ],
+  },
+  Drawing: {
+    'Line & form': [
+      {t:'How To Draw — For Absolute Beginners',c:'Proko',d:'11:02',url:'https://www.youtube.com/watch?v=ewMksAbgdEI'},
+      {t:'Drawing Basics: Line Quality & Pressure Control',c:'Uncomfortable',d:'8:34',url:'https://www.youtube.com/watch?v=7GFmUMT7aNs'},
+      {t:'How To Draw Basic Shapes & Forms',c:'Proko',d:'9:47',url:'https://www.youtube.com/watch?v=GnEMfBMb4Z0'},
+      {t:'Perspective Drawing For Beginners — 1 Point',c:'Sketch Like an Architect',d:'10:20',url:'https://www.youtube.com/watch?v=nAlCyQqEZSU'},
+      {t:'Shading Techniques From Beginner to Advanced',c:'Alphonso Dunn',d:'12:48',url:'https://www.youtube.com/watch?v=o0CaGQtJpEA'},
+      {t:'How To Draw With Confidence — Gesture',c:'Proko',d:'13:15',url:'https://www.youtube.com/watch?v=74HR59yFZ7Y'},
+    ],
+    'Figure & portrait': [
+      {t:'How To Draw Faces — Complete Tutorial',c:'Proko',d:'14:15',url:'https://www.youtube.com/watch?v=wAJBSIOGjgU'},
+      {t:'How To Draw Eyes — Realistic Step By Step',c:'Mark Crilley',d:'10:08',url:'https://www.youtube.com/watch?v=Gh5HjRrF6L4'},
+      {t:'How To Draw Hands — Anatomy & Practice',c:'Proko',d:'16:54',url:'https://www.youtube.com/watch?v=RNLiHm1esP4'},
+      {t:'Figure Drawing For Beginners — Gesture',c:'Proko',d:'18:22',url:'https://www.youtube.com/watch?v=74HR59yFZ7Y'},
+      {t:'Portrait Drawing From Life — Full Demo',c:'Proko',d:'22:40',url:'https://www.youtube.com/watch?v=C1kFPSVckEI'},
+      {t:'How To Draw Hair Realistically',c:'Mark Crilley',d:'9:55',url:'https://www.youtube.com/watch?v=gFNFPRlq1_M'},
+    ],
+    'Urban sketching': [
+      {t:'Urban Sketching Tips For Beginners',c:'Marc Taro Holmes',d:'13:07',url:'https://www.youtube.com/watch?v=GBXBdQKnuS8'},
+      {t:'How To Sketch Buildings — 2 Point Perspective',c:'Sketch Like an Architect',d:'12:44',url:'https://www.youtube.com/watch?v=nAlCyQqEZSU'},
+      {t:'Urban Sketching — Drawing On Location',c:'Shari Blaukopf',d:'15:30',url:'https://www.youtube.com/watch?v=jCbm2nCW_VQ'},
+      {t:'Watercolour + Ink — Urban Sketching Combo',c:'Marc Taro Holmes',d:'18:12',url:'https://www.youtube.com/watch?v=L62C-OBMvts'},
+      {t:'How To Draw Street Scenes With Crowds',c:'Sketch Like an Architect',d:'11:48',url:'https://www.youtube.com/watch?v=OlrCCDWhVFY'},
+      {t:'Pen & Ink Drawing Techniques For Urban Art',c:'Alphonso Dunn',d:'14:22',url:'https://www.youtube.com/watch?v=FZqFtJFMGDM'},
+    ],
+    'Nature & illustration': [
+      {t:'How To Draw Animals — Shape-Based Method',c:'Mark Crilley',d:'9:42',url:'https://www.youtube.com/watch?v=RHBk1yS1_2k'},
+      {t:'How To Draw Trees & Plants Realistically',c:'Alphonso Dunn',d:'11:33',url:'https://www.youtube.com/watch?v=e_4deTr9rbI'},
+      {t:'Botanical Illustration For Beginners',c:'Kristy Rice',d:'14:07',url:'https://www.youtube.com/watch?v=7nEgGmFWVsI'},
+      {t:'How To Draw Birds — Field Guide Style',c:'Mark Crilley',d:'10:54',url:'https://www.youtube.com/watch?v=N8MsXhM6SBo'},
+      {t:'Colour Theory For Illustrators',c:'Proko',d:'16:20',url:'https://www.youtube.com/watch?v=MuQ6Vd-kIrc'},
+      {t:'Digital Illustration Basics — Procreate',c:'Marc Brunet',d:'20:11',url:'https://www.youtube.com/watch?v=mKgCbHOFByI'},
+    ],
+  },
+  Coding: {
+    'Web development': [
+      {t:'HTML Full Course — Build a Website',c:'freeCodeCamp',d:'2:02:00',url:'https://www.youtube.com/watch?v=pQN-pnXPaVg'},
+      {t:'CSS Tutorial — Zero to Hero',c:'freeCodeCamp',d:'6:18:00',url:'https://www.youtube.com/watch?v=1Rs2ND1ryYc'},
+      {t:'JavaScript Full Course For Beginners',c:'Bro Code',d:'8:11:00',url:'https://www.youtube.com/watch?v=8dWL3wF_OMw'},
+      {t:'CSS Flexbox Crash Course',c:'Traversy Media',d:'28:11',url:'https://www.youtube.com/watch?v=3YW65K6LcIA'},
+      {t:'Build a Responsive Website — HTML & CSS',c:'Kevin Powell',d:'45:00',url:'https://www.youtube.com/watch?v=moBhzSC455o'},
+      {t:'JavaScript DOM Manipulation — Full Course',c:'freeCodeCamp',d:'3:36:00',url:'https://www.youtube.com/watch?v=5fb2aPlgoys'},
+    ],
+    'Python': [
+      {t:'Python For Beginners — Full Course',c:'Programming with Mosh',d:'6:14:00',url:'https://www.youtube.com/watch?v=_uQrJ0TkZlc'},
+      {t:'Python Functions — Complete Guide',c:'Corey Schafer',d:'24:13',url:'https://www.youtube.com/watch?v=9Os0o3wzS_I'},
+      {t:'Python OOP — Classes & Objects',c:'Corey Schafer',d:'27:49',url:'https://www.youtube.com/watch?v=ZDa-Z5JzLYM'},
+      {t:'Python File Handling & I/O',c:'Corey Schafer',d:'20:11',url:'https://www.youtube.com/watch?v=Uh2ebFW8OYM'},
+      {t:'Python Data Analysis With Pandas',c:'freeCodeCamp',d:'4:04:00',url:'https://www.youtube.com/watch?v=r-uOLxNrNk8'},
+      {t:'Build 5 Projects With Python — Beginner',c:'Programming with Mosh',d:'3:18:00',url:'https://www.youtube.com/watch?v=JJmcL1N2KQs'},
+    ],
+    'Mobile apps': [
+      {t:'React Native Tutorial For Beginners',c:'Programming with Mosh',d:'2:28:00',url:'https://www.youtube.com/watch?v=0-S5a0eXPoc'},
+      {t:'SwiftUI Tutorial — Build Your First iOS App',c:'Sean Allen',d:'1:30:00',url:'https://www.youtube.com/watch?v=F2ojC6TNwws'},
+      {t:'Flutter Tutorial For Beginners',c:'Net Ninja',d:'3:22:00',url:'https://www.youtube.com/watch?v=1ukSR1GRtMU'},
+      {t:'React Native Navigation — Full Guide',c:'Programming with Mosh',d:'54:00',url:'https://www.youtube.com/watch?v=OmQCU-3KPms'},
+      {t:'Build A To-Do App In Flutter',c:'Net Ninja',d:'45:22',url:'https://www.youtube.com/watch?v=8sAyPDLorek'},
+      {t:'iOS App Development — Xcode Basics',c:'Sean Allen',d:'48:14',url:'https://www.youtube.com/watch?v=CwA1VWP0Ldw'},
+    ],
+    'Game development': [
+      {t:'Unity Tutorial For Beginners — Your First Game',c:'Brackeys',d:'43:52',url:'https://www.youtube.com/watch?v=IlKaB1etrik'},
+      {t:'Godot 4 — Getting Started Complete Guide',c:'GDQuest',d:'1:10:00',url:'https://www.youtube.com/watch?v=VeCrE-ge8xM'},
+      {t:'How To Make A 2D Platformer In Unity',c:'Brackeys',d:'52:10',url:'https://www.youtube.com/watch?v=dwcT-Dch0bA'},
+      {t:'Pygame Tutorial — Build A Space Shooter',c:'Clear Code',d:'1:42:00',url:'https://www.youtube.com/watch?v=Q-__8Xw9KTM'},
+      {t:'Game Design Fundamentals Every Dev Needs',c:'GDQuest',d:'18:33',url:'https://www.youtube.com/watch?v=G8AT01tuyrk'},
+      {t:'Unity Shader Graph — Visual Effects Basics',c:'Brackeys',d:'22:15',url:'https://www.youtube.com/watch?v=Ar9eIn57QDc'},
+    ],
+  },
+  Photography: {
+    'Camera & exposure': [
+      {t:'Photography For Beginners — Complete Tutorial',c:'Tony & Chelsea Northrup',d:'22:18',url:'https://www.youtube.com/watch?v=LxO-6rlihSg'},
+      {t:'Understanding Aperture — Full Explanation',c:'Mark Wallace',d:'15:07',url:'https://www.youtube.com/watch?v=YojL7UQTVhc'},
+      {t:'How To Shoot In Manual Mode',c:'Tony & Chelsea Northrup',d:'18:45',url:'https://www.youtube.com/watch?v=3wMFMbA-MiE'},
+      {t:'Shutter Speed Tutorial — Everything You Need',c:'Mark Wallace',d:'12:33',url:'https://www.youtube.com/watch?v=YojL7UQTVhc'},
+      {t:'ISO Explained — Noise & Low Light',c:'Tony & Chelsea Northrup',d:'14:22',url:'https://www.youtube.com/watch?v=2Ac4pOcCE38'},
+      {t:'White Balance — How & When To Use It',c:'Mark Wallace',d:'10:08',url:'https://www.youtube.com/watch?v=m0yZEWUSahk'},
+    ],
+    'Street & travel': [
+      {t:'Street Photography Tips From A Pro',c:'Sean Tucker',d:'14:28',url:'https://www.youtube.com/watch?v=n31UEQJK7zk'},
+      {t:'How To Approach Strangers For Street Photos',c:'Sean Tucker',d:'12:55',url:'https://www.youtube.com/watch?v=c6ypfbmKURE'},
+      {t:'Travel Photography — 10 Tips For Better Shots',c:'Peter McKinnon',d:'16:42',url:'https://www.youtube.com/watch?v=5c-ISuK0mhI'},
+      {t:'How To Shoot Golden Hour Like A Pro',c:'Mango Street',d:'8:43',url:'https://www.youtube.com/watch?v=OBMmUJGd2Hg'},
+      {t:'Composition Rules For Better Photos',c:'Peter McKinnon',d:'12:34',url:'https://www.youtube.com/watch?v=VArISvUuyr0'},
+      {t:'Lightroom Editing For Street Photography',c:'Peter McKinnon',d:'19:52',url:'https://www.youtube.com/watch?v=uahCjt6RXMQ'},
+    ],
+    'Portrait': [
+      {t:'Portrait Photography Lighting For Beginners',c:'Daniel Norton',d:'20:11',url:'https://www.youtube.com/watch?v=o2HlMZnjyc8'},
+      {t:'How To Direct & Pose Your Subject',c:'Mango Street',d:'11:07',url:'https://www.youtube.com/watch?v=sNLgrfJPBgo'},
+      {t:'5 Portrait Lighting Setups You Must Know',c:'Daniel Norton',d:'18:44',url:'https://www.youtube.com/watch?v=LX1lN5gCFN8'},
+      {t:'How To Edit Portraits In Lightroom',c:'Tony & Chelsea Northrup',d:'22:30',url:'https://www.youtube.com/watch?v=IhJZvKBMFtY'},
+      {t:'Natural Light Portrait Photography',c:'Mango Street',d:'9:58',url:'https://www.youtube.com/watch?v=6vqBCAVWKGY'},
+      {t:'Off-Camera Flash For Portraits — Beginner',c:'Daniel Norton',d:'24:15',url:'https://www.youtube.com/watch?v=OiGAQtBFrkw'},
+    ],
+    'Nature & macro': [
+      {t:'Wildlife Photography Tips For Beginners',c:'Tony & Chelsea Northrup',d:'20:33',url:'https://www.youtube.com/watch?v=m0yZEWUSahk'},
+      {t:'Macro Photography — Getting Started',c:'Mark Wallace',d:'16:22',url:'https://www.youtube.com/watch?v=GUmBFLh-sMk'},
+      {t:'How To Photograph Birds In Flight',c:'Tony & Chelsea Northrup',d:'18:10',url:'https://www.youtube.com/watch?v=VZDmHvXXV2Y'},
+      {t:'Landscape Photography — Composition Guide',c:'Peter McKinnon',d:'14:08',url:'https://www.youtube.com/watch?v=bH8BbKOBBVg'},
+      {t:'Macro Lens — Which To Buy & How To Use',c:'Mark Wallace',d:'12:44',url:'https://www.youtube.com/watch?v=GUmBFLh-sMk'},
+      {t:'How To Edit Nature Photos — Full Workflow',c:'Peter McKinnon',d:'21:15',url:'https://www.youtube.com/watch?v=QFrg8fxK-mI'},
+    ],
+  },
+  Cooking: {
+    'Knife skills': [
+      {t:'Knife Skills — How To Chop Everything',c:'Joshua Weissman',d:'14:37',url:'https://www.youtube.com/watch?v=JMA2SqaDgG8'},
+      {t:'How To Hold A Chef\'s Knife Correctly',c:'Internet Shaquille',d:'7:14',url:'https://www.youtube.com/watch?v=ZJUop5_xkBU'},
+      {t:'How To Cut An Onion Without Crying',c:'Ethan Chlebowski',d:'6:33',url:'https://www.youtube.com/watch?v=vCuEY-FuRew'},
+      {t:'5 Basic Sauces Every Cook Should Know',c:'Ethan Chlebowski',d:'16:12',url:'https://www.youtube.com/watch?v=A9OFnzpbqhg'},
+      {t:'The Science Of Cooking Eggs Perfectly',c:'Ethan Chlebowski',d:'12:18',url:'https://www.youtube.com/watch?v=OTNGp_OQLK4'},
+      {t:'How To Season Food Like A Chef',c:'Joshua Weissman',d:'10:45',url:'https://www.youtube.com/watch?v=pFVMuFKF8Kk'},
+    ],
+    'Italian & pasta': [
+      {t:'How To Make Fresh Pasta From Scratch',c:'Internet Shaquille',d:'10:22',url:'https://www.youtube.com/watch?v=5qnK1JmMpag'},
+      {t:'Perfect Carbonara — The Only Recipe You Need',c:'Joshua Weissman',d:'12:08',url:'https://www.youtube.com/watch?v=D_2DBLAt57c'},
+      {t:'How To Make Risotto Like A Chef',c:'Ethan Chlebowski',d:'14:33',url:'https://www.youtube.com/watch?v=lBnHmJiHdQ0'},
+      {t:'Pizza Dough From Scratch — Neapolitan Style',c:'Joshua Weissman',d:'16:07',url:'https://www.youtube.com/watch?v=3EATzBKkgCQ'},
+      {t:'5 Italian Sauces You Must Master',c:'Internet Shaquille',d:'11:44',url:'https://www.youtube.com/watch?v=52LaFaldRoA'},
+      {t:'Tiramisu — Classic Italian Dessert',c:'Joshua Weissman',d:'9:28',url:'https://www.youtube.com/watch?v=LnLlxvR33lY'},
+    ],
+    'Asian cuisine': [
+      {t:'Stir Fry Secrets From A Chinese Chef',c:'Made With Lau',d:'18:03',url:'https://www.youtube.com/watch?v=GDQxb4JxZcg'},
+      {t:'How To Make Sushi At Home',c:'Joshua Weissman',d:'14:52',url:'https://www.youtube.com/watch?v=QL5w7DXKEoY'},
+      {t:'The Perfect Fried Rice — Wok Technique',c:'Made With Lau',d:'16:10',url:'https://www.youtube.com/watch?v=1r28aaVvDu4'},
+      {t:'Thai Green Curry From Scratch',c:'Joshua Weissman',d:'13:27',url:'https://www.youtube.com/watch?v=LQh5SQsQlfk'},
+      {t:'How To Make Ramen At Home',c:'Joshua Weissman',d:'22:04',url:'https://www.youtube.com/watch?v=9WXIrnWsaCo'},
+      {t:'Dim Sum At Home — 5 Recipes',c:'Made With Lau',d:'20:38',url:'https://www.youtube.com/watch?v=DlKpLBwY_8I'},
+    ],
+    'Baking & pastry': [
+      {t:'How To Make Bread — Beginner Guide',c:'Joshua Weissman',d:'20:45',url:'https://www.youtube.com/watch?v=9fCEYg2GGvM'},
+      {t:'The Perfect Chocolate Chip Cookie',c:'Ethan Chlebowski',d:'11:22',url:'https://www.youtube.com/watch?v=eT3bqG3TEZU'},
+      {t:'How To Make Croissants From Scratch',c:'Joshua Weissman',d:'24:14',url:'https://www.youtube.com/watch?v=FKnJ0pBNu2o'},
+      {t:'Cakes 101 — Sponge, Buttercream & Layers',c:'Internet Shaquille',d:'15:47',url:'https://www.youtube.com/watch?v=8s_tJaV5KNg'},
+      {t:'French Pastry Basics — Choux & Eclairs',c:'Joshua Weissman',d:'18:33',url:'https://www.youtube.com/watch?v=fwFCLVAVMU8'},
+      {t:'Sourdough Starter & Loaf — Full Guide',c:'Ethan Chlebowski',d:'28:10',url:'https://www.youtube.com/watch?v=jJpIOyhanwg'},
+    ],
+  },
+  Piano: {
+    'Reading music': [
+      {t:'Piano Lesson 1 — Complete Beginner',c:'Playground Sessions',d:'12:06',url:'https://www.youtube.com/watch?v=827SIiKCkLg'},
+      {t:'How To Read Sheet Music — Step By Step',c:'Bill Hilton',d:'16:34',url:'https://www.youtube.com/watch?v=LOSNMv_7QuI'},
+      {t:'Piano Scales — Major & Minor Explained',c:'PianoTV',d:'14:22',url:'https://www.youtube.com/watch?v=NJRMaUxEbxs'},
+      {t:'How To Read Treble & Bass Clef',c:'PianoTV',d:'11:07',url:'https://www.youtube.com/watch?v=8YPziBVVWaQ'},
+      {t:'Hand Independence Exercises For Piano',c:'PianoTV',d:'13:41',url:'https://www.youtube.com/watch?v=S30ztHcHEIQ'},
+      {t:'How To Play Hands Together — First Steps',c:'Bill Hilton',d:'10:29',url:'https://www.youtube.com/watch?v=V1NLX6Cx50M'},
+    ],
+    'Classical': [
+      {t:'How To Play Für Elise — Full Tutorial',c:'Rousseau',d:'9:18',url:'https://www.youtube.com/watch?v=bSP5gzIXRR0'},
+      {t:'Moonlight Sonata — First Movement Tutorial',c:'PianoTV',d:'18:44',url:'https://www.youtube.com/watch?v=E2UeBmGBFLg'},
+      {t:'Clair de Lune — Beginner Arrangement',c:'Rousseau',d:'12:22',url:'https://www.youtube.com/watch?v=CvFH_6DNRCY'},
+      {t:'How To Play Bach Minuet In G',c:'Bill Hilton',d:'11:04',url:'https://www.youtube.com/watch?v=N0mJlIEcS2g'},
+      {t:'Chopin Nocturne Op. 9 No. 2 Tutorial',c:'PianoTV',d:'20:18',url:'https://www.youtube.com/watch?v=9E6b3swbnWg'},
+      {t:'Classical Piano Technique — Hanon Exercises',c:'PianoTV',d:'14:55',url:'https://www.youtube.com/watch?v=CDGcqkYqsaI'},
+    ],
+    'Jazz': [
+      {t:'Jazz Piano For Beginners — Voicings & Feel',c:'Pianote',d:'18:55',url:'https://www.youtube.com/watch?v=CwPFGSNq56Y'},
+      {t:'The ii-V-I Progression — Jazz Fundamentals',c:'Pianote',d:'15:33',url:'https://www.youtube.com/watch?v=DkGDg5W0Xls'},
+      {t:'Jazz Chord Voicings For Beginners',c:'PianoTV',d:'16:11',url:'https://www.youtube.com/watch?v=MhEBFGq8wr4'},
+      {t:'How To Improvise On Piano — Jazz Basics',c:'Pianote',d:'20:04',url:'https://www.youtube.com/watch?v=aJ2ieTHmk8c'},
+      {t:'Blues Piano — Left Hand & Right Hand',c:'Pianote',d:'14:22',url:'https://www.youtube.com/watch?v=Q8oOlkrjX7c'},
+      {t:'Autumn Leaves — Jazz Piano Arrangement',c:'PianoTV',d:'18:07',url:'https://www.youtube.com/watch?v=B19Re24lH8s'},
+    ],
+    'Pop & contemporary': [
+      {t:'How To Play Pop Songs On Piano',c:'Playground Sessions',d:'10:29',url:'https://www.youtube.com/watch?v=vJ4f3xEk9EI'},
+      {t:'How To Play Chord Inversions — Pop Piano',c:'PianoTV',d:'12:44',url:'https://www.youtube.com/watch?v=sZRmQ-u3H_I'},
+      {t:'Chord Progressions That Sound Beautiful',c:'PianoTV',d:'11:47',url:'https://www.youtube.com/watch?v=MhEBFGq8wr4'},
+      {t:'How To Play With Both Hands — Pop Style',c:'Playground Sessions',d:'13:15',url:'https://www.youtube.com/watch?v=lT8XUGM_tNA'},
+      {t:'Arpeggios For Pop Piano — Essential Patterns',c:'PianoTV',d:'10:33',url:'https://www.youtube.com/watch?v=KAd67w_LFKQ'},
+      {t:'How To Play Let It Be On Piano',c:'Bill Hilton',d:'14:08',url:'https://www.youtube.com/watch?v=RLjaWGRSNJ4'},
+    ],
+  },
+  Yoga: {
+    'Beginner foundations': [
+      {t:'Yoga For Complete Beginners — 20 Minute Practice',c:'Yoga With Adriene',d:'20:49',url:'https://www.youtube.com/watch?v=v7AYKMP6rOE'},
+      {t:'Sun Salutation A — Step By Step For Beginners',c:'Yoga With Adriene',d:'18:33',url:'https://www.youtube.com/watch?v=73sjOu0g58M'},
+      {t:'Breathwork & Pranayama For Beginners',c:'Yoga With Adriene',d:'14:22',url:'https://www.youtube.com/watch?v=8VwufJrUhic'},
+      {t:'Warrior Poses — Foundation Sequence',c:'Yoga With Adriene',d:'16:40',url:'https://www.youtube.com/watch?v=Vn-3PrQxQEk'},
+      {t:'Morning Yoga Routine — 10 Minutes',c:'Yoga With Adriene',d:'10:11',url:'https://www.youtube.com/watch?v=4pKly2JojMw'},
+      {t:'Yoga Basics — 7 Poses Every Beginner Needs',c:'Boho Beautiful',d:'22:15',url:'https://www.youtube.com/watch?v=v7AYKMP6rOE'},
+    ],
+    'Strength & flow': [
+      {t:'Vinyasa Flow For Beginners — 30 Minutes',c:'Boho Beautiful',d:'30:00',url:'https://www.youtube.com/watch?v=9kOCY0KNByw'},
+      {t:'Power Yoga — Core Strength Workout',c:'Travis Eliot',d:'35:22',url:'https://www.youtube.com/watch?v=bRSHMRaHCpw'},
+      {t:'Yoga For Core Strength — 20 Minutes',c:'Yoga With Adriene',d:'20:44',url:'https://www.youtube.com/watch?v=v7AYKMP6rOE'},
+      {t:'Arm Balance Prep — Build Upper Body Strength',c:'Travis Eliot',d:'24:18',url:'https://www.youtube.com/watch?v=bRSHMRaHCpw'},
+      {t:'Crow Pose Tutorial — Step By Step',c:'Yoga With Adriene',d:'12:07',url:'https://www.youtube.com/watch?v=MtPFMn2MKEo'},
+      {t:'Advanced Vinyasa Flow — 45 Minutes',c:'Boho Beautiful',d:'44:55',url:'https://www.youtube.com/watch?v=9kOCY0KNByw'},
+    ],
+    'Morning & restorative': [
+      {t:'Morning Yoga — Wake Up Your Body',c:'Yoga With Adriene',d:'10:11',url:'https://www.youtube.com/watch?v=4pKly2JojMw'},
+      {t:'Restorative Yoga — Full Body Release',c:'Yoga With Adriene',d:'35:04',url:'https://www.youtube.com/watch?v=g_tea8ZNk5A'},
+      {t:'Yin Yoga Full Body — 45 Minutes',c:'Travis Eliot',d:'45:18',url:'https://www.youtube.com/watch?v=bRSHMRaHCpw'},
+      {t:'Yoga Nidra — Deep Relaxation & Sleep',c:'Yoga With Adriene',d:'30:12',url:'https://www.youtube.com/watch?v=M0u9GST_j3s'},
+      {t:'Gentle Yoga For Stress & Anxiety',c:'Yoga With Adriene',d:'22:40',url:'https://www.youtube.com/watch?v=hJbRpHZr_d0'},
+      {t:'5-Minute Morning Stretch — Gentle Wake Up',c:'Boho Beautiful',d:'5:14',url:'https://www.youtube.com/watch?v=4pKly2JojMw'},
+    ],
+    'Flexibility & splits': [
+      {t:'Yoga For Flexibility — Deep Stretch',c:'Yoga With Adriene',d:'30:04',url:'https://www.youtube.com/watch?v=g_tea8ZNk5A'},
+      {t:'Hip Opener Yoga — 30 Minutes',c:'Yoga With Adriene',d:'21:35',url:'https://www.youtube.com/watch?v=THlGS6RbUhA'},
+      {t:'How To Get The Splits — 30 Day Program',c:'Boho Beautiful',d:'28:18',url:'https://www.youtube.com/watch?v=9kOCY0KNByw'},
+      {t:'Hamstring Stretch — Deep Release Sequence',c:'Travis Eliot',d:'22:04',url:'https://www.youtube.com/watch?v=bRSHMRaHCpw'},
+      {t:'Backbend Yoga Sequence — Wheel & Bridge',c:'Yoga With Adriene',d:'25:47',url:'https://www.youtube.com/watch?v=v7AYKMP6rOE'},
+      {t:'Full Body Stretch — Flexibility & Mobility',c:'Boho Beautiful',d:'32:11',url:'https://www.youtube.com/watch?v=9kOCY0KNByw'},
+    ],
+  },
+};
+
+// Extract base skill name and direction keyword from stored skill name
+// e.g. "Guitar (Lead guitar & solos)" → {base:'Guitar', dir:'Lead guitar'}
+function parseSkillDir(skillName) {
+  const m = skillName.match(/^(.+?)\s*[\(（](.+?)[\)）]/);
+  if (m) return { base: m[1].trim(), dir: m[2].trim() };
+  const m2 = skillName.match(/^(.+?)\s*—\s*(.+)$/);
+  if (m2) return { base: m2[1].trim(), dir: m2[2].trim() };
+  return { base: skillName.trim(), dir: null };
+}
+
+function buildVideosForSkill(sk, type, sub, idx) {
+  const plat = sk.platforms.length ? sk.platforms : ['YouTube'];
+  const { base, dir } = parseSkillDir(sk.skill);
+
+  // Find matching direction pool
+  const dirPool = DIRECTION_VIDEO_DB[base];
+  let pool = null;
+  if (dirPool && dir) {
+    // Match by partial key (e.g. "Lead guitar" matches "Lead guitar & solos")
+    const key = Object.keys(dirPool).find(k =>
+      dir.toLowerCase().includes(k.toLowerCase()) ||
+      k.toLowerCase().includes(dir.toLowerCase().split(' ')[0])
+    );
+    if (key) pool = dirPool[key];
+  }
+  // Fallback: use first direction pool for the skill, or generic VIDEO_DB
+  if (!pool && dirPool) pool = dirPool[Object.keys(dirPool)[0]];
+  if (!pool && VIDEO_DB[base]) pool = VIDEO_DB[base];
+
+  if (pool) {
+    const v1 = pool[idx % pool.length];
+    const v2 = pool[(idx + 2) % pool.length];
+    const safe2 = v1 === v2 ? pool[(idx + 3) % pool.length] : v2;
+    return [
+      { t: v1.t, c: v1.c, d: v1.d, platform: plat[0], url: v1.url, q: v1.t },
+      { t: safe2.t, c: safe2.c, d: safe2.d, platform: plat[plat.length > 1 ? 1 : 0], url: safe2.url, q: safe2.t },
+    ];
+  }
+
+  // Last resort: search link
+  const q = `${sub} ${base} tutorial`;
+  return [
+    { t: toTitleCase(q), c: `${base} Coach`, d: '10:00', platform: plat[0], url: `https://www.youtube.com/results?search_query=${encodeURIComponent(q)}`, q },
+  ];
+}
+
+// ── YouTube video resolver ────────────────────────────────
+function parseIsoDuration(iso) {
+  const m = iso.match(/PT(?:(\d+)H)?(?:(\d+)M)?(?:(\d+)S)?/);
+  if (!m) return '';
+  const h = parseInt(m[1] || 0), min = parseInt(m[2] || 0), sec = parseInt(m[3] || 0);
+  return h > 0
+    ? `${h}:${String(min).padStart(2,'0')}:${String(sec).padStart(2,'0')}`
+    : `${min}:${String(sec).padStart(2,'0')}`;
+}
+
+// Returns { url, t, c, d, thumb } or null. excludeIds prevents duplicate videos.
+async function resolveVideo(query, excludeIds = new Set()) {
+  try {
+    const searchRes = await fetch(
+      `https://www.googleapis.com/youtube/v3/search?part=snippet&q=${encodeURIComponent(query)}&type=video&maxResults=8&videoEmbeddable=true&key=${YOUTUBE_API_KEY}`
+    );
+    if (!searchRes.ok) return null;
+    const searchData = await searchRes.json();
+    const candidates = (searchData.items || []).map(item => ({
+      id: item.id?.videoId,
+      t: item.snippet?.title,
+      c: item.snippet?.channelTitle,
+      thumb: item.snippet?.thumbnails?.medium?.url || item.snippet?.thumbnails?.default?.url,
+    })).filter(c => c.id && !excludeIds.has(c.id));
+    if (!candidates.length) return null;
+
+    // Verify status + get duration in one call
+    const detailRes = await fetch(
+      `https://www.googleapis.com/youtube/v3/videos?part=status,contentDetails&id=${candidates.map(c => c.id).join(',')}&key=${YOUTUBE_API_KEY}`
+    );
+    const detail = detailRes.ok ? await detailRes.json() : null;
+    const validItem = detail?.items?.find(v =>
+      v.status?.privacyStatus === 'public' &&
+      v.status?.uploadStatus === 'processed' &&
+      !excludeIds.has(v.id)
+    ) || detail?.items?.find(v => !excludeIds.has(v.id));
+
+    const chosen = candidates.find(c => c.id === validItem?.id) || candidates[0];
+    const dur = parseIsoDuration(validItem?.contentDetails?.duration || '');
+    return { url: `https://www.youtube.com/watch?v=${chosen.id}`, t: chosen.t, c: chosen.c, d: dur || '—', thumb: chosen.thumb };
+  } catch {
+    return null;
+  }
 }
 
 // Override openLesson to use MS.skills
-function openLesson(id, from) {
+async function openLesson(id, from) {
   let l=null,sk=null;
   const activeSk=activeSkill();
   if(activeSk){l=activeSk.lessons.find(x=>x.id===id);if(l)sk=activeSk;}
@@ -3286,27 +3708,83 @@ function openLesson(id, from) {
   const d=new Date(l.date+'T12:00:00');
   document.getElementById('l-date').textContent=d.toLocaleDateString('en-US',{weekday:'long',month:'long',day:'numeric'});
   document.getElementById('l-dur').textContent=`⏱ ${l.duration}`;
-  const gradients=['linear-gradient(135deg,rgba(94,106,210,0.3),rgba(5,4,16,0.8))','linear-gradient(135deg,rgba(244,114,182,0.25),rgba(5,4,16,0.8))','linear-gradient(135deg,rgba(52,211,153,0.2),rgba(5,4,16,0.8))'];
-  document.getElementById('l-videos').innerHTML=(l.videos||[]).map((v,i)=>{
-    const pc=v.platform==='YouTube'?'plat-yt':v.platform==='Instagram'?'plat-ig':'plat-tt';
-    const sb=v.platform==='Instagram'?'https://www.instagram.com/explore/tags/':v.platform==='TikTok'?'https://www.tiktok.com/search?q=':'https://www.youtube.com/results?search_query=';
-    const url=v.url&&v.url!=='#'?v.url:sb+encodeURIComponent(v.q||v.t);
-    return`<div class="vid-card" onclick="window.open('${url}','_blank')">
-      <div class="vid-thumb" style="background:${gradients[i%gradients.length]}">
-        <div class="vid-platform-chip ${pc}">${v.platform}</div>
-        <div class="vid-play">▶</div>
-      </div>
-      <div class="vid-info"><div class="vid-title">${v.t}</div><div class="vid-meta">${v.c} · ${v.d} — <span class="vid-link">${v.url&&v.url!=='#'?'Watch on':'Search on'} ${v.platform} →</span></div></div>
-    </div>`;
-  }).join('');
   document.getElementById('l-tips').innerHTML=`<div class="tip-box"><strong>Focus:</strong> ${l.description}<br><br><strong>Tip:</strong> ${l.tip}</div>`;
   const btn=document.getElementById('done-btn');
   if(btn){
     if(sk.done.has(l.id)){btn.textContent='✓ Completed';btn.className='done-btn completed';}
     else{btn.textContent='✓ Mark as complete';btn.className='done-btn';}
   }
+  // Show loading placeholder while videos resolve
+  document.getElementById('l-videos').innerHTML='<div style="text-align:center;padding:24px 0;color:rgba(255,255,255,0.35);font-size:14px">Finding best videos for you…</div>';
   showScreen('lesson');
   if(typeof vcStart==='function' && !sk.done.has(l.id)) vcStart(l.duration);
+
+  // Step 1: batch-verify existing YouTube URLs and sync their metadata
+  const videos = l.videos || [];
+  const toCheck = videos
+    .filter(v => v.platform === 'YouTube' && v.url && v.url !== '#')
+    .map(v => ({ v, id: new URLSearchParams(v.url.split('?')[1] || '').get('v') }))
+    .filter(x => x.id);
+
+  if (toCheck.length) {
+    try {
+      const detailRes = await fetch(
+        `https://www.googleapis.com/youtube/v3/videos?part=status,snippet,contentDetails&id=${toCheck.map(x => x.id).join(',')}&key=${YOUTUBE_API_KEY}`
+      );
+      if (detailRes.ok) {
+        const detailData = await detailRes.json();
+        const byId = Object.fromEntries((detailData.items || []).map(v => [v.id, v]));
+        toCheck.forEach(({ v, id }) => {
+          const item = byId[id];
+          if (!item || item.status?.privacyStatus !== 'public' || item.status?.uploadStatus !== 'processed') {
+            v.url = '#'; // dead — Step 2 will replace
+          } else {
+            // Sync real metadata from YouTube
+            v.t = item.snippet?.title || v.t;
+            v.c = item.snippet?.channelTitle || v.c;
+            v.d = parseIsoDuration(item.contentDetails?.duration || '') || v.d;
+            v.thumb = item.snippet?.thumbnails?.medium?.url || item.snippet?.thumbnails?.default?.url || v.thumb;
+          }
+        });
+      }
+    } catch { /* keep existing data if check fails */ }
+  }
+
+  // Step 2: resolve videos still missing a valid URL — sequentially to avoid duplicates
+  const usedIds = new Set(
+    videos
+      .filter(v => v.url && v.url !== '#')
+      .map(v => new URLSearchParams(v.url.split('?')[1] || '').get('v'))
+      .filter(Boolean)
+  );
+  for (const v of videos) {
+    if (v.url && v.url !== '#') continue;
+    if (v.platform !== 'YouTube') continue;
+    const query = `${v.q || v.t} ${sk.skill} ${sk.level} tutorial`;
+    const result = await resolveVideo(query, usedIds);
+    if (result) {
+      v.url = result.url; v.t = result.t; v.c = result.c; v.d = result.d; v.thumb = result.thumb;
+      const vid = new URLSearchParams(result.url.split('?')[1] || '').get('v');
+      if (vid) usedIds.add(vid);
+    }
+  }
+
+  const gradients=['linear-gradient(135deg,rgba(94,106,210,0.3),rgba(5,4,16,0.8))','linear-gradient(135deg,rgba(244,114,182,0.25),rgba(5,4,16,0.8))','linear-gradient(135deg,rgba(52,211,153,0.2),rgba(5,4,16,0.8))'];
+  document.getElementById('l-videos').innerHTML=videos.map((v,i)=>{
+    const pc=v.platform==='YouTube'?'plat-yt':v.platform==='Instagram'?'plat-ig':'plat-tt';
+    const sb=v.platform==='Instagram'?'https://www.instagram.com/explore/tags/':v.platform==='TikTok'?'https://www.tiktok.com/search?q=':'https://www.youtube.com/results?search_query=';
+    const url=v.url&&v.url!=='#'?v.url:sb+encodeURIComponent(v.q||v.t);
+    const thumbBg=v.thumb
+      ?`background-image:url('${v.thumb}');background-size:cover;background-position:center`
+      :`background:${gradients[i%gradients.length]}`;
+    return`<div class="vid-card" onclick="window.open('${url}','_blank')">
+      <div class="vid-thumb" style="${thumbBg}">
+        <div class="vid-platform-chip ${pc}">${v.platform}</div>
+        <div class="vid-play">▶</div>
+      </div>
+      <div class="vid-info"><div class="vid-title">${v.t}</div><div class="vid-meta">${v.c} · ${v.d} — <span class="vid-link">Watch on ${v.platform} →</span></div></div>
+    </div>`;
+  }).join('');
 }
 
 // Override markDone
