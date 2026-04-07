@@ -1,4 +1,4 @@
-# SkillPath v3.2
+# SkillPath v2.2.1
 
 AI-powered skill learning planner. Zero distraction.
 
@@ -6,8 +6,9 @@ AI-powered skill learning planner. Zero distraction.
 [Launch SkillPath App](https://bbds2802-maker.github.io/skillpath/app.html)
 
 ## Pages
-- [App](https://bbds2802-maker.github.io/skillpath/app.html) — Mobile learning planner with YouTube video scheduling
+- [App](https://bbds2802-maker.github.io/skillpath/app2.2.1html) — Mobile learning planner with YouTube video scheduling
 - [Web](https://bbds2802-maker.github.io/skillpath/web.html.html) — Desktop version
+- [App (Beta/Test)](app.html) — （测试版）
 
 ## How it works
 1. Enter a skill you want to learn
@@ -16,4 +17,4 @@ AI-powered skill learning planner. Zero distraction.
 4. Real thumbnails, verified links, no duplicate videos across sessions
 5. Track sessions on a real calendar
 
-Built with vanilla HTML/CSS/JS + YouTube Data API v3.
+Built with AI driver + YouTube Data API v3.
