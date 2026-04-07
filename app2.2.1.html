@@ -1,0 +1,3410 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<title>SkillPath App — v2.0</title>
+<link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+<style>
+/* ── TOKENS ─────────────────────────────────────────────── */
+:root {
+  --bg:        #0d0d14;
+  --card:      #161620;
+  --card2:     #1e1e2c;
+  --border:    #272738;
+  --accent:    #6c63ff;
+  --a-light:   rgba(108,99,255,.15);
+  --green:     #34d399;
+  --pink:      #f472b6;
+  --amber:     #fbbf24;
+  --text:      #f0f0fa;
+  --sub:       #6b6b96;
+  --font:      'Plus Jakarta Sans', sans-serif;
+  --r:         18px;
+  --safe-b:    env(safe-area-inset-bottom, 0px);
+}
+
+/* ── RESET ──────────────────────────────────────────────── */
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; -webkit-tap-highlight-color: transparent; }
+html, body { width: 100%; height: 100%; overflow: hidden; background: #000; }
+body { font-family: var(--font); color: var(--text); display: flex; justify-content: center; align-items: center; }
+
+/* ── PHONE SHELL ─────────────────────────────────────────── */
+.phone {
+  width: min(390px, 100vw);
+  height: min(844px, 100vh);
+  background: var(--bg);
+  border-radius: min(52px, 8vw);
+  overflow: hidden;
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  box-shadow: 0 0 0 10px #1a1a1a, 0 0 0 11px #2a2a2a, 0 40px 80px rgba(0,0,0,.8);
+}
+@media (max-width: 420px) {
+  .phone { border-radius: 0; box-shadow: none; }
+}
+
+/* ── STATUS BAR ──────────────────────────────────────────── */
+.status-bar {
+  flex-shrink: 0;
+  height: 50px;
+  display: flex;
+  align-items: flex-end;
+  justify-content: space-between;
+  padding: 0 28px 8px;
+  font-size: 12px;
+  font-weight: 600;
+  letter-spacing: .02em;
+  color: var(--text);
+  position: relative;
+  z-index: 10;
+}
+.notch {
+  position: absolute;
+  top: 0; left: 50%; transform: translateX(-50%);
+  width: 120px; height: 30px;
+  background: #000;
+  border-radius: 0 0 20px 20px;
+}
+.status-icons { display: flex; gap: 6px; align-items: center; font-size: 11px; }
+
+/* ── SCROLLABLE BODY ────────────────────────────────────── */
+.app-body {
+  flex: 1;
+  overflow: hidden;
+  position: relative;
+}
+
+/* ── BOTTOM NAV ──────────────────────────────────────────── */
+.bottom-nav {
+  flex-shrink: 0;
+  height: calc(64px + var(--safe-b));
+  background: rgba(22,22,32,.96);
+  backdrop-filter: blur(20px);
+  border-top: 1px solid var(--border);
+  display: flex;
+  align-items: flex-start;
+  padding-top: 10px;
+  position: relative;
+  z-index: 20;
+}
+.nav-tab {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 4px;
+  cursor: pointer;
+  opacity: .45;
+  transition: opacity .2s;
+  padding: 2px 0;
+}
+.nav-tab.active { opacity: 1; }
+.nav-tab .nav-icon { font-size: 22px; line-height: 1; }
+.nav-tab .nav-label { font-size: 10px; font-weight: 600; letter-spacing: .04em; }
+.nav-tab.active .nav-label { color: var(--accent); }
+.nav-dot {
+  width: 4px; height: 4px;
+  background: var(--accent);
+  border-radius: 50%;
+  margin-top: 1px;
+  opacity: 0;
+  transition: opacity .2s;
+}
+.nav-tab.active .nav-dot { opacity: 1; }
+
+/* ── SCREENS ─────────────────────────────────────────────── */
+.screen {
+  position: absolute;
+  inset: 0;
+  overflow-y: auto;
+  overflow-x: hidden;
+  -webkit-overflow-scrolling: touch;
+  display: none;
+  flex-direction: column;
+}
+.screen.active { display: flex; }
+.screen::-webkit-scrollbar { display: none; }
+
+/* ── ONBOARDING SCREEN ───────────────────────────────────── */
+#s-onboard {
+  background: var(--bg);
+  padding: 0;
+  justify-content: flex-end;
+}
+
+.onboard-hero {
+  position: absolute;
+  top: 0; left: 0; right: 0;
+  height: 55%;
+  background: linear-gradient(160deg, #1a1030 0%, #0d0d14 60%);
+  overflow: hidden;
+}
+.hero-glow {
+  position: absolute;
+  width: 300px; height: 300px;
+  border-radius: 50%;
+  background: radial-gradient(circle, rgba(108,99,255,.35) 0%, transparent 70%);
+  top: -60px; left: 50%; transform: translateX(-50%);
+  animation: glow-pulse 3s ease-in-out infinite;
+}
+@keyframes glow-pulse {
+  0%,100% { opacity: .7; transform: translateX(-50%) scale(1); }
+  50% { opacity: 1; transform: translateX(-50%) scale(1.1); }
+}
+.hero-icon {
+  position: absolute;
+  top: 50%; left: 50%;
+  transform: translate(-50%, -56%);
+  font-size: 72px;
+  filter: drop-shadow(0 0 30px rgba(108,99,255,.6));
+}
+.hero-wordmark {
+  position: absolute;
+  bottom: 24px; left: 0; right: 0;
+  text-align: center;
+  font-size: 28px;
+  font-weight: 800;
+  letter-spacing: -1px;
+}
+.hero-wordmark span { color: var(--accent); }
+.hero-tagline {
+  position: absolute;
+  bottom: 4px; left: 0; right: 0;
+  text-align: center;
+  font-size: 12px;
+  color: var(--sub);
+  font-weight: 400;
+}
+
+.onboard-sheet {
+  position: relative;
+  background: var(--card);
+  border-radius: 28px 28px 0 0;
+  padding: 28px 24px 32px;
+  margin-top: 50%;
+  min-height: 52%;
+  z-index: 2;
+}
+.sheet-handle {
+  width: 36px; height: 4px;
+  background: var(--border);
+  border-radius: 2px;
+  margin: 0 auto 24px;
+}
+
+/* Step dots */
+.step-dots { display: flex; gap: 6px; margin-bottom: 24px; }
+.sdot {
+  height: 4px; border-radius: 2px;
+  background: var(--border);
+  transition: all .3s;
+  width: 20px;
+}
+.sdot.on { background: var(--accent); width: 32px; }
+.sdot.done { background: var(--green); width: 20px; }
+
+.step-head { font-size: 20px; font-weight: 800; margin-bottom: 6px; letter-spacing: -.4px; }
+.step-desc { font-size: 13px; color: var(--sub); margin-bottom: 20px; line-height: 1.6; }
+
+/* Form elements */
+.field-lbl {
+  font-size: 11px; font-weight: 700;
+  letter-spacing: .1em; text-transform: uppercase;
+  color: var(--sub); margin-bottom: 8px; display: block;
+}
+.field-input {
+  width: 100%;
+  background: var(--card2);
+  border: 1.5px solid var(--border);
+  border-radius: 14px;
+  padding: 14px 16px;
+  color: var(--text);
+  font-family: var(--font);
+  font-size: 15px;
+  outline: none;
+  margin-bottom: 18px;
+  transition: border-color .2s;
+  -webkit-appearance: none;
+}
+.field-input:focus { border-color: var(--accent); }
+select.field-input { appearance: none; background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='8' viewBox='0 0 12 8'%3E%3Cpath d='M1 1l5 5 5-5' stroke='%236b6b96' stroke-width='1.5' fill='none' stroke-linecap='round'/%3E%3C/svg%3E"); background-repeat: no-repeat; background-position: right 16px center; padding-right: 40px; }
+select.field-input option { background: #1e1e2c; }
+
+.chip-row { display: flex; flex-wrap: wrap; gap: 8px; margin-bottom: 18px; }
+.chip {
+  padding: 8px 16px;
+  border-radius: 999px;
+  border: 1.5px solid var(--border);
+  background: transparent;
+  color: var(--sub);
+  font-size: 13px;
+  font-weight: 500;
+  font-family: var(--font);
+  cursor: pointer;
+  transition: all .2s;
+  white-space: nowrap;
+}
+.chip.on { background: var(--a-light); border-color: var(--accent); color: var(--accent); }
+
+.two-col { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-bottom: 18px; }
+.two-col > div > .field-lbl { margin-bottom: 6px; }
+.two-col > div > .field-input { margin-bottom: 0; }
+
+.btn-cta {
+  width: 100%;
+  padding: 17px;
+  background: var(--accent);
+  border: none;
+  border-radius: 16px;
+  color: #fff;
+  font-family: var(--font);
+  font-size: 15px;
+  font-weight: 700;
+  cursor: pointer;
+  transition: all .18s;
+  letter-spacing: .02em;
+  position: relative;
+  overflow: hidden;
+}
+.btn-cta::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(180deg, rgba(255,255,255,.12) 0%, transparent 100%);
+}
+.btn-cta:active { transform: scale(.97); }
+
+.btn-back {
+  background: var(--card2);
+  border: 1.5px solid var(--border);
+  border-radius: 16px;
+  color: var(--sub);
+  font-family: var(--font);
+  font-size: 15px;
+  font-weight: 600;
+  padding: 17px 22px;
+  cursor: pointer;
+}
+.btn-row { display: flex; gap: 10px; }
+.btn-row .btn-cta { flex: 1; }
+
+/* ── LOADING SCREEN ──────────────────────────────────────── */
+#s-loading {
+  justify-content: center;
+  align-items: center;
+  gap: 28px;
+  padding: 40px 32px;
+  background: var(--bg);
+}
+#s-loading.active { display: flex; }
+
+.load-orb {
+  width: 96px; height: 96px;
+  border-radius: 50%;
+  background: conic-gradient(var(--accent), #a78bfa, #f472b6, var(--accent));
+  animation: spin-orb 2s linear infinite;
+  position: relative;
+}
+.load-orb::before {
+  content: '';
+  position: absolute;
+  inset: 6px;
+  background: var(--bg);
+  border-radius: 50%;
+}
+.load-orb::after {
+  content: '✦';
+  position: absolute;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 28px;
+  animation: counter-spin 2s linear infinite;
+}
+@keyframes spin-orb { to { transform: rotate(360deg); } }
+@keyframes counter-spin { to { transform: rotate(-360deg); } }
+
+.load-title { font-size: 20px; font-weight: 800; text-align: center; letter-spacing: -.4px; }
+.load-msg { font-size: 13px; color: var(--sub); text-align: center; line-height: 1.6; min-height: 40px; }
+.load-bar-wrap { width: 200px; height: 3px; background: var(--border); border-radius: 2px; overflow: hidden; }
+.load-bar { height: 100%; background: linear-gradient(90deg, var(--accent), var(--pink)); border-radius: 2px; width: 0%; transition: width .5s ease; }
+
+/* ── HOME (TODAY) SCREEN ─────────────────────────────────── */
+#s-home { padding: 0 0 16px; background: var(--bg); }
+
+.home-header {
+  padding: 16px 22px 0;
+  background: var(--bg);
+  position: sticky; top: 0; z-index: 5;
+}
+.home-header-inner {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  margin-bottom: 16px;
+}
+.home-greeting { font-size: 22px; font-weight: 800; letter-spacing: -.5px; }
+.home-date { font-size: 12px; color: var(--sub); margin-top: 2px; }
+.avatar {
+  width: 40px; height: 40px;
+  border-radius: 50%;
+  background: linear-gradient(135deg, var(--accent), var(--pink));
+  display: flex; align-items: center; justify-content: center;
+  font-size: 18px;
+}
+
+/* Progress strip */
+.progress-strip {
+  background: var(--card);
+  border-radius: var(--r);
+  padding: 16px 18px;
+  margin: 0 0 16px;
+  display: flex;
+  gap: 14px;
+  align-items: center;
+}
+.prog-ring-wrap { position: relative; flex-shrink: 0; }
+.prog-ring { width: 52px; height: 52px; transform: rotate(-90deg); }
+.pr-bg { fill: none; stroke: var(--border); stroke-width: 5; }
+.pr-fill { fill: none; stroke: var(--accent); stroke-width: 5; stroke-linecap: round; stroke-dasharray: 126; stroke-dashoffset: 126; transition: stroke-dashoffset 1s ease; }
+.prog-pct {
+  position: absolute; inset: 0;
+  display: flex; align-items: center; justify-content: center;
+  font-size: 12px; font-weight: 800; color: var(--accent);
+}
+.prog-text { }
+.prog-title { font-size: 14px; font-weight: 700; margin-bottom: 3px; }
+.prog-sub { font-size: 12px; color: var(--sub); }
+.prog-bar-thin { height: 3px; background: var(--border); border-radius: 2px; margin-top: 8px; overflow: hidden; }
+.prog-bar-thin-fill { height: 100%; background: linear-gradient(90deg, var(--accent), var(--pink)); border-radius: 2px; transition: width .8s ease; }
+
+.section-head {
+  font-size: 11px; font-weight: 700; text-transform: uppercase;
+  letter-spacing: .1em; color: var(--sub);
+  padding: 0 22px;
+  margin: 16px 0 10px;
+}
+
+/* Today card */
+.today-card {
+  margin: 0 16px 12px;
+  background: linear-gradient(135deg, #1d1b40 0%, #1a1030 100%);
+  border: 1px solid rgba(108,99,255,.3);
+  border-radius: 20px;
+  padding: 20px;
+  cursor: pointer;
+  transition: transform .15s;
+  position: relative;
+  overflow: hidden;
+}
+.today-card::before {
+  content: '';
+  position: absolute;
+  top: -40px; right: -40px;
+  width: 120px; height: 120px;
+  background: radial-gradient(circle, rgba(108,99,255,.2), transparent 70%);
+}
+.today-card:active { transform: scale(.98); }
+.tc-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  font-size: 10px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: .1em;
+  color: var(--accent);
+  background: var(--a-light);
+  padding: 4px 10px;
+  border-radius: 999px;
+  margin-bottom: 12px;
+}
+.tc-title { font-size: 16px; font-weight: 700; margin-bottom: 6px; line-height: 1.35; }
+.tc-meta { font-size: 12px; color: var(--sub); display: flex; gap: 12px; align-items: center; }
+.tc-arrow {
+  position: absolute;
+  right: 18px; top: 50%;
+  transform: translateY(-50%);
+  font-size: 20px;
+  color: var(--accent);
+  opacity: .5;
+}
+
+/* Upcoming list */
+.upcoming-item {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 13px 22px;
+  cursor: pointer;
+  transition: background .15s;
+  border-radius: 12px;
+  margin: 0 8px;
+}
+.upcoming-item:active { background: var(--card); }
+.up-date-box {
+  width: 42px; flex-shrink: 0; text-align: center;
+  background: var(--card2);
+  border-radius: 12px;
+  padding: 7px 4px;
+}
+.up-day { font-size: 10px; color: var(--sub); font-weight: 600; text-transform: uppercase; }
+.up-num { font-size: 18px; font-weight: 800; line-height: 1; }
+.up-info { flex: 1; min-width: 0; }
+.up-title { font-size: 13px; font-weight: 600; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.up-meta { font-size: 11px; color: var(--sub); margin-top: 2px; }
+.type-dot {
+  width: 8px; height: 8px; border-radius: 50%; flex-shrink: 0;
+}
+.type-basics    { background: var(--accent); }
+.type-technique { background: var(--pink); }
+.type-practice  { background: var(--green); }
+.type-review    { background: var(--amber); }
+
+/* ── CALENDAR SCREEN ─────────────────────────────────────── */
+#s-calendar { padding: 0 0 16px; background: var(--bg); }
+
+.cal-header {
+  padding: 16px 22px 12px;
+  position: sticky; top: 0;
+  background: var(--bg);
+  z-index: 5;
+}
+.cal-header-row {
+  display: flex; justify-content: space-between; align-items: center;
+  margin-bottom: 16px;
+}
+.cal-title-h { font-size: 22px; font-weight: 800; letter-spacing: -.5px; }
+.cal-nav-btns { display: flex; gap: 8px; }
+.cal-nav-btn {
+  width: 36px; height: 36px;
+  background: var(--card);
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  color: var(--text);
+  font-size: 15px;
+  cursor: pointer;
+  display: flex; align-items: center; justify-content: center;
+  transition: border-color .2s;
+}
+.cal-nav-btn:active { border-color: var(--accent); }
+
+/* Weekday labels */
+.cal-day-labels {
+  display: grid;
+  grid-template-columns: repeat(7,1fr);
+  text-align: center;
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: .06em;
+  text-transform: uppercase;
+  color: var(--sub);
+  margin-bottom: 6px;
+}
+
+/* Calendar grid */
+.cal-grid {
+  display: grid;
+  grid-template-columns: repeat(7,1fr);
+  gap: 3px;
+  padding: 0 8px;
+}
+.cal-cell {
+  aspect-ratio: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: flex-start;
+  border-radius: 12px;
+  padding: 4px 2px;
+  cursor: pointer;
+  position: relative;
+  transition: background .15s;
+  gap: 3px;
+}
+.cal-cell:active { background: var(--card2); }
+.cal-cell.other-m { opacity: .3; }
+.cal-cell-num {
+  font-size: 13px; font-weight: 600;
+  width: 28px; height: 28px;
+  display: flex; align-items: center; justify-content: center;
+  border-radius: 50%;
+}
+.cal-cell.is-today .cal-cell-num {
+  background: var(--accent);
+  color: #fff;
+  font-weight: 800;
+}
+.cal-pips { display: flex; gap: 2px; flex-wrap: wrap; justify-content: center; }
+.cal-pip {
+  width: 5px; height: 5px;
+  border-radius: 50%;
+}
+
+/* selected day lessons */
+.day-lessons-panel {
+  margin: 8px 16px 0;
+  background: var(--card);
+  border-radius: 20px;
+  overflow: hidden;
+}
+.dlp-header {
+  padding: 14px 18px;
+  font-size: 13px; font-weight: 700;
+  color: var(--sub);
+  border-bottom: 1px solid var(--border);
+}
+.dlp-item {
+  display: flex; align-items: center; gap: 12px;
+  padding: 13px 18px;
+  border-bottom: 1px solid var(--border);
+  cursor: pointer;
+  transition: background .15s;
+}
+.dlp-item:last-child { border-bottom: none; }
+.dlp-item:active { background: var(--card2); }
+.dlp-color { width: 4px; height: 40px; border-radius: 2px; flex-shrink: 0; }
+.dlp-info { flex: 1; min-width: 0; }
+.dlp-title { font-size: 14px; font-weight: 600; }
+.dlp-meta { font-size: 11px; color: var(--sub); margin-top: 2px; }
+.dlp-chevron { color: var(--sub); font-size: 14px; }
+
+/* ── LESSON DETAIL SCREEN ────────────────────────────────── */
+#s-lesson { padding: 0; background: var(--bg); }
+#s-lesson.active { display: flex; }
+
+.lesson-header {
+  padding: 16px 20px 20px;
+  background: linear-gradient(180deg, #1a1530 0%, var(--bg) 100%);
+  flex-shrink: 0;
+}
+.back-btn {
+  display: inline-flex; align-items: center; gap: 6px;
+  font-size: 14px; font-weight: 600; color: var(--accent);
+  cursor: pointer; margin-bottom: 16px;
+  background: none; border: none;
+}
+.l-type-tag {
+  display: inline-block;
+  padding: 4px 12px;
+  border-radius: 999px;
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: .08em;
+  text-transform: uppercase;
+  margin-bottom: 10px;
+}
+.l-title { font-size: 20px; font-weight: 800; letter-spacing: -.4px; line-height: 1.3; margin-bottom: 8px; }
+.l-date-row { font-size: 12px; color: var(--sub); display: flex; gap: 14px; }
+
+.lesson-body { flex: 1; overflow-y: auto; padding: 0 16px 16px; }
+.lesson-body::-webkit-scrollbar { display: none; }
+
+.l-section-lbl {
+  font-size: 11px; font-weight: 700; text-transform: uppercase;
+  letter-spacing: .1em; color: var(--sub);
+  margin: 20px 0 10px;
+}
+
+/* Video card */
+.vid-card {
+  background: var(--card);
+  border: 1px solid var(--border);
+  border-radius: 18px;
+  overflow: hidden;
+  margin-bottom: 12px;
+  cursor: pointer;
+  transition: transform .15s;
+}
+.vid-card:active { transform: scale(.98); }
+.vid-thumb {
+  width: 100%; height: 130px;
+  display: flex; align-items: center; justify-content: center;
+  position: relative;
+  flex-direction: column; gap: 8px;
+}
+.vid-play {
+  width: 44px; height: 44px;
+  background: rgba(255,255,255,.9);
+  border-radius: 50%;
+  display: flex; align-items: center; justify-content: center;
+  font-size: 16px; color: #111;
+  box-shadow: 0 4px 16px rgba(0,0,0,.4);
+  position: relative; z-index: 1;
+}
+.vid-platform-chip {
+  position: absolute; top: 10px; left: 10px;
+  padding: 3px 8px; border-radius: 999px;
+  font-size: 9px; font-weight: 700; letter-spacing: .08em;
+  text-transform: uppercase;
+}
+.plat-yt  { background: rgba(255,80,80,.2);  color: #ff6060; }
+.plat-ig  { background: rgba(244,114,182,.2); color: var(--pink); }
+.plat-tt  { background: rgba(52,211,153,.2);  color: var(--green); }
+
+.vid-info { padding: 12px 14px; }
+.vid-title { font-size: 13px; font-weight: 600; line-height: 1.4; margin-bottom: 4px; }
+.vid-meta  { font-size: 11px; color: var(--sub); }
+.vid-link  { color: var(--accent); }
+
+/* Tip card */
+.tip-box {
+  background: rgba(52,211,153,.07);
+  border: 1px solid rgba(52,211,153,.2);
+  border-radius: 16px;
+  padding: 16px;
+  font-size: 13px;
+  line-height: 1.7;
+  color: var(--text);
+}
+.tip-box strong { color: var(--green); }
+
+.lesson-footer {
+  padding: 12px 16px;
+  background: var(--bg);
+  border-top: 1px solid var(--border);
+  flex-shrink: 0;
+}
+.done-btn {
+  width: 100%;
+  padding: 17px;
+  background: var(--green);
+  border: none;
+  border-radius: 16px;
+  color: #0a1a14;
+  font-family: var(--font);
+  font-size: 15px;
+  font-weight: 800;
+  cursor: pointer;
+  transition: all .18s;
+  letter-spacing: .02em;
+}
+.done-btn:active { transform: scale(.97); }
+.done-btn.completed { background: var(--card2); color: var(--sub); border: 1.5px solid var(--border); }
+
+/* ── PLAN (LIST) SCREEN ──────────────────────────────────── */
+#s-plan { padding: 0 0 16px; background: var(--bg); }
+.plan-header {
+  padding: 16px 22px 12px;
+  position: sticky; top: 0;
+  background: var(--bg); z-index: 5;
+}
+.plan-header-title { font-size: 22px; font-weight: 800; letter-spacing: -.5px; }
+.plan-header-sub { font-size: 12px; color: var(--sub); margin-top: 3px; }
+
+.week-label {
+  font-size: 11px; font-weight: 700;
+  text-transform: uppercase; letter-spacing: .1em;
+  color: var(--sub);
+  padding: 14px 22px 6px;
+}
+.plan-row {
+  display: flex; align-items: center; gap: 12px;
+  padding: 13px 16px;
+  margin: 0 8px 4px;
+  background: var(--card);
+  border-radius: 16px;
+  cursor: pointer;
+  transition: all .15s;
+}
+.plan-row:active { transform: scale(.98); }
+.plan-row.done-row { opacity: .45; }
+.pr-date {
+  text-align: center;
+  background: var(--card2);
+  border-radius: 12px;
+  padding: 7px 8px;
+  min-width: 44px;
+}
+.pr-day { font-size: 9px; font-weight: 700; text-transform: uppercase; color: var(--sub); }
+.pr-num { font-size: 19px; font-weight: 800; line-height: 1; }
+.pr-info { flex: 1; min-width: 0; }
+.pr-title { font-size: 13px; font-weight: 600; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.pr-meta  { font-size: 11px; color: var(--sub); margin-top: 2px; }
+.pr-check {
+  width: 26px; height: 26px;
+  border: 2px solid var(--border);
+  border-radius: 8px;
+  display: flex; align-items: center; justify-content: center;
+  font-size: 13px;
+  flex-shrink: 0;
+  cursor: pointer;
+  transition: all .2s;
+}
+.pr-check.ck { background: var(--green); border-color: var(--green); color: #0a1a14; font-weight: 800; }
+
+/* ── TOAST ───────────────────────────────────────────────── */
+.toast {
+  position: absolute;
+  bottom: 80px; left: 50%;
+  transform: translateX(-50%) translateY(10px);
+  background: var(--card);
+  border: 1px solid var(--green);
+  border-radius: 14px;
+  padding: 11px 20px;
+  font-size: 13px; font-weight: 600;
+  color: var(--green);
+  white-space: nowrap;
+  opacity: 0;
+  transition: all .3s;
+  z-index: 100;
+  pointer-events: none;
+}
+.toast.show { opacity: 1; transform: translateX(-50%) translateY(0); }
+
+/* ── EMPTY STATE ─────────────────────────────────────────── */
+.empty-state {
+  display: flex; flex-direction: column;
+  align-items: center; justify-content: center;
+  padding: 60px 32px;
+  text-align: center; gap: 12px; color: var(--sub);
+}
+.empty-state .e-icon { font-size: 48px; opacity: .4; }
+.empty-state .e-text { font-size: 14px; line-height: 1.6; }
+
+/* ── FLOATING FOCUS REMINDER ─────────────────────────────── */
+.focus-bubble {
+  position: absolute;
+  bottom: 80px; left: 50%;
+  transform: translateX(-50%) translateY(20px) scale(0.92);
+  background: linear-gradient(135deg, #1a1040, #0f0a28);
+  border: 1px solid rgba(108,99,255,.5);
+  border-radius: 20px;
+  padding: 14px 18px;
+  min-width: 280px; max-width: 320px;
+  z-index: 200;
+  opacity: 0;
+  pointer-events: none;
+  transition: all .35s cubic-bezier(0.34,1.56,0.64,1);
+  box-shadow: 0 8px 32px rgba(0,0,0,.6), 0 0 0 1px rgba(108,99,255,.2);
+}
+.focus-bubble.visible {
+  opacity: 1;
+  transform: translateX(-50%) translateY(0) scale(1);
+  pointer-events: all;
+}
+.fb-top { display: flex; align-items: center; gap: 10px; margin-bottom: 8px; }
+.fb-icon { font-size: 22px; }
+.fb-title { font-size: 13px; font-weight: 800; flex: 1; }
+.fb-close {
+  background: rgba(255,255,255,.08);
+  border: none; border-radius: 8px;
+  color: var(--sub); font-size: 13px;
+  width: 26px; height: 26px;
+  cursor: pointer; display: flex;
+  align-items: center; justify-content: center;
+  transition: background .15s;
+}
+.fb-close:hover { background: rgba(255,255,255,.14); color: var(--text); }
+.fb-msg { font-size: 12px; color: var(--sub); line-height: 1.6; margin-bottom: 12px; }
+.fb-actions { display: flex; gap: 8px; }
+.fb-btn-primary {
+  flex: 1; padding: 9px;
+  background: var(--accent); border: none;
+  border-radius: 10px; color: #fff;
+  font-family: var(--font); font-size: 12px; font-weight: 700;
+  cursor: pointer; transition: opacity .15s;
+}
+.fb-btn-primary:active { opacity: .8; }
+.fb-btn-ghost {
+  padding: 9px 14px;
+  background: rgba(255,255,255,.06); border: 1px solid var(--border);
+  border-radius: 10px; color: var(--sub);
+  font-family: var(--font); font-size: 12px; font-weight: 600;
+  cursor: pointer; transition: background .15s;
+}
+.fb-btn-ghost:active { background: rgba(255,255,255,.1); }
+
+/* ── SESSION TIMER BAR ───────────────────────────────────── */
+.session-timer-bar {
+  position: absolute;
+  top: 0; left: 0; right: 0;
+  height: 3px;
+  background: var(--border);
+  z-index: 50;
+  overflow: hidden;
+  display: none;
+}
+.session-timer-bar.active { display: block; }
+.stb-fill {
+  height: 100%;
+  background: linear-gradient(90deg, var(--accent), var(--green));
+  border-radius: 0 2px 2px 0;
+  transition: width 1s linear;
+  width: 0%;
+}
+
+/* ── DISTRACTION BLOCK OVERLAY ───────────────────────────── */
+.distraction-overlay {
+  position: absolute;
+  inset: 0;
+  background: rgba(8,6,20,.97);
+  z-index: 300;
+  display: none;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 20px;
+  padding: 40px 28px;
+  text-align: center;
+  backdrop-filter: blur(10px);
+}
+.distraction-overlay.show { display: flex; }
+.do-icon { font-size: 56px; animation: breathe 3s ease-in-out infinite; }
+@keyframes breathe {
+  0%,100% { transform: scale(1); }
+  50% { transform: scale(1.08); }
+}
+.do-title { font-size: 22px; font-weight: 800; letter-spacing: -.4px; }
+.do-sub { font-size: 14px; color: var(--sub); line-height: 1.7; max-width: 260px; }
+.do-timer {
+  font-size: 48px; font-weight: 800;
+  font-variant-numeric: tabular-nums;
+  color: var(--accent);
+  letter-spacing: -2px;
+}
+.do-btn {
+  padding: 14px 32px;
+  background: var(--accent); border: none;
+  border-radius: 14px; color: #fff;
+  font-family: var(--font); font-size: 14px; font-weight: 700;
+  cursor: pointer;
+}
+.do-skip {
+  font-size: 12px; color: var(--sub);
+  cursor: pointer; text-decoration: underline;
+  background: none; border: none; font-family: var(--font);
+}
+
+/* ── FOCUS SETTINGS PANEL ────────────────────────────────── */
+.focus-settings {
+  position: absolute;
+  bottom: 0; left: 0; right: 0;
+  background: var(--card);
+  border-radius: 24px 24px 0 0;
+  padding: 20px 22px 32px;
+  z-index: 250;
+  transform: translateY(100%);
+  transition: transform .3s cubic-bezier(0.4,0,0.2,1);
+}
+.focus-settings.open { transform: translateY(0); }
+.fs-handle { width: 36px; height: 4px; background: var(--border); border-radius: 2px; margin: 0 auto 20px; }
+.fs-title { font-size: 17px; font-weight: 800; margin-bottom: 4px; }
+.fs-sub { font-size: 12px; color: var(--sub); margin-bottom: 20px; }
+.fs-row {
+  display: flex; justify-content: space-between;
+  align-items: center; padding: 13px 0;
+  border-bottom: 1px solid var(--border);
+}
+.fs-row:last-of-type { border-bottom: none; }
+.fs-row-label { font-size: 13px; font-weight: 600; }
+.fs-row-sub { font-size: 11px; color: var(--sub); margin-top: 2px; }
+
+/* Toggle switch */
+.toggle {
+  width: 44px; height: 26px;
+  background: var(--border);
+  border-radius: 999px;
+  position: relative;
+  cursor: pointer;
+  transition: background .2s;
+  flex-shrink: 0;
+}
+.toggle.on { background: var(--accent); }
+.toggle::after {
+  content: '';
+  position: absolute;
+  width: 20px; height: 20px;
+  background: #fff;
+  border-radius: 50%;
+  top: 3px; left: 3px;
+  transition: transform .2s;
+  box-shadow: 0 1px 4px rgba(0,0,0,.3);
+}
+.toggle.on::after { transform: translateX(18px); }
+
+.fs-select {
+  background: var(--card2);
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  color: var(--text);
+  font-family: var(--font);
+  font-size: 12px; font-weight: 600;
+  padding: 6px 10px;
+  outline: none;
+  cursor: pointer;
+}
+.focus-overlay-bg {
+  position: absolute; inset: 0;
+  background: rgba(0,0,0,.5);
+  z-index: 240;
+  display: none;
+  backdrop-filter: blur(2px);
+}
+.focus-overlay-bg.show { display: block; }
+
+/* Focus shield badge on home */
+.focus-badge {
+  display: inline-flex; align-items: center; gap: 5px;
+  background: rgba(52,211,153,.1);
+  border: 1px solid rgba(52,211,153,.25);
+  border-radius: 999px;
+  padding: 4px 10px;
+  font-size: 10px; font-weight: 700;
+  color: var(--green);
+  cursor: pointer;
+  transition: background .15s;
+}
+.focus-badge:active { background: rgba(52,211,153,.18); }
+.focus-badge.off { background: rgba(107,107,150,.1); border-color: rgba(107,107,150,.2); color: var(--sub); }
+
+/* ── FLOATING VIDEO COUNTDOWN TIMER ─────────────────────── */
+.vid-countdown {
+  position: fixed;
+  bottom: 82px;
+  right: calc(50% - min(195px, 50vw) + 8px);
+  width: 148px;
+  background: linear-gradient(160deg, #16143a 0%, #0f0d28 100%);
+  border: 1px solid rgba(108,99,255,.55);
+  border-radius: 20px;
+  z-index: 500;
+  box-shadow: 0 12px 40px rgba(0,0,0,.7);
+  transform: translateX(20px) scale(.92);
+  opacity: 0;
+  pointer-events: none;
+  transition: all .35s cubic-bezier(0.34,1.56,0.64,1);
+  overflow: hidden;
+}
+.vid-countdown.vc-visible { opacity: 1; transform: translateX(0) scale(1); pointer-events: all; }
+.vid-countdown.vc-urgent  { border-color: rgba(244,114,182,.6); }
+.vid-countdown.vc-done    { border-color: rgba(52,211,153,.6); }
+.vc-header {
+  display: flex; align-items: center; justify-content: space-between;
+  padding: 10px 12px 8px;
+  border-bottom: 1px solid rgba(108,99,255,.18);
+  background: rgba(108,99,255,.08);
+}
+.vc-label { font-size: 9px; font-weight: 700; text-transform: uppercase; letter-spacing: .1em; color: #a09aff; }
+.vc-min-btn {
+  background: rgba(255,255,255,.08); border: none; border-radius: 6px;
+  color: var(--sub); width: 20px; height: 20px;
+  font-size: 14px; cursor: pointer; display: flex; align-items: center; justify-content: center;
+  font-family: var(--font); transition: background .15s;
+}
+.vc-min-btn:active { background: rgba(255,255,255,.16); }
+.vc-body { padding: 12px 12px 10px; text-align: center; }
+.vc-ring-wrap { position: relative; width: 80px; height: 80px; margin: 0 auto 10px; }
+.vc-ring-svg  { width: 80px; height: 80px; transform: rotate(-90deg); }
+.vc-ring-bg   { fill: none; stroke: rgba(255,255,255,.07); stroke-width: 6; }
+.vc-ring-fill {
+  fill: none; stroke: var(--accent); stroke-width: 6; stroke-linecap: round;
+  stroke-dasharray: 207; stroke-dashoffset: 0;
+  transition: stroke-dashoffset 1s linear, stroke .5s;
+}
+.vc-urgent .vc-ring-fill { stroke: var(--pink); }
+.vc-done   .vc-ring-fill { stroke: var(--green); }
+.vc-ring-center {
+  position: absolute; inset: 0;
+  display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 1px;
+}
+.vc-time {
+  font-size: 19px; font-weight: 800; color: var(--text);
+  font-variant-numeric: tabular-nums; letter-spacing: -.5px; line-height: 1;
+}
+.vc-urgent .vc-time { color: var(--pink); }
+.vc-done   .vc-time { color: var(--green); }
+.vc-unit   { font-size: 8px; color: var(--sub); text-transform: uppercase; letter-spacing: .08em; font-weight: 600; }
+.vc-bar-wrap  { height: 3px; background: rgba(255,255,255,.07); border-radius: 2px; overflow: hidden; margin-bottom: 10px; }
+.vc-bar-fill  {
+  height: 100%; background: linear-gradient(90deg, var(--accent), var(--green));
+  border-radius: 2px; width: 0%; transition: width 1s linear;
+}
+.vc-urgent .vc-bar-fill { background: linear-gradient(90deg, var(--pink), var(--amber)); }
+.vc-status { font-size: 9px; color: var(--sub); margin-bottom: 10px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.vc-actions { display: flex; gap: 5px; }
+.vc-btn-done {
+  flex: 1; padding: 8px 4px; background: var(--green); border: none;
+  border-radius: 10px; color: #0a1a14;
+  font-family: var(--font); font-size: 10px; font-weight: 800;
+  cursor: pointer; transition: opacity .15s;
+}
+.vc-btn-done:active { opacity: .8; }
+.vc-btn-add {
+  padding: 8px 9px; background: rgba(255,255,255,.07);
+  border: 1px solid rgba(255,255,255,.1); border-radius: 10px; color: var(--sub);
+  font-family: var(--font); font-size: 10px; font-weight: 600;
+  cursor: pointer; white-space: nowrap; transition: background .15s;
+}
+.vc-btn-add:active { background: rgba(255,255,255,.13); color: var(--text); }
+.vc-mini { display: none; padding: 8px 12px; align-items: center; gap: 7px; }
+.vc-mini-time { font-size: 16px; font-weight: 800; color: var(--text); font-variant-numeric: tabular-nums; }
+.vc-mini-lbl  { font-size: 9px; color: var(--sub); text-transform: uppercase; letter-spacing: .06em; }
+
+/* ── COUNTDOWN DRAG + PAUSE ──────────────────────────────── */
+.vc-header { cursor: grab; user-select: none; }
+.vc-header:active { cursor: grabbing; }
+.vc-ctrl-row { display: flex; align-items: center; gap: 4px; }
+.vc-ctrl-btn {
+  background: rgba(255,255,255,.08); border: none; border-radius: 6px;
+  color: var(--sub); width: 22px; height: 22px; font-size: 12px; line-height: 1;
+  cursor: pointer; display: flex; align-items: center; justify-content: center;
+  transition: background .15s, color .15s; font-family: var(--font); flex-shrink: 0;
+}
+.vc-ctrl-btn:active { background: rgba(255,255,255,.18); color: var(--text); }
+.vid-countdown.vc-paused .vc-ring-fill { stroke: var(--amber) !important; }
+.vid-countdown.vc-paused .vc-time      { color: var(--amber) !important; }
+.vid-countdown.vc-paused .vc-bar-fill  { background: linear-gradient(90deg,var(--amber),#f59e0b) !important; }
+
+
+/* ── NEW ONBOARDING — SKILL PICKER ──────────────────────── */
+.ob-hero-full {
+  position: absolute; top: 0; left: 0; right: 0; bottom: 0;
+  background: var(--bg);
+  display: flex; flex-direction: column;
+  overflow: hidden;
+}
+
+/* Hero gradient top */
+.ob-hero-top {
+  flex-shrink: 0;
+  height: 220px;
+  background: linear-gradient(160deg, #1a1040 0%, #0d0d18 70%);
+  display: flex; flex-direction: column;
+  align-items: center; justify-content: center;
+  position: relative; overflow: hidden;
+}
+.ob-hero-top::before {
+  content: '';
+  position: absolute;
+  width: 280px; height: 280px; border-radius: 50%;
+  background: radial-gradient(circle, rgba(108,99,255,.28) 0%, transparent 70%);
+  top: -80px; left: 50%; transform: translateX(-50%);
+}
+.ob-wordmark {
+  font-size: 30px; font-weight: 800;
+  letter-spacing: -1.5px; position: relative; z-index: 1;
+}
+.ob-wordmark span { color: var(--accent); }
+.ob-tagline {
+  font-size: 12px; color: var(--sub);
+  margin-top: 6px; position: relative; z-index: 1;
+}
+
+/* Bottom sheet */
+.ob-sheet {
+  flex: 1;
+  background: var(--card);
+  border-radius: 28px 28px 0 0;
+  overflow-y: auto; overflow-x: hidden;
+  padding: 20px 20px 32px;
+  position: relative;
+}
+.ob-sheet::-webkit-scrollbar { display: none; }
+
+.ob-sheet-handle {
+  width: 36px; height: 4px; background: var(--border);
+  border-radius: 2px; margin: 0 auto 18px;
+}
+
+.ob-section-lbl {
+  font-size: 11px; font-weight: 700; text-transform: uppercase;
+  letter-spacing: .1em; color: var(--sub); margin-bottom: 12px;
+}
+
+/* Popular skill grid */
+.skill-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 10px;
+  margin-bottom: 14px;
+}
+.skill-tile {
+  background: var(--card2);
+  border: 1.5px solid var(--border);
+  border-radius: 16px;
+  padding: 14px 8px 12px;
+  display: flex; flex-direction: column;
+  align-items: center; gap: 7px;
+  cursor: pointer;
+  transition: all .2s;
+  position: relative; overflow: hidden;
+}
+.skill-tile::before {
+  content: '';
+  position: absolute; inset: 0;
+  background: var(--a-light);
+  opacity: 0; transition: opacity .2s;
+}
+.skill-tile.selected {
+  border-color: var(--accent);
+  background: rgba(108,99,255,.1);
+}
+.skill-tile.selected::before { opacity: 1; }
+.skill-tile:active { transform: scale(.95); }
+.st-emoji { font-size: 28px; line-height: 1; }
+.st-name {
+  font-size: 11px; font-weight: 600; text-align: center;
+  color: var(--sub); line-height: 1.3;
+}
+.skill-tile.selected .st-name { color: var(--accent); }
+
+/* "Other" tile */
+.skill-tile.other-tile { border-style: dashed; }
+.skill-tile.other-tile .st-emoji { font-size: 22px; color: var(--sub); }
+
+/* Discovery sheet (step 1 — slide up over step 0) */
+.discovery-sheet {
+  position: absolute;
+  inset: 0;
+  background: var(--card);
+  border-radius: 28px 28px 0 0;
+  padding: 20px 20px 32px;
+  transform: translateY(100%);
+  transition: transform .4s cubic-bezier(0.4,0,0.2,1);
+  overflow-y: auto; overflow-x: hidden;
+  z-index: 10;
+}
+.discovery-sheet::-webkit-scrollbar { display: none; }
+.discovery-sheet.ds-open { transform: translateY(0); }
+
+.ds-handle { width: 36px; height: 4px; background: var(--border); border-radius: 2px; margin: 0 auto 18px; }
+.ds-back {
+  display: inline-flex; align-items: center; gap: 5px;
+  font-size: 13px; font-weight: 600; color: var(--accent);
+  background: none; border: none; cursor: pointer;
+  font-family: var(--font); margin-bottom: 16px;
+}
+
+.ds-skill-badge {
+  display: inline-flex; align-items: center; gap: 8px;
+  background: var(--a-light); border: 1px solid rgba(108,99,255,.3);
+  border-radius: 12px; padding: 8px 14px;
+  margin-bottom: 16px;
+}
+.ds-badge-emoji { font-size: 20px; }
+.ds-badge-name  { font-size: 15px; font-weight: 700; color: var(--accent); }
+
+.ds-question { font-size: 18px; font-weight: 800; letter-spacing: -.4px; margin-bottom: 6px; }
+.ds-sub      { font-size: 13px; color: var(--sub); margin-bottom: 16px; line-height: 1.5; }
+
+/* Suggested directions */
+.direction-list { display: flex; flex-direction: column; gap: 8px; margin-bottom: 18px; }
+.direction-item {
+  display: flex; align-items: center; gap: 12px;
+  background: var(--card2); border: 1.5px solid var(--border);
+  border-radius: 14px; padding: 12px 14px;
+  cursor: pointer; transition: all .15s;
+}
+.direction-item.selected {
+  border-color: var(--accent);
+  background: rgba(108,99,255,.1);
+}
+.direction-item:active { transform: scale(.98); }
+.di-icon  { font-size: 20px; flex-shrink: 0; }
+.di-text  { flex: 1; }
+.di-title { font-size: 13px; font-weight: 600; }
+.di-sub   { font-size: 11px; color: var(--sub); margin-top: 2px; }
+.di-check {
+  width: 20px; height: 20px; border: 2px solid var(--border);
+  border-radius: 6px; flex-shrink: 0; transition: all .15s;
+  display: flex; align-items: center; justify-content: center; font-size: 11px;
+}
+.direction-item.selected .di-check {
+  background: var(--accent); border-color: var(--accent); color: #fff;
+}
+
+
+/* ════════════════════════════════════════════════════════════
+   LIQUID GLASS — FULL STYLE SYSTEM
+   Morphing shapes · Iridescent gradients · Backdrop blur
+════════════════════════════════════════════════════════════ */
+
+/* ── LIQUID TOKENS ───────────────────────────────────────── */
+:root {
+  --bg:        #07040f;
+  --card:      rgba(255,255,255,.055);
+  --card2:     rgba(255,255,255,.09);
+  --border:    rgba(255,255,255,.1);
+  --accent:    #7c6ff7;
+  --a-light:   rgba(124,111,247,.14);
+  --green:     #2dd4bf;
+  --pink:      #e879f9;
+  --amber:     #f59e0b;
+  --sub:       rgba(240,240,250,.42);
+  --r:         22px;
+  /* Liquid-specific */
+  --glass:     rgba(255,255,255,.055);
+  --glass-b:   rgba(255,255,255,.1);
+  --lp:        rgba(124,111,247,.30); /* liquid purple */
+  --lc:        rgba(6,182,212,.22);   /* liquid cyan   */
+  --lm:        rgba(232,121,249,.18); /* liquid magenta */
+  --morph:     500ms cubic-bezier(0.4,0,0.2,1);
+  --spring:    .5s cubic-bezier(0.34,1.56,0.64,1);
+}
+
+/* ── FLOATING BACKGROUND BLOBS ────────────────────────────── */
+.liquid-layer {
+  position: absolute; inset: 0;
+  pointer-events: none; overflow: hidden; z-index: 0;
+}
+.lb {
+  position: absolute; border-radius: 50%;
+  filter: blur(72px); will-change: transform;
+}
+.lb-1 {
+  width: 360px; height: 360px; background: var(--lp);
+  top: -100px; left: -70px;
+  animation: drift-a 11s ease-in-out infinite;
+}
+.lb-2 {
+  width: 220px; height: 220px; background: var(--lc);
+  top: 32%; right: -40px;
+  animation: drift-b 14s ease-in-out infinite;
+}
+.lb-3 {
+  width: 280px; height: 280px; background: var(--lm);
+  bottom: 6%; left: 12%;
+  animation: drift-c 9s ease-in-out 2s infinite;
+}
+.lb-4 {
+  width: 160px; height: 160px;
+  background: rgba(45,212,191,.18);
+  top: 55%; left: 5%;
+  animation: drift-a 16s ease-in-out 4s infinite reverse;
+}
+@keyframes drift-a {
+  0%,100% { transform: translate(0,0) scale(1); }
+  35%     { transform: translate(28px,-40px) scale(1.07); }
+  65%     { transform: translate(-16px,22px) scale(.95); }
+}
+@keyframes drift-b {
+  0%,100% { transform: translate(0,0) scale(1); }
+  40%     { transform: translate(-22px,32px) scale(1.05); }
+  70%     { transform: translate(18px,-18px) scale(.97); }
+}
+@keyframes drift-c {
+  0%,100% { transform: translate(0,0) scale(1); }
+  30%     { transform: translate(24px,-20px) scale(1.06); }
+  70%     { transform: translate(-28px,14px) scale(.93); }
+}
+
+/* ── SCREENS & BACKGROUNDS ────────────────────────────────── */
+.phone {
+  background: #07040f;
+  box-shadow: 0 0 0 10px #0e0a1a, 0 0 0 11px rgba(124,111,247,.22),
+              0 40px 100px rgba(0,0,0,.9);
+}
+.screen { background: transparent; }
+#s-home,#s-calendar,#s-plan,#s-lesson,#s-onboard,#s-loading {
+  background: transparent;
+}
+
+/* Sticky header blurs for legibility on scroll */
+.home-header {
+  background: rgba(7,4,15,.5);
+  backdrop-filter: blur(18px);
+  -webkit-backdrop-filter: blur(18px);
+}
+.cal-header {
+  background: rgba(7,4,15,.5);
+  backdrop-filter: blur(18px);
+  -webkit-backdrop-filter: blur(18px);
+}
+.plan-header {
+  background: rgba(7,4,15,.5);
+  backdrop-filter: blur(18px);
+  -webkit-backdrop-filter: blur(18px);
+}
+
+/* ── STATUS BAR ───────────────────────────────────────────── */
+.status-bar { background: transparent; }
+
+/* ── BOTTOM NAV ───────────────────────────────────────────── */
+.bottom-nav {
+  background: rgba(7,4,15,.78);
+  backdrop-filter: blur(32px) saturate(200%);
+  -webkit-backdrop-filter: blur(32px) saturate(200%);
+  border-top: 1px solid rgba(255,255,255,.08);
+  position: relative;
+}
+/* Liquid blob active indicator */
+.nav-liquid {
+  position: absolute; top: 8px;
+  height: 40px;
+  background: linear-gradient(135deg, rgba(124,111,247,.22), rgba(45,212,191,.1));
+  backdrop-filter: blur(10px);
+  border-radius: 14px;
+  border: 1px solid rgba(124,111,247,.35);
+  transition: left var(--spring), width var(--spring);
+  pointer-events: none;
+  box-shadow: 0 0 22px rgba(124,111,247,.18);
+  left: 0; width: 0; /* positioned by JS */
+}
+.nav-dot { display: none; } /* replaced by liquid blob */
+
+/* ── GLASS SURFACE BASE ───────────────────────────────────── */
+.progress-strip,
+.today-card,
+.plan-row,
+.vid-card,
+.day-lessons-panel,
+.focus-bubble,
+.tip-box,
+.vid-countdown {
+  background: var(--glass);
+  backdrop-filter: blur(22px) saturate(160%);
+  -webkit-backdrop-filter: blur(22px) saturate(160%);
+  border-color: var(--glass-b);
+  position: relative;
+}
+
+/* Iridescent top-edge shimmer on glass cards */
+.progress-strip::after,
+.today-card::after,
+.plan-row::after {
+  content: '';
+  position: absolute;
+  top: 0; left: 18%; right: 18%; height: 1px;
+  background: linear-gradient(90deg, transparent, rgba(255,255,255,.28), transparent);
+  border-radius: 1px; pointer-events: none;
+}
+
+/* ── ONBOARDING ───────────────────────────────────────────── */
+.ob-hero-top {
+  background: linear-gradient(160deg, #160d32 0%, #07040f 70%);
+}
+.ob-hero-top::before {
+  background: radial-gradient(circle, rgba(124,111,247,.38) 0%, transparent 70%);
+}
+.onboard-hero {
+  background: linear-gradient(160deg, #160d32 0%, #07040f 60%);
+}
+.hero-glow {
+  background: radial-gradient(circle, rgba(124,111,247,.42) 0%, transparent 70%);
+}
+.ob-sheet, .discovery-sheet, .onboard-sheet {
+  background: rgba(12,8,26,.85);
+  backdrop-filter: blur(32px) saturate(180%);
+  -webkit-backdrop-filter: blur(32px) saturate(180%);
+  border-top: 1px solid rgba(255,255,255,.1);
+}
+.ob-sheet-handle, .ds-handle, .sheet-handle {
+  background: linear-gradient(90deg, rgba(124,111,247,.6), rgba(45,212,191,.6));
+  opacity: .6;
+}
+
+/* ── BUTTONS ──────────────────────────────────────────────── */
+.btn-cta {
+  background: linear-gradient(135deg, #7c6ff7 0%, #2dd4bf 55%, #e879f9 100%);
+  background-size: 200% 200%;
+  border-radius: 18px;
+  box-shadow: 0 8px 32px rgba(124,111,247,.38);
+  animation: btn-liquid 5s ease infinite;
+  transition: transform var(--spring), box-shadow .3s;
+}
+@keyframes btn-liquid {
+  0%,100% { background-position: 0% 50%; }
+  50%     { background-position: 100% 50%; }
+}
+.btn-cta::after { background: none; }
+.btn-cta:active { transform: scale(.96); box-shadow: 0 4px 14px rgba(124,111,247,.28); }
+
+.btn-back {
+  background: rgba(255,255,255,.06);
+  border-color: rgba(255,255,255,.1);
+  backdrop-filter: blur(10px);
+  border-radius: 18px;
+}
+
+.done-btn {
+  background: linear-gradient(135deg, #2dd4bf, #06b6d4);
+  border-radius: 18px;
+  box-shadow: 0 8px 24px rgba(45,212,191,.28);
+}
+.done-btn.completed {
+  background: rgba(255,255,255,.07);
+  border-color: rgba(255,255,255,.1);
+  color: var(--sub);
+  box-shadow: none;
+}
+.done-btn:active { transform: scale(.97); }
+
+/* ── FORM INPUTS ──────────────────────────────────────────── */
+.field-input {
+  background: rgba(255,255,255,.05);
+  border-color: rgba(255,255,255,.1);
+  border-radius: 16px;
+}
+.field-input:focus {
+  border-color: var(--accent);
+  box-shadow: 0 0 0 3px rgba(124,111,247,.18);
+}
+select.field-input option { background: #120d28; }
+
+/* ── CHIPS ────────────────────────────────────────────────── */
+.chip {
+  background: rgba(255,255,255,.04);
+  border-color: rgba(255,255,255,.1);
+  border-radius: 12px;
+  transition: all .25s var(--spring);
+}
+.chip.on {
+  background: rgba(124,111,247,.18);
+  border-color: rgba(124,111,247,.45);
+  color: #c4bffe;
+  box-shadow: 0 0 14px rgba(124,111,247,.18);
+}
+
+/* ── SKILL TILES ──────────────────────────────────────────── */
+.skill-tile {
+  background: rgba(255,255,255,.04);
+  border-color: rgba(255,255,255,.08);
+  backdrop-filter: blur(14px);
+  border-radius: 20px;
+  transition: all .3s var(--spring);
+}
+.skill-tile.selected {
+  background: rgba(124,111,247,.15);
+  border-color: rgba(124,111,247,.45);
+  box-shadow: 0 0 20px rgba(124,111,247,.2);
+}
+.skill-tile:active { transform: scale(.94); }
+
+/* ── DIRECTION ITEMS ──────────────────────────────────────── */
+.direction-item {
+  background: rgba(255,255,255,.04);
+  border-color: rgba(255,255,255,.08);
+  backdrop-filter: blur(12px);
+}
+.direction-item.selected {
+  background: rgba(124,111,247,.12);
+  border-color: rgba(124,111,247,.4);
+}
+
+/* ── LIQUID LOADING ORB ───────────────────────────────────── */
+.load-orb {
+  background: linear-gradient(135deg, #7c6ff7, #2dd4bf, #e879f9);
+  background-size: 300% 300%;
+  animation: liq-morph 3s ease-in-out infinite, liq-color 6s ease infinite;
+  box-shadow: 0 0 50px rgba(124,111,247,.5), 0 0 100px rgba(124,111,247,.2);
+}
+@keyframes liq-morph {
+  0%,100% { border-radius: 60% 40% 30% 70% / 60% 30% 70% 40%; transform: rotate(0deg); }
+  25%     { border-radius: 30% 60% 70% 40% / 50% 60% 30% 60%; transform: rotate(90deg); }
+  50%     { border-radius: 50% 50% 40% 60% / 40% 50% 60% 50%; transform: rotate(180deg); }
+  75%     { border-radius: 40% 60% 60% 40% / 60% 30% 70% 40%; transform: rotate(270deg); }
+}
+@keyframes liq-color {
+  0%,100% { background-position: 0% 50%; }
+  50%     { background-position: 100% 50%; }
+}
+.load-orb::before { display: none; }
+.load-orb::after  { display: none; }
+
+/* ── PROGRESS BAR & RING ──────────────────────────────────── */
+.prog-bar-thin-fill, .load-bar, .stb-fill, .vc-bar-fill {
+  background: linear-gradient(90deg, var(--accent), #2dd4bf, var(--pink));
+}
+.pr-fill { stroke: var(--accent); filter: drop-shadow(0 0 6px rgba(124,111,247,.5)); }
+
+/* ── TODAY CARD ───────────────────────────────────────────── */
+.today-card {
+  background: linear-gradient(135deg, rgba(124,111,247,.12), rgba(45,212,191,.07));
+  border-color: rgba(124,111,247,.22);
+}
+.today-card::before {
+  background: radial-gradient(circle, rgba(124,111,247,.18), transparent 70%);
+}
+
+/* ── CALENDAR ─────────────────────────────────────────────── */
+.cal-cell.is-today .cal-cell-num {
+  background: linear-gradient(135deg, var(--accent), var(--pink));
+  box-shadow: 0 4px 14px rgba(124,111,247,.4);
+}
+.cal-nav-btn {
+  background: rgba(255,255,255,.05);
+  border-color: rgba(255,255,255,.1);
+  border-radius: 12px;
+  backdrop-filter: blur(10px);
+  width: 44px; height: 44px;
+}
+.cal-nav-btn:active { border-color: var(--accent); }
+
+/* ── DATE BOXES ───────────────────────────────────────────── */
+.up-date-box {
+  background: rgba(255,255,255,.06);
+  backdrop-filter: blur(8px);
+  border-radius: 14px;
+}
+.pr-date {
+  background: rgba(255,255,255,.06);
+  backdrop-filter: blur(8px);
+  border-radius: 14px;
+}
+
+/* ── LESSON SCREENS ───────────────────────────────────────── */
+.lesson-header {
+  background: linear-gradient(180deg, rgba(21,11,52,.9) 0%, transparent 100%);
+  backdrop-filter: blur(20px);
+}
+.lesson-footer {
+  background: rgba(7,4,15,.72);
+  backdrop-filter: blur(16px);
+  border-top-color: rgba(255,255,255,.08);
+}
+
+/* ── PLAN ROW ─────────────────────────────────────────────── */
+.plan-row { background: var(--glass); }
+.plan-row:active { transform: scale(.98); background: rgba(255,255,255,.08); }
+
+/* ── DAY PANEL ────────────────────────────────────────────── */
+.day-lessons-panel { background: var(--glass); backdrop-filter: blur(22px); }
+.dlp-header { border-bottom-color: rgba(255,255,255,.07); }
+.dlp-item   { border-bottom-color: rgba(255,255,255,.07); }
+.dlp-item:active { background: rgba(255,255,255,.05); }
+
+/* ── AVATAR ───────────────────────────────────────────────── */
+.avatar {
+  background: linear-gradient(135deg, var(--accent), var(--pink));
+  box-shadow: 0 4px 16px rgba(124,111,247,.4);
+  font-size: 15px; font-weight: 800; color: #fff;
+  letter-spacing: -.5px;
+}
+
+/* ── FOCUS BADGE ──────────────────────────────────────────── */
+.focus-badge {
+  backdrop-filter: blur(10px);
+  padding: 6px 12px;
+  font-size: 11px;
+}
+.focus-badge.off { background: rgba(255,255,255,.05); border-color: rgba(255,255,255,.1); }
+
+/* ── FOCUS BUBBLE ─────────────────────────────────────────── */
+.focus-bubble {
+  background: rgba(12,8,26,.9);
+  backdrop-filter: blur(32px) saturate(180%);
+  border-color: rgba(124,111,247,.35);
+  box-shadow: 0 16px 48px rgba(0,0,0,.7),
+              0 0 0 1px rgba(124,111,247,.15),
+              0 0 40px rgba(124,111,247,.08);
+}
+
+/* ── FOCUS SETTINGS ───────────────────────────────────────── */
+.focus-settings {
+  background: rgba(12,8,26,.92);
+  backdrop-filter: blur(32px) saturate(180%);
+  border-top: 1px solid rgba(255,255,255,.1);
+}
+.fs-row { border-bottom-color: rgba(255,255,255,.07); }
+
+/* ── TOGGLE ───────────────────────────────────────────────── */
+.toggle { background: rgba(255,255,255,.12); }
+.toggle.on {
+  background: linear-gradient(135deg, var(--accent), #2dd4bf);
+}
+
+/* ── TOAST ────────────────────────────────────────────────── */
+.toast {
+  background: rgba(12,8,26,.92);
+  backdrop-filter: blur(20px);
+  border-color: rgba(45,212,191,.4);
+  box-shadow: 0 8px 32px rgba(0,0,0,.5), 0 0 20px rgba(45,212,191,.1);
+}
+
+/* ── VID COUNTDOWN WIDGET ─────────────────────────────────── */
+.vid-countdown {
+  background: rgba(12,8,26,.88);
+  backdrop-filter: blur(30px) saturate(180%);
+  border-color: rgba(124,111,247,.4);
+}
+.vc-header { background: rgba(124,111,247,.1); }
+
+/* ── DISTRACTION OVERLAY ──────────────────────────────────── */
+.distraction-overlay {
+  background: rgba(4,2,12,.96);
+  backdrop-filter: blur(24px);
+}
+
+/* ── FOCUS OVERLAY BG ─────────────────────────────────────── */
+.focus-overlay-bg { background: rgba(4,2,12,.6); }
+
+/* ── PR CHECK ─────────────────────────────────────────────── */
+.pr-check {
+  background: rgba(255,255,255,.04);
+  border-color: rgba(255,255,255,.12);
+  border-radius: 10px;
+}
+.pr-check.ck {
+  background: linear-gradient(135deg, var(--green), #06b6d4);
+  border-color: transparent;
+}
+
+/* ── UPCOMING ITEM ────────────────────────────────────────── */
+.upcoming-item:active { background: rgba(255,255,255,.05); }
+
+/* ── SECTION HEADS ────────────────────────────────────────── */
+.section-head { color: rgba(255,255,255,.35); }
+.week-label   { color: rgba(124,111,247,.65); }
+.ob-section-lbl { color: rgba(124,111,247,.65); }
+
+/* ── VID CARD ─────────────────────────────────────────────── */
+.vid-card { background: var(--glass); border-color: var(--glass-b); }
+
+/* ── TIP BOX ──────────────────────────────────────────────── */
+.tip-box {
+  background: rgba(45,212,191,.05);
+  border-color: rgba(45,212,191,.2);
+  backdrop-filter: blur(10px);
+}
+
+/* ── DS BADGE ─────────────────────────────────────────────── */
+.ds-skill-badge {
+  background: rgba(124,111,247,.1);
+  border-color: rgba(124,111,247,.25);
+  backdrop-filter: blur(8px);
+}
+
+/* ── REDUCED MOTION ───────────────────────────────────────── */
+@media (prefers-reduced-motion: reduce) {
+  .lb, .load-orb { animation: none !important; }
+  .btn-cta       { animation: none !important; }
+  *, *::before, *::after { transition-duration: .01ms !important; }
+}
+
+</style>
+</head>
+<body>
+
+<div class="phone">
+  <!-- STATUS BAR -->
+  <div class="status-bar">
+    <div class="notch"></div>
+    <span id="status-time">9:41</span>
+    <div class="status-icons">
+      <span>●●●</span>
+      <span>WiFi</span>
+      <span>🔋</span>
+    </div>
+  </div>
+
+  <!-- APP BODY -->
+  <div class="app-body">
+
+    <!-- ░░ ONBOARDING ░░ -->
+    <div class="screen active" id="s-onboard">
+      <div class="ob-hero-full">
+
+        <!-- Hero top -->
+        <div class="ob-hero-top">
+          <div class="ob-wordmark">Skill<span>Path</span></div>
+          <div class="ob-tagline">Learn anything. No distractions.</div>
+        </div>
+
+        <!-- Step 0: Popular skill picker -->
+        <div class="ob-sheet" id="ob-sheet-0">
+          <div class="ob-sheet-handle"></div>
+          <div class="ob-section-lbl">🔥 Popular skills</div>
+
+          <div class="skill-grid" id="skill-grid">
+            <div class="skill-tile" data-skill="Skateboarding" data-emoji="🛹" onclick="selectSkillTile(this)">
+              <div class="st-emoji">🛹</div><div class="st-name">Skateboarding</div>
+            </div>
+            <div class="skill-tile" data-skill="Guitar" data-emoji="🎸" onclick="selectSkillTile(this)">
+              <div class="st-emoji">🎸</div><div class="st-name">Guitar</div>
+            </div>
+            <div class="skill-tile" data-skill="Drawing" data-emoji="🎨" onclick="selectSkillTile(this)">
+              <div class="st-emoji">🎨</div><div class="st-name">Drawing</div>
+            </div>
+            <div class="skill-tile" data-skill="Coding" data-emoji="💻" onclick="selectSkillTile(this)">
+              <div class="st-emoji">💻</div><div class="st-name">Coding</div>
+            </div>
+            <div class="skill-tile" data-skill="Photography" data-emoji="📷" onclick="selectSkillTile(this)">
+              <div class="st-emoji">📷</div><div class="st-name">Photography</div>
+            </div>
+            <div class="skill-tile" data-skill="Cooking" data-emoji="🍳" onclick="selectSkillTile(this)">
+              <div class="st-emoji">🍳</div><div class="st-name">Cooking</div>
+            </div>
+            <div class="skill-tile" data-skill="Piano" data-emoji="🎹" onclick="selectSkillTile(this)">
+              <div class="st-emoji">🎹</div><div class="st-name">Piano</div>
+            </div>
+            <div class="skill-tile" data-skill="Yoga" data-emoji="🧘" onclick="selectSkillTile(this)">
+              <div class="st-emoji">🧘</div><div class="st-name">Yoga</div>
+            </div>
+            <div class="skill-tile other-tile" data-skill="" data-emoji="✨" onclick="selectOtherSkill()">
+              <div class="st-emoji">＋</div><div class="st-name">Other</div>
+            </div>
+          </div>
+
+          <!-- "Other" custom input — hidden by default -->
+          <div id="other-input-wrap" style="display:none;margin-bottom:14px">
+            <label class="field-lbl">Enter your skill</label>
+            <input class="field-input" id="inp-skill-custom" type="text"
+              placeholder="e.g. Surfing, Watercolour, Chess…"
+              oninput="onCustomSkillInput()" />
+          </div>
+
+          <button class="btn-cta" id="ob0-continue" onclick="obPickerNext()" disabled
+            style="opacity:.4;cursor:default">
+            Continue →
+          </button>
+        </div>
+
+        <!-- Step 1: Discovery — slides up as a floating sheet -->
+        <div class="discovery-sheet" id="discovery-sheet">
+          <div class="ds-handle"></div>
+          <button class="ds-back" onclick="closeDiscovery()">← Back</button>
+
+          <!-- Selected skill badge -->
+          <div class="ds-skill-badge">
+            <div class="ds-badge-emoji" id="ds-badge-emoji">🛹</div>
+            <div class="ds-badge-name" id="ds-badge-name">Skateboarding</div>
+          </div>
+
+          <div class="ds-question">Do you have something specific in mind? 🎯</div>
+          <div class="ds-sub">Pick a direction below, or type your own focus area. We'll build a plan around it.</div>
+
+          <!-- Custom focus input -->
+          <label class="field-lbl">Your specific goal (optional)</label>
+          <input class="field-input" id="inp-skill" type="text"
+            placeholder="e.g. Learn kickflips, fingerpicking, portraits…"
+            style="margin-bottom:16px" />
+
+          <!-- Suggested directions (populated by JS) -->
+          <div class="ob-section-lbl">✦ Recommended directions</div>
+          <div class="direction-list" id="direction-list"></div>
+
+          <label class="field-lbl">Your current level</label>
+          <div class="chip-row" id="cr-level">
+            <button class="chip on" data-v="complete beginner">Beginner</button>
+            <button class="chip" data-v="some experience">Some exp.</button>
+            <button class="chip" data-v="intermediate">Intermediate</button>
+          </div>
+
+          <button class="btn-cta" onclick="obNext(1)">Set up my schedule →</button>
+        </div>
+
+        <!-- Step 2: Schedule -->
+        <div class="discovery-sheet" id="schedule-sheet">
+          <div class="ds-handle"></div>
+          <button class="ds-back" onclick="closeSchedule()">← Back</button>
+          <div class="ds-question">Plan your schedule ⏱</div>
+          <div class="ds-sub">We'll spread sessions across your week so progress feels effortless.</div>
+
+          <div class="two-col" style="margin-bottom:14px">
+            <div>
+              <label class="field-lbl">Duration</label>
+              <select class="field-input" id="sel-dur">
+                <option>2 weeks</option>
+                <option selected>1 month</option>
+                <option>3 months</option>
+                <option>6 months</option>
+              </select>
+            </div>
+            <div>
+              <label class="field-lbl">Per week</label>
+              <select class="field-input" id="sel-freq">
+                <option>2 sessions</option>
+                <option selected>3 sessions</option>
+                <option>4 sessions</option>
+                <option>5 sessions</option>
+              </select>
+            </div>
+          </div>
+          <label class="field-lbl">Session length</label>
+          <div class="chip-row" id="cr-len">
+            <button class="chip" data-v="15 min">15 min</button>
+            <button class="chip on" data-v="30 min">30 min</button>
+            <button class="chip" data-v="45 min">45 min</button>
+            <button class="chip" data-v="60 min">60 min</button>
+          </div>
+          <label class="field-lbl">Style</label>
+          <div class="chip-row" id="cr-style">
+            <button class="chip on" data-v="visual demos">Visual demos</button>
+            <button class="chip" data-v="step-by-step">Step-by-step</button>
+            <button class="chip" data-v="quick tips">Quick tips</button>
+          </div>
+          <label class="field-lbl">Platforms</label>
+          <div class="chip-row" id="cr-plat">
+            <button class="chip on" data-v="YouTube">YouTube</button>
+            <button class="chip" data-v="Instagram">Instagram</button>
+            <button class="chip" data-v="TikTok">TikTok</button>
+          </div>
+          <button class="btn-cta" onclick="startGenerate()" style="margin-top:8px">Build my plan ✦</button>
+        </div>
+
+      </div>
+    </div>
+
+    <!-- ░░ LOADING ░░ -->
+    <div class="screen" id="s-loading">
+      <div class="load-orb"></div>
+      <div class="load-title">Building your plan…</div>
+      <div class="load-msg" id="load-msg">Searching for the best tutorials…</div>
+      <div class="load-bar-wrap"><div class="load-bar" id="load-bar"></div></div>
+    </div>
+
+    <!-- ░░ HOME ░░ -->
+    <div class="screen" id="s-home">
+      <div class="home-header">
+        <div class="home-header-inner">
+          <div>
+            <div class="home-greeting">Today</div>
+            <div class="home-date" id="home-date-lbl"></div>
+          </div>
+          <div style="display:flex;align-items:center;gap:10px">
+            <div class="focus-badge on" id="focus-badge" onclick="openFocusSettings()">🛡️ Focus On</div>
+            <div class="avatar" id="home-avatar">🎯</div>
+          </div>
+        </div>
+        <div class="progress-strip" id="prog-strip">
+          <div class="prog-ring-wrap">
+            <svg class="prog-ring" viewBox="0 0 44 44">
+              <circle class="pr-bg" cx="22" cy="22" r="20"/>
+              <circle class="pr-fill" id="pr-fill" cx="22" cy="22" r="20"/>
+            </svg>
+            <div class="prog-pct" id="prog-pct-lbl">0%</div>
+          </div>
+          <div class="prog-text">
+            <div class="prog-title" id="prog-skill-name">Skill</div>
+            <div class="prog-sub" id="prog-sub-lbl">0 of 0 sessions done</div>
+            <div class="prog-bar-thin"><div class="prog-bar-thin-fill" id="prog-bar-thin" style="width:0%"></div></div>
+          </div>
+        </div>
+      </div>
+
+      <div class="section-head">Up Next</div>
+      <div id="today-card-wrap"></div>
+
+      <div class="section-head">Upcoming</div>
+      <div id="upcoming-list"></div>
+    </div>
+
+    <!-- ░░ CALENDAR ░░ -->
+    <div class="screen" id="s-calendar">
+      <div class="cal-header">
+        <div class="cal-header-row">
+          <div class="cal-title-h" id="cal-month-lbl">March 2026</div>
+          <div class="cal-nav-btns">
+            <button class="cal-nav-btn" onclick="chMonth(-1)">‹</button>
+            <button class="cal-nav-btn" onclick="chMonth(1)">›</button>
+          </div>
+        </div>
+        <div class="cal-day-labels">
+          <div>S</div><div>M</div><div>T</div><div>W</div>
+          <div>T</div><div>F</div><div>S</div>
+        </div>
+      </div>
+      <div class="cal-grid" id="cal-grid"></div>
+      <div id="day-panel"></div>
+    </div>
+
+    <!-- ░░ PLAN LIST ░░ -->
+    <div class="screen" id="s-plan">
+      <div class="plan-header">
+        <div class="plan-header-title">Full Plan</div>
+        <div class="plan-header-sub" id="plan-header-sub">0 sessions</div>
+      </div>
+      <div id="plan-list-wrap"></div>
+    </div>
+
+    <!-- ░░ LESSON DETAIL ░░ -->
+    <div class="screen" id="s-lesson">
+      <div class="lesson-header">
+        <button class="back-btn" id="lesson-back-btn">← Back</button>
+        <div class="l-type-tag" id="l-type-tag">Basics</div>
+        <div class="l-title" id="l-title">Lesson</div>
+        <div class="l-date-row">
+          <span id="l-date">Date</span>
+          <span id="l-dur">30 min</span>
+        </div>
+      </div>
+      <div class="lesson-body">
+        <div class="l-section-lbl">📹 Curated Videos</div>
+        <div id="l-videos"></div>
+        <div class="l-section-lbl">💡 Tips for this session</div>
+        <div id="l-tips"></div>
+      </div>
+      <!-- VIDEO COUNTDOWN TIMER — lives inside the lesson screen -->
+      <div class="vid-countdown" id="vid-countdown">
+        <div class="vc-header" id="vc-drag-handle">
+          <div class="vc-label">⏱ Session timer</div>
+          <div class="vc-ctrl-row">
+            <button class="vc-ctrl-btn" id="vc-pause-btn" title="Pause" onclick="vcTogglePause()">⏸</button>
+            <button class="vc-ctrl-btn" id="vc-min-btn"   title="Minimise" onclick="vcToggleMin()">−</button>
+          </div>
+        </div>
+        <div class="vc-body" id="vc-body">
+          <div class="vc-ring-wrap">
+            <svg class="vc-ring-svg" viewBox="0 0 80 80">
+              <circle class="vc-ring-bg"   cx="40" cy="40" r="33"/>
+              <circle class="vc-ring-fill" id="vc-ring" cx="40" cy="40" r="33"/>
+            </svg>
+            <div class="vc-ring-center">
+              <div class="vc-time" id="vc-time">00:00</div>
+              <div class="vc-unit">left</div>
+            </div>
+          </div>
+          <div class="vc-bar-wrap"><div class="vc-bar-fill" id="vc-bar"></div></div>
+          <div class="vc-status" id="vc-status">Watching your lesson</div>
+          <div class="vc-actions">
+            <button class="vc-btn-done" onclick="vcDone()">✓ Done</button>
+            <button class="vc-btn-add"  onclick="vcAddTime(5)">+5 min</button>
+          </div>
+        </div>
+        <div class="vc-mini" id="vc-mini">
+          <div class="vc-mini-time" id="vc-mini-time">00:00</div>
+          <div class="vc-mini-lbl">remaining</div>
+        </div>
+      </div>
+
+      <div class="lesson-footer">
+        <button class="done-btn" id="done-btn" onclick="markDone()">✓ Mark as complete</button>
+      </div>
+    </div>
+
+    <!-- TOAST -->
+    <div class="toast" id="toast"></div>
+
+    <!-- ░░ SESSION TIMER BAR ░░ -->
+    <div class="session-timer-bar" id="session-timer-bar">
+      <div class="stb-fill" id="stb-fill"></div>
+    </div>
+
+    <!-- ░░ FLOATING FOCUS REMINDER ░░ -->
+    <div class="focus-bubble" id="focus-bubble">
+      <div class="fb-top">
+        <div class="fb-icon" id="fb-icon">🧠</div>
+        <div class="fb-title" id="fb-title">Focus Check</div>
+        <button class="fb-close" onclick="dismissReminder()">✕</button>
+      </div>
+      <div class="fb-msg" id="fb-msg">Stay on track with your learning session.</div>
+      <div class="fb-actions">
+        <button class="fb-btn-primary" onclick="reminderGoToLesson()">Open my lesson →</button>
+        <button class="fb-btn-ghost" onclick="dismissReminder()">Snooze</button>
+      </div>
+    </div>
+
+    <!-- ░░ DISTRACTION BLOCK OVERLAY ░░ -->
+    <div class="distraction-overlay" id="distraction-overlay">
+      <div class="do-icon">🧘</div>
+      <div class="do-title">Time to Focus</div>
+      <div class="do-sub" id="do-sub">Your learning session starts soon. Take a breath and get ready.</div>
+      <div class="do-timer" id="do-timer">0:30</div>
+      <button class="do-btn" onclick="closeDistractionOverlay()">I'm ready — Start session</button>
+      <button class="do-skip" onclick="closeDistractionOverlay()">Skip countdown</button>
+    </div>
+
+    <!-- ░░ FOCUS SETTINGS ░░ -->
+    <div class="focus-overlay-bg" id="focus-overlay-bg" onclick="closeFocusSettings()"></div>
+    <div class="focus-settings" id="focus-settings">
+      <div class="fs-handle"></div>
+      <div class="fs-title">🛡️ Focus Shield</div>
+      <div class="fs-sub">Anti-distraction reminders to keep you on track</div>
+
+      <div class="fs-row">
+        <div>
+          <div class="fs-row-label">Session reminders</div>
+          <div class="fs-row-sub">Remind me when a session is due</div>
+        </div>
+        <div class="toggle on" id="tog-reminders" onclick="toggleSetting('reminders')"></div>
+      </div>
+
+      <div class="fs-row">
+        <div>
+          <div class="fs-row-label">Focus countdown</div>
+          <div class="fs-row-sub">Show a breathing timer before sessions</div>
+        </div>
+        <div class="toggle on" id="tog-countdown" onclick="toggleSetting('countdown')"></div>
+      </div>
+
+      <div class="fs-row">
+        <div>
+          <div class="fs-row-label">Session timer bar</div>
+          <div class="fs-row-sub">Progress bar while you study</div>
+        </div>
+        <div class="toggle on" id="tog-timerbar" onclick="toggleSetting('timerbar')"></div>
+      </div>
+
+      <div class="fs-row">
+        <div>
+          <div class="fs-row-label">Reminder frequency</div>
+          <div class="fs-row-sub">How often to check in</div>
+        </div>
+        <select class="fs-select" id="sel-freq-reminder">
+          <option value="15">Every 15 min</option>
+          <option value="30" selected>Every 30 min</option>
+          <option value="60">Every hour</option>
+          <option value="120">Every 2 hours</option>
+        </select>
+      </div>
+
+      <div class="fs-row" style="border-bottom:none; padding-top:16px;">
+        <div>
+          <div class="fs-row-label">Test reminder</div>
+          <div class="fs-row-sub">Preview what it looks like</div>
+        </div>
+        <button class="fb-btn-primary" style="width:auto;padding:8px 14px;font-size:11px" onclick="triggerReminder('test')">Preview</button>
+      </div>
+    </div>
+  </div><!-- end app-body -->
+
+  <!-- BOTTOM NAV (hidden during onboarding/loading) -->
+  <div class="bottom-nav" id="bottom-nav" style="display:none">
+    <div class="nav-tab active" id="tab-home" onclick="goTab('home')">
+      <div class="nav-icon">🏠</div>
+      <div class="nav-label">Today</div>
+      <div class="nav-dot"></div>
+    </div>
+    <div class="nav-tab" id="tab-calendar" onclick="goTab('calendar')">
+      <div class="nav-icon">📅</div>
+      <div class="nav-label">Calendar</div>
+      <div class="nav-dot"></div>
+    </div>
+    <div class="nav-tab" id="tab-plan" onclick="goTab('plan')">
+      <div class="nav-icon">📋</div>
+      <div class="nav-label">Plan</div>
+      <div class="nav-dot"></div>
+    </div>
+    <div class="nav-tab" id="tab-new" onclick="resetToOnboard()">
+      <div class="nav-icon">＋</div>
+      <div class="nav-label">New Skill</div>
+      <div class="nav-dot"></div>
+    </div>
+  </div>
+</div>
+
+<script>
+// ═══════════════════════════════════════════════════════════
+// STATE
+// ═══════════════════════════════════════════════════════════
+const YT_KEY = 'AIzaSyCez2mxu4yGrlIE9koGU93B944UOJkO6HQ';
+
+const S = {
+  skill: '', level: 'complete beginner',
+  duration: '1 month', freq: 3, len: '30 min',
+  style: 'visual demos', platforms: ['YouTube'],
+  lessons: [], done: new Set(),
+  curLesson: null, prevTab: 'home',
+  calMonth: new Date().getMonth(), calYear: new Date().getFullYear(),
+  selDay: null,
+  focus: {
+    reminders: true, countdown: true, timerbar: true,
+    freqMins: 30,
+  },
+  sessionTimerStart: null,
+  sessionTimerDuration: 30,
+  sessionTimerInterval: null,
+  reminderInterval: null,
+};
+
+// ═══════════════════════════════════════════════════════════
+// STATUS BAR CLOCK
+// ═══════════════════════════════════════════════════════════
+function tickClock() {
+  const n = new Date();
+  document.getElementById('status-time').textContent =
+    `${n.getHours()}:${String(n.getMinutes()).padStart(2,'0')}`;
+}
+tickClock(); setInterval(tickClock, 10000);
+
+// ═══════════════════════════════════════════════════════════
+// ONBOARDING
+// ═══════════════════════════════════════════════════════════
+// ── Onboarding: skill picker state ───────────────────────
+let obStep = 0;
+let _selectedTile = null;
+let _selectedEmoji = '🎯';
+
+// Skill directions per skill
+const SKILL_DIRECTIONS = {
+  'Skateboarding': [
+    { icon:'🛹', title:'Learn the basics & safety', sub:'Pushing, stopping, turning' },
+    { icon:'🔥', title:'Master ollies & kickflips', sub:'Core street tricks' },
+    { icon:'🏟️', title:'Bowl & ramp skating',       sub:'Transitions and vert' },
+    { icon:'🎥', title:'Film & skate culture',       sub:'Creative & lifestyle' },
+  ],
+  'Guitar': [
+    { icon:'🎵', title:'Beginner chords & strumming', sub:'G, C, D, Em basics' },
+    { icon:'🎸', title:'Lead guitar & soloing',       sub:'Scales, bends, riffs' },
+    { icon:'🎶', title:'Fingerpicking & acoustic',    sub:'Melodic picking styles' },
+    { icon:'🤘', title:'Electric & rock styles',      sub:'Distortion, power chords' },
+  ],
+  'Drawing': [
+    { icon:'✏️', title:'Fundamentals: line & form',  sub:'Shapes, shading, perspective' },
+    { icon:'👤', title:'Figure & portrait drawing',   sub:'Anatomy and faces' },
+    { icon:'🏙️', title:'Urban sketching',             sub:'Architecture & environments' },
+    { icon:'🦋', title:'Nature & illustration',       sub:'Plants, animals, detail' },
+  ],
+  'Coding': [
+    { icon:'🌐', title:'Web development',             sub:'HTML, CSS, JavaScript' },
+    { icon:'🐍', title:'Python programming',          sub:'Data, automation, AI' },
+    { icon:'📱', title:'Mobile app development',      sub:'iOS or Android basics' },
+    { icon:'🎮', title:'Game development',            sub:'Unity, Godot, Pygame' },
+  ],
+  'Photography': [
+    { icon:'📸', title:'Camera basics & exposure',   sub:'ISO, aperture, shutter' },
+    { icon:'🌇', title:'Street & travel photography', sub:'Candid, light, storytelling' },
+    { icon:'🖼️', title:'Portrait photography',        sub:'Lighting, posing, editing' },
+    { icon:'🌿', title:'Nature & macro',              sub:'Wildlife and close-up shots' },
+  ],
+  'Cooking': [
+    { icon:'🔪', title:'Knife skills & basics',       sub:'Prep, technique, safety' },
+    { icon:'🍝', title:'Italian & pasta dishes',      sub:'Sauces, fresh pasta, risotto' },
+    { icon:'🍱', title:'Asian cuisine',               sub:'Stir-fry, sushi, curries' },
+    { icon:'🍰', title:'Baking & pastry',             sub:'Bread, cakes, pastry' },
+  ],
+  'Piano': [
+    { icon:'🎹', title:'Reading music & hand position', sub:'Notes, scales, posture' },
+    { icon:'🎼', title:'Classical pieces',            sub:'Bach, Beethoven, Chopin' },
+    { icon:'🎷', title:'Jazz & improvisation',        sub:'Chords, voicings, feel' },
+    { icon:'🎵', title:'Pop & contemporary',          sub:'Play songs you love' },
+  ],
+  'Yoga': [
+    { icon:'🧘', title:'Beginner foundations',        sub:'Basic poses & breathing' },
+    { icon:'💪', title:'Strength & flow yoga',        sub:'Vinyasa & power sequences' },
+    { icon:'🌅', title:'Morning & restorative',       sub:'Gentle, calming practice' },
+    { icon:'🤸', title:'Flexibility & splits',        sub:'Hip openers, backbends' },
+  ],
+};
+
+const DEFAULT_DIRECTIONS = [
+  { icon:'⭐', title:'Start from the very beginning', sub:'No experience needed' },
+  { icon:'🎯', title:'Focus on a specific technique',  sub:'Target one core skill' },
+  { icon:'🔄', title:'Build a consistent habit',       sub:'Short daily sessions' },
+  { icon:'🏆', title:'Reach a milestone goal',         sub:'Work toward something concrete' },
+];
+
+function selectSkillTile(el) {
+  // Deselect previous
+  document.querySelectorAll('.skill-tile').forEach(t => t.classList.remove('selected'));
+  el.classList.add('selected');
+  _selectedTile = el;
+  _selectedEmoji = el.dataset.emoji;
+
+  // Hide custom input
+  document.getElementById('other-input-wrap').style.display = 'none';
+  document.getElementById('inp-skill-custom').value = '';
+
+  // Enable continue
+  const btn = document.getElementById('ob0-continue');
+  btn.disabled = false;
+  btn.style.opacity = '1';
+  btn.style.cursor = 'pointer';
+}
+
+function selectOtherSkill() {
+  document.querySelectorAll('.skill-tile').forEach(t => t.classList.remove('selected'));
+  document.querySelector('.other-tile').classList.add('selected');
+  _selectedTile = document.querySelector('.other-tile');
+  _selectedEmoji = '✨';
+  document.getElementById('other-input-wrap').style.display = 'block';
+  document.getElementById('inp-skill-custom').focus();
+  // Disable continue until they type something
+  const btn = document.getElementById('ob0-continue');
+  btn.disabled = true; btn.style.opacity = '.4'; btn.style.cursor = 'default';
+}
+
+function onCustomSkillInput() {
+  const val = document.getElementById('inp-skill-custom').value.trim();
+  const btn = document.getElementById('ob0-continue');
+  if (val.length > 0) {
+    btn.disabled = false; btn.style.opacity = '1'; btn.style.cursor = 'pointer';
+  } else {
+    btn.disabled = true; btn.style.opacity = '.4'; btn.style.cursor = 'default';
+  }
+}
+
+function obPickerNext() {
+  // Read selected skill
+  const isOther = document.querySelector('.other-tile')?.classList.contains('selected');
+  const skillName = isOther
+    ? document.getElementById('inp-skill-custom').value.trim()
+    : _selectedTile?.dataset.skill || '';
+  if (!skillName) return;
+
+  S.skill = skillName;
+
+  // Populate discovery sheet
+  document.getElementById('ds-badge-emoji').textContent = _selectedEmoji;
+  document.getElementById('ds-badge-name').textContent  = skillName;
+  document.getElementById('inp-skill').placeholder = 'e.g. ' + (
+    skillName === 'Skateboarding' ? 'Kickflips, bowl skating, street style…' :
+    skillName === 'Guitar'        ? 'Fingerpicking, rock solos, jazz chords…' :
+    skillName === 'Coding'        ? 'Build a website, learn Python, make a game…' :
+    'Be specific about your goal…'
+  );
+
+  // Populate directions
+  const dirs = SKILL_DIRECTIONS[skillName] || DEFAULT_DIRECTIONS;
+  const list = document.getElementById('direction-list');
+  list.innerHTML = dirs.map((d,i) => `
+    <div class="direction-item" onclick="toggleDirection(this)">
+      <div class="di-icon">${d.icon}</div>
+      <div class="di-text">
+        <div class="di-title">${d.title}</div>
+        <div class="di-sub">${d.sub}</div>
+      </div>
+      <div class="di-check"></div>
+    </div>`).join('');
+
+  // Open discovery sheet
+  document.getElementById('discovery-sheet').classList.add('ds-open');
+}
+
+function toggleDirection(el) {
+  el.classList.toggle('selected');
+  if (el.classList.contains('selected')) {
+    el.querySelector('.di-check').textContent = '✓';
+  } else {
+    el.querySelector('.di-check').textContent = '';
+  }
+}
+
+function closeDiscovery() {
+  document.getElementById('discovery-sheet').classList.remove('ds-open');
+}
+
+function closeSchedule() {
+  document.getElementById('schedule-sheet').classList.remove('ds-open');
+}
+
+function obNext(n) {
+  if (n === 1) {
+    // Moving from discovery to schedule
+    const customGoal = document.getElementById('inp-skill').value.trim();
+    const selectedDirs = [...document.querySelectorAll('.direction-item.selected')]
+      .map(el => el.querySelector('.di-title').textContent);
+
+    // Build a richer skill description
+    if (customGoal) {
+      S.skill = S.skill + ' — ' + customGoal;
+    } else if (selectedDirs.length) {
+      S.skill = S.skill + ' (' + selectedDirs[0] + ')';
+    }
+    S.level = chipVal('cr-level') || 'complete beginner';
+    document.getElementById('schedule-sheet').classList.add('ds-open');
+    return;
+  }
+}
+
+function chipVal(id) {
+  const el = document.querySelector(`#${id} .chip.on`);
+  return el ? el.dataset.v : null;
+}
+
+document.querySelectorAll('.chip-row').forEach(cr => {
+  cr.addEventListener('click', e => {
+    if (!e.target.classList.contains('chip')) return;
+    if (cr.id === 'cr-plat') {
+      e.target.classList.toggle('on');
+    } else {
+      cr.querySelectorAll('.chip').forEach(c => c.classList.remove('on'));
+      e.target.classList.add('on');
+    }
+  });
+});
+
+// ═══════════════════════════════════════════════════════════
+// GENERATE — AI-POWERED via Anthropic API
+// ═══════════════════════════════════════════════════════════
+async function startGenerate() {
+  S.duration = document.getElementById('sel-dur').value;
+  S.freq = parseInt(document.getElementById('sel-freq').value);
+  S.len = chipVal('cr-len') || '30 min';
+  S.style = chipVal('cr-style') || 'visual demos';
+  S.platforms = [...document.querySelectorAll('#cr-plat .chip.on')].map(c => c.dataset.v);
+  if (!S.platforms.length) S.platforms = ['YouTube'];
+
+  showScreen('loading');
+  document.getElementById('bottom-nav').style.display = 'none';
+
+  const msgs = [
+    'Analysing your skill level…',
+    'Asking AI to design your curriculum…',
+    'Generating unique video searches per lesson…',
+    'Sequencing topics from beginner to advanced…',
+    'Scheduling sessions across your calendar…',
+    'Almost ready — finalising your plan!',
+  ];
+  const bar = document.getElementById('load-bar');
+  const msg = document.getElementById('load-msg');
+  bar.style.width = '0%';
+  let i = 0;
+  const iv = setInterval(() => {
+    if (i < msgs.length) {
+      msg.textContent = msgs[i];
+      bar.style.width = `${Math.round(((i+1)/msgs.length)*100)}%`;
+      i++;
+    } else clearInterval(iv);
+  }, 900);
+
+  // Try AI generation first, fall back to smart local builder
+  try {
+    const aiLessons = await generateWithAI();
+    if (aiLessons && aiLessons.length > 0) {
+      S.lessons = aiLessons;
+    } else {
+      S.lessons = buildPlan();
+    }
+  } catch(err) {
+    console.warn('AI generation failed, using local builder:', err);
+    S.lessons = buildPlan();
+  }
+
+  // Enrich lessons with real YouTube video IDs
+  try {
+    msg.textContent = 'Finding the best videos for each lesson…';
+    S.lessons = await fetchRealVideos(S.lessons);
+  } catch(err) {
+    console.warn('YouTube fetch failed:', err);
+  }
+
+  S.done = new Set();
+  setTimeout(() => {
+    buildMainApp();
+    document.getElementById('bottom-nav').style.display = 'flex';
+    initFocusSystem();
+    goTab('home');
+  }, Math.max(0, 5400 - (Date.now() % 5400)));
+}
+
+// ── AI generation via Anthropic API ─────────────────────────
+async function generateWithAI() {
+  const weeks = getDurWeeks();
+  const totalSessions = Math.min(weeks * S.freq, 48);
+  const dayOffsets = { 2:[0,3], 3:[0,2,4], 4:[0,1,3,4], 5:[0,1,2,3,4] }[S.freq] || [0,2,4];
+
+  // Pre-compute dates so Claude only needs to fill content
+  const dates = [];
+  const start = new Date(); start.setDate(start.getDate() + 1);
+  let si = 0, wk = 0;
+  while (dates.length < totalSessions) {
+    for (let d = 0; d < dayOffsets.length && dates.length < totalSessions; d++) {
+      const dt = new Date(start);
+      dt.setDate(start.getDate() + wk * 7 + dayOffsets[d]);
+      dates.push(fmtDate(dt));
+      si++;
+    }
+    wk++;
+  }
+
+  const prompt = `You are an expert learning coach and video curator. Create a ${S.duration} learning plan for "${S.skill}" (level: ${S.level}).
+
+Preferences: ${S.style} style, platforms: ${S.platforms.join(', ')}, ${S.len} sessions, ${S.freq}x/week.
+
+Generate EXACTLY ${totalSessions} lessons. Each lesson must have UNIQUE, SPECIFIC video search queries — never repeat the same query. Progress logically: foundations first, then technique, then practice, then review cycles.
+
+CRITICAL for videos: Each lesson needs 2 videos with HIGHLY SPECIFIC search queries that a human expert would actually use. Do NOT use generic queries like "${S.skill} tutorial" or "${S.skill} for beginners" repeatedly. Instead use queries like:
+- "${S.skill} [specific sub-skill] [technique name] tutorial [year]"
+- "how to [very specific movement/concept] ${S.skill} [beginner/intermediate]"
+- "[specific instructor style] ${S.skill} [exact topic] breakdown"
+
+Respond ONLY with a valid JSON array. No markdown, no explanation, just JSON:
+[
+  {
+    "id": "l1",
+    "title": "Specific lesson title",
+    "type": "basics|technique|practice|review",
+    "date": "${dates[0]}",
+    "duration": "${S.len}",
+    "description": "What to focus on in this session (1-2 sentences)",
+    "tip": "One concrete, actionable practice tip",
+    "videos": [
+      {
+        "t": "Very specific video title a real creator would use",
+        "c": "Realistic channel name",
+        "d": "X:XX",
+        "platform": "${S.platforms[0]}",
+        "q": "short YouTube search query max 6 words no parentheses no special characters"
+      }
+    ]
+  }
+]
+
+Use these exact dates in order: ${dates.join(', ')}.
+Make every lesson title, description, tip, and video query UNIQUE. No two lessons should feel similar.`;
+
+  const response = await fetch('https://api.anthropic.com/v1/messages', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({
+      model: 'claude-sonnet-4-20250514',
+      max_tokens: 6000,
+      system: 'You are a learning plan generator. Output ONLY valid JSON arrays. No markdown code fences, no preamble, no explanation. Just the raw JSON array starting with [ and ending with ].',
+      messages: [{ role: 'user', content: prompt }]
+    })
+  });
+
+  if (!response.ok) throw new Error(`API ${response.status}`);
+  const data = await response.json();
+  const raw = data.content.map(b => b.text || '').join('').trim();
+  // Strip any accidental markdown fences
+  const clean = raw.replace(/^```(?:json)?\s*/i,'').replace(/\s*```$/,'').trim();
+  const lessons = JSON.parse(clean);
+  // Validate structure
+  if (!Array.isArray(lessons) || !lessons[0]?.id) throw new Error('Invalid response structure');
+  return lessons;
+}
+
+// ── Fetch real YouTube video IDs for every lesson ──────────
+function isoToMins(iso) {
+  const m = (iso || '').match(/PT(?:(\d+)H)?(?:(\d+)M)?(?:(\d+)S)?/);
+  if (!m) return null;
+  return (parseInt(m[1]||0)*60) + parseInt(m[2]||0) + Math.ceil(parseInt(m[3]||0)/60);
+}
+
+async function ytFetch(path) {
+  const res = await fetch(`https://www.googleapis.com/youtube/v3/${path}&key=${YT_KEY}`);
+  if (!res.ok) { console.warn('YT API error', res.status, await res.text()); return null; }
+  return res.json();
+}
+
+// Strip special chars, keep first 5 meaningful words, always include skill name
+function simplifyQuery(q, skill) {
+  const clean = q.replace(/[()[\]&+#@!?]/g, ' ').replace(/\s{2,}/g, ' ').trim();
+  const words = clean.split(' ').filter(w => w.length > 2);
+  const short = words.slice(0, 5).join(' ');
+  const skillWord = skill.toLowerCase().split(' ')[0];
+  return short.toLowerCase().includes(skillWord) ? short : `${skill} ${short}`;
+}
+
+// Session cache: skill name → video pool (avoids re-spending quota on same skill)
+const ytSearchCache = new Map();
+
+async function fetchRealVideos(lessons) {
+  const sessionMins = parseInt(S.len) || 30;
+  const targetMinsPerVideo = Math.round(sessionMins / 2);
+  const cacheKey = S.skill.toLowerCase().trim();
+
+  let pool; // [{videoId, t, c, thumb, durMins}]
+
+  if (ytSearchCache.has(cacheKey)) {
+    pool = ytSearchCache.get(cacheKey);
+  } else {
+    // ONE search call — maxResults 50 covers the entire plan
+    // Query: skill + broad terms to get a variety of tutorial types
+    const skillClean = S.skill.replace(/[()[\]&+]/g, '').trim();
+    const q = encodeURIComponent(`${skillClean} tutorial tips technique`);
+    const searchData = await ytFetch(
+      `search?part=snippet&q=${q}&type=video&maxResults=50&relevanceLanguage=en&order=relevance`
+    );
+    const items = (searchData?.items || []).filter(it => it.id?.videoId);
+
+    if (!items.length) {
+      // Fallback: simpler query
+      const fallback = await ytFetch(
+        `search?part=snippet&q=${encodeURIComponent(skillClean)}&type=video&maxResults=50&relevanceLanguage=en`
+      );
+      items.push(...(fallback?.items || []).filter(it => it.id?.videoId));
+    }
+
+    // ONE videos call to get durations for all 50 results
+    const ids = items.map(it => it.id.videoId).join(',');
+    let durMap = {};
+    if (ids) {
+      const details = await ytFetch(`videos?part=contentDetails&id=${ids}`);
+      for (const det of (details?.items || [])) {
+        const mins = isoToMins(det.contentDetails?.duration);
+        if (mins !== null) durMap[det.id] = mins;
+      }
+    }
+
+    pool = items.map(item => ({
+      videoId: item.id.videoId,
+      t: item.snippet.title,
+      c: item.snippet.channelTitle,
+      thumb: item.snippet.thumbnails?.high?.url || item.snippet.thumbnails?.medium?.url || '',
+      durMins: durMap[item.id.videoId] ?? null,
+    }));
+
+    ytSearchCache.set(cacheKey, pool);
+  }
+
+  // Local assignment: score each pool video against each lesson slot, no API calls
+  const used = new Set();
+
+  function pickBest(raw) {
+    const queryWords = simplifyQuery(raw, S.skill).toLowerCase().split(' ').filter(w => w.length > 2);
+    // Prefer unused; allow reuse only when pool is nearly exhausted
+    const source = pool.filter(p => !used.has(p.videoId));
+    const candidates = source.length >= 3 ? source : pool;
+
+    const scored = candidates.map(p => {
+      const title = (p.t || '').toLowerCase();
+      // Keyword overlap score (0–1)
+      const kwScore = queryWords.length
+        ? queryWords.filter(w => title.includes(w)).length / queryWords.length
+        : 0.5;
+      // Duration match score (0–1): penalise deviation from target
+      const durScore = p.durMins != null
+        ? 1 / (1 + Math.abs(p.durMins - targetMinsPerVideo) * 0.12)
+        : 0.5;
+      return { p, score: kwScore * 0.65 + durScore * 0.35 };
+    }).sort((a, b) => b.score - a.score);
+
+    if (!scored.length) return null;
+    const best = scored[0].p;
+    used.add(best.videoId);
+    return best;
+  }
+
+  return lessons.map(lesson => ({
+    ...lesson,
+    videos: (lesson.videos || []).map(v => {
+      const best = pickBest(v.q || v.t);
+      if (!best) return { ...v, noVideo: true };
+      const hit = { videoId: best.videoId, t: best.t, c: best.c, thumb: best.thumb, durMins: best.durMins };
+      if (best.durMins && best.durMins > sessionMins) {
+        hit.watchSecs = sessionMins * 60;
+        hit.watchNote = `Watch first ${sessionMins} min today`;
+      }
+      return { ...v, ...hit };
+    }),
+  }));
+}
+
+// ═══════════════════════════════════════════════════════════
+// LOCAL PLAN BUILDER (fallback — much smarter than before)
+// ═══════════════════════════════════════════════════════════
+function getDurWeeks() {
+  return { '2 weeks':2,'1 month':4,'3 months':12,'6 months':24 }[S.duration] || 4;
+}
+
+function buildPlan() {
+  const weeks = getDurWeeks();
+  const total = Math.min(weeks * S.freq, 48);
+  const dayOffsets = { 2:[0,3], 3:[0,2,4], 4:[0,1,3,4], 5:[0,1,2,3,4] }[S.freq] || [0,2,4];
+
+  const start = new Date(); start.setDate(start.getDate() + 1);
+  const lessons = [];
+  let si = 0, wk = 0;
+
+  while (lessons.length < total) {
+    for (let d = 0; d < dayOffsets.length && lessons.length < total; d++) {
+      const dt = new Date(start);
+      dt.setDate(start.getDate() + wk * 7 + dayOffsets[d]);
+      const pct = si / total;
+      let type = pct < .25 ? 'basics' : pct < .55 ? 'technique' : pct < .80 ? 'practice' : 'review';
+      if (si > 0 && (si + 1) % 5 === 0) type = 'review';
+      lessons.push(makeLesson(S.skill, si, type, dt, total));
+      si++;
+    }
+    wk++;
+  }
+  return lessons;
+}
+
+// Structured sub-topics per lesson index to ensure diversity
+function getSubTopic(skill, idx, type, total) {
+  const pct = idx / total;
+  const phase = pct < .25 ? 0 : pct < .5 ? 1 : pct < .75 ? 2 : 3;
+
+  // Generic skill learning arc broken into granular sub-topics
+  const arcs = {
+    basics: [
+      ['equipment setup and safety', 'body positioning fundamentals', 'first movements and balance',
+       'understanding the core mechanics', 'common beginner mistakes to avoid'],
+      ['warm-up routines for practice', 'grip and stance refinement', 'slow-motion technique breakdown',
+       'reading instructional diagrams', 'self-assessment methods'],
+    ],
+    technique: [
+      ['isolating the key movement', 'footwork and timing patterns', 'upper body coordination',
+       'building muscle memory through repetition', 'combining two movements together'],
+      ['increasing speed gradually', 'maintaining form under fatigue', 'correcting asymmetries',
+       'advanced positioning details', 'flowing between movements'],
+    ],
+    practice: [
+      ['timed practice sets', 'applying technique in real scenarios', 'increasing difficulty progressively',
+       'endurance and consistency drills', 'creative variation and improvisation'],
+      ['performance under mild pressure', 'full run-through sessions', 'partner or solo challenge drills',
+       'simulating real conditions', 'building flow state'],
+    ],
+    review: [
+      ['comparing early vs current recordings', 'identifying top 3 improvements', 'planning next week focus',
+       'rest and mental consolidation', 'celebrating milestones'],
+    ],
+  };
+
+  const pool = arcs[type] ? (arcs[type][phase] || arcs[type][0]) : arcs.basics[0];
+  return pool[idx % pool.length];
+}
+
+function makeLesson(skill, idx, type, date, total) {
+  const n = idx + 1;
+  const sub = getSubTopic(skill, idx, type, total);
+  const weekNum = Math.floor(idx / S.freq) + 1;
+
+  // Unique title per lesson using sub-topic
+  const titlePrefixes = {
+    basics: ['Getting started:', 'Foundation:', 'Intro to', 'Understanding', 'First steps:'],
+    technique: ['Drilling:', 'Mastering:', 'Technique focus:', 'Breaking down', 'Refining:'],
+    practice: ['Practice session:', 'Open drill:', 'Apply it:', 'Build fluency:', 'Challenge:'],
+    review: [`Week ${weekNum} review:`, 'Check-in:', 'Reflect:', 'Milestone:', 'Assessment:'],
+  };
+  const prefixes = titlePrefixes[type];
+  const prefix = prefixes[idx % prefixes.length];
+  const title = `${prefix} ${sub}`;
+
+  // Unique tip per lesson
+  const tips = {
+    basics: [
+      `Film yourself practising ${sub} — compare to a pro video frame by frame.`,
+      `Spend the first 5 minutes visualising ${sub} perfectly before you move.`,
+      `Focus only on ${sub} this session. Narrow focus = faster progress.`,
+      `Do 3 slow reps of ${sub}, then 3 fast. Notice what changes.`,
+      `Write one sentence after this session: what did you feel differently about ${sub}?`,
+    ],
+    technique: [
+      `Break ${sub} into 3 micro-steps. Master each before combining them.`,
+      `Set a 10-minute timer and only focus on ${sub}. No multitasking.`,
+      `If ${sub} feels wrong, slow down 50% — speed hides technique flaws.`,
+      `Do ${sub} with your eyes closed for 2 reps. It reveals balance issues instantly.`,
+      `Record audio narration while practising ${sub} — talking through it deepens understanding.`,
+    ],
+    practice: [
+      `Set a goal: 15 clean reps of ${sub} before ending the session.`,
+      `Try ${sub} in a slightly new environment today — variation builds adaptability.`,
+      `Put on a playlist and do ${sub} without stopping to overthink. Flow beats perfection.`,
+      `Track your best streak of consecutive good reps of ${sub} today.`,
+      `Invite someone to watch your practice — mild pressure sharpens ${sub} execution.`,
+    ],
+    review: [
+      `Write down 2 things that improved and 1 thing to fix about ${sub}.`,
+      `Watch your session recording at 0.5x speed — you'll notice things you missed live.`,
+      `Rate yourself 1–10 on ${sub}. Be honest — accuracy matters more than optimism.`,
+      `Rest today. Your nervous system is consolidating what you've learned about ${sub}.`,
+      `Share a clip of ${sub} with someone for external feedback. Fresh eyes catch blind spots.`,
+    ],
+  };
+  const tipPool = tips[type];
+  const tip = tipPool[idx % tipPool.length];
+
+  const desc = {
+    basics: `A ${S.len} foundation session focused entirely on ${sub}. Watch the videos first, then apply immediately.`,
+    technique: `A ${S.len} technique drill targeting ${sub}. Watch once, then practise with the video paused.`,
+    practice: `${S.len} of focused practice on ${sub}. Minimal video time — mostly doing.`,
+    review: `A ${S.len} review session. Assess your progress on ${sub} and plan adjustments.`,
+  }[type];
+
+  return {
+    id: `l${n}`, title, type,
+    date: fmtDate(date), duration: S.len,
+    description: desc, tip,
+    videos: buildVideos(skill, type, sub, idx),
+  };
+}
+
+function buildVideos(skill, type, subTopic, idx) {
+  const s = skill.toLowerCase();
+  const st = subTopic.toLowerCase();
+  const plat = S.platforms.length ? S.platforms : ['YouTube'];
+  const year = new Date().getFullYear();
+
+  // Generate highly specific, varied queries using sub-topic + angle variations
+  const angles = [
+    [`${s} ${st} tutorial ${year}`, `how to do ${st} in ${s} step by step`],
+    [`${s} ${st} beginner breakdown`, `${st} technique for ${s} explained slowly`],
+    [`${s} ${st} common mistakes fix`, `improving ${st} in ${s} drills`],
+    [`${s} ${st} practice routine`, `${st} for ${s} full tutorial`],
+    [`best way to learn ${st} ${s}`, `${s} ${st} tips from pros`],
+    [`${s} ${st} slow motion analysis`, `${st} fundamentals ${s} coaching`],
+  ];
+  const pair = angles[idx % angles.length];
+
+  const channelNames = [
+    `${skill} Academy`, `Learn${skill.replace(/ /g,'')}`, `${skill}Coach`,
+    `The${skill.replace(/ /g,'')}Lab`, `${skill}Mastery`, `ProTips${skill.replace(/ /g,'')}`,
+    `${skill}Breakdown`, `SkillPath Originals`, `${skill}Workshop`,
+  ];
+
+  const durations = ['6:24','8:11','10:33','7:45','12:08','5:52','9:17','14:20','11:03','7:38'];
+
+  return pair.map((q, i) => ({
+    t: toTitleCase(q),
+    c: channelNames[(idx + i * 3) % channelNames.length],
+    d: durations[(idx + i) % durations.length],
+    platform: plat[(idx + i) % plat.length],
+    q,
+  }));
+}
+
+function toTitleCase(s) {
+  return s.replace(/\b\w/g, c => c.toUpperCase());
+}
+
+function fmtDate(d) {
+  return `${d.getFullYear()}-${pad(d.getMonth()+1)}-${pad(d.getDate())}`;
+}
+function pad(n) { return String(n).padStart(2,'0'); }
+
+// ═══════════════════════════════════════════════════════════
+// BUILD MAIN APP
+// ═══════════════════════════════════════════════════════════
+function buildMainApp() {
+  const now = new Date();
+  document.getElementById('home-date-lbl').textContent =
+    now.toLocaleDateString('en-US',{weekday:'long',month:'long',day:'numeric'});
+  document.getElementById('home-avatar').textContent = skillEmoji();
+  renderProgress();
+  renderHome();
+  renderCalendar();
+  renderPlanList();
+}
+
+function skillEmoji() {
+  const icons = {skate:'🛹',guitar:'🎸',piano:'🎹',cook:'🍳',draw:'🎨',paint:'🖌',swim:'🏊',run:'🏃',yoga:'🧘',code:'💻',photo:'📷',dance:'💃',sing:'🎤',chess:'♟',tennis:'🎾',surf:'🏄',climb:'🧗',box:'🥊'};
+  const kw = S.skill.toLowerCase();
+  const m = Object.keys(icons).find(k => kw.includes(k));
+  return m ? icons[m] : '🎯';
+}
+
+// ── Progress ────────────────────────────────────────────────
+function renderProgress() {
+  const total = S.lessons.length, done = S.done.size;
+  const pct = total ? Math.round((done/total)*100) : 0;
+  document.getElementById('prog-pct-lbl').textContent = `${pct}%`;
+  document.getElementById('prog-skill-name').textContent = S.skill;
+  document.getElementById('prog-sub-lbl').textContent = `${done} of ${total} sessions done`;
+  document.getElementById('prog-bar-thin').style.width = `${pct}%`;
+  const circ = 2 * Math.PI * 20;
+  const fill = document.getElementById('pr-fill');
+  fill.style.strokeDasharray = circ;
+  fill.style.strokeDashoffset = circ - (pct/100)*circ;
+}
+
+// ── Home ────────────────────────────────────────────────────
+function renderHome() {
+  const today = fmtDate(new Date());
+  const DAYS = ['Sun','Mon','Tue','Wed','Thu','Fri','Sat'];
+  const nextLesson = S.lessons.find(l => !S.done.has(l.id));
+  const tcWrap = document.getElementById('today-card-wrap');
+
+  if (nextLesson) {
+    const d = new Date(nextLesson.date+'T12:00:00');
+    const isToday = nextLesson.date === today;
+    const label = isToday ? '🔥 Today\'s session' : `📅 ${d.toLocaleDateString('en-US',{weekday:'short',month:'short',day:'numeric'})}`;
+    tcWrap.innerHTML = `
+      <div class="today-card" onclick="openLesson('${nextLesson.id}','home')">
+        <div class="tc-badge">${label}</div>
+        <div class="tc-title">${nextLesson.title}</div>
+        <div class="tc-meta">
+          <span>⏱ ${nextLesson.duration}</span>
+          <span>📹 ${nextLesson.videos?.length||0} videos</span>
+          <span class="type-dot ${nextLesson.type}" style="display:inline-block"></span>
+          <span style="text-transform:capitalize">${nextLesson.type}</span>
+        </div>
+        <div class="tc-arrow">›</div>
+      </div>`;
+  } else {
+    tcWrap.innerHTML = `<div class="today-card"><div class="tc-badge">🎉 All done!</div><div class="tc-title">You've completed your ${S.skill} plan!</div></div>`;
+  }
+
+  const upcoming = S.lessons.filter(l => !S.done.has(l.id) && l !== nextLesson).slice(0,5);
+  const ul = document.getElementById('upcoming-list');
+  if (!upcoming.length) { ul.innerHTML = '<div style="padding:12px 22px;font-size:13px;color:var(--sub)">Nothing else scheduled.</div>'; return; }
+  ul.innerHTML = upcoming.map(l => {
+    const d = new Date(l.date+'T12:00:00');
+    return `
+      <div class="upcoming-item" onclick="openLesson('${l.id}','home')">
+        <div class="up-date-box">
+          <div class="up-day">${DAYS[d.getDay()]}</div>
+          <div class="up-num">${d.getDate()}</div>
+        </div>
+        <div class="up-info">
+          <div class="up-title">${l.title}</div>
+          <div class="up-meta">⏱ ${l.duration} · ${l.videos?.length||0} videos</div>
+        </div>
+        <div class="type-dot ${l.type}"></div>
+      </div>`;
+  }).join('');
+}
+
+// ── Calendar ────────────────────────────────────────────────
+let calSel = null;
+
+function renderCalendar() {
+  const MONTHS = ['January','February','March','April','May','June','July','August','September','October','November','December'];
+  const { calMonth: m, calYear: y } = S;
+  document.getElementById('cal-month-lbl').textContent = `${MONTHS[m]} ${y}`;
+
+  const grid = document.getElementById('cal-grid');
+  grid.innerHTML = '';
+  const firstDay = new Date(y,m,1).getDay();
+  const daysInM  = new Date(y,m+1,0).getDate();
+  const daysInPrev = new Date(y,m,0).getDate();
+  const todayStr = fmtDate(new Date());
+  const total = Math.ceil((firstDay+daysInM)/7)*7;
+
+  for (let i = 0; i < total; i++) {
+    let dn, cm, cy;
+    if (i < firstDay) { dn = daysInPrev-firstDay+i+1; cm = m-1; cy = m===0?y-1:y; }
+    else if (i >= firstDay+daysInM) { dn = i-firstDay-daysInM+1; cm = m+1; cy = m===11?y+1:y; }
+    else { dn = i-firstDay+1; cm = m; cy = y; }
+
+    const ds = `${cy}-${pad(cm+1)}-${pad(dn)}`;
+    const lessons = S.lessons.filter(l => l.date === ds);
+    const isToday = ds === todayStr;
+    const isOther = cm !== m;
+    const isSel   = ds === calSel;
+
+    const cell = document.createElement('div');
+    cell.className = 'cal-cell'+(isOther?' other-m':'')+(isToday?' is-today':'');
+    if (isSel) cell.style.background = 'var(--card2)';
+    cell.innerHTML = `<div class="cal-cell-num">${dn}</div>`;
+    if (lessons.length) {
+      const pips = document.createElement('div');
+      pips.className = 'cal-pips';
+      lessons.forEach(l => {
+        const pip = document.createElement('div');
+        pip.className = `cal-pip ${l.type}`;
+        if (S.done.has(l.id)) pip.style.opacity = '.3';
+        pips.appendChild(pip);
+      });
+      cell.appendChild(pips);
+    }
+    cell.addEventListener('click', () => { calSel = ds; renderCalendar(); renderDayPanel(ds); });
+    grid.appendChild(cell);
+  }
+  renderDayPanel(calSel || todayStr);
+}
+
+function renderDayPanel(ds) {
+  const panel = document.getElementById('day-panel');
+  const lessons = S.lessons.filter(l => l.date === ds);
+  const d = new Date(ds+'T12:00:00');
+  const lbl = d.toLocaleDateString('en-US',{weekday:'long',month:'short',day:'numeric'});
+  if (!lessons.length) {
+    panel.innerHTML = `<div class="day-lessons-panel"><div class="dlp-header">${lbl} — No sessions</div></div>`;
+    return;
+  }
+  const typeColors = { basics:'var(--accent)', technique:'var(--pink)', practice:'var(--green)', review:'var(--amber)' };
+  panel.innerHTML = `
+    <div class="day-lessons-panel">
+      <div class="dlp-header">${lbl}</div>
+      ${lessons.map(l => `
+        <div class="dlp-item" onclick="openLesson('${l.id}','calendar')">
+          <div class="dlp-color" style="background:${typeColors[l.type]};opacity:${S.done.has(l.id)?'.3':'1'}"></div>
+          <div class="dlp-info">
+            <div class="dlp-title" style="${S.done.has(l.id)?'text-decoration:line-through;opacity:.5':''}">${l.title}</div>
+            <div class="dlp-meta">⏱ ${l.duration} · ${l.videos?.length||0} videos · <span style="text-transform:capitalize">${l.type}</span></div>
+          </div>
+          <div class="dlp-chevron">›</div>
+        </div>`).join('')}
+    </div>`;
+}
+
+function chMonth(dir) {
+  S.calMonth += dir;
+  if (S.calMonth > 11) { S.calMonth = 0; S.calYear++; }
+  if (S.calMonth < 0)  { S.calMonth = 11; S.calYear--; }
+  calSel = null;
+  renderCalendar();
+}
+
+// ── Plan list ───────────────────────────────────────────────
+function renderPlanList() {
+  document.getElementById('plan-header-sub').textContent = `${S.lessons.length} sessions · ${S.duration}`;
+  const wrap = document.getElementById('plan-list-wrap');
+  const DAYS = ['Sun','Mon','Tue','Wed','Thu','Fri','Sat'];
+  let lastW = -1, html = '';
+  S.lessons.forEach((l,i) => {
+    const wk = Math.floor(i/S.freq);
+    if (wk !== lastW) { html += `<div class="week-label">Week ${wk+1}</div>`; lastW = wk; }
+    const d = new Date(l.date+'T12:00:00');
+    const ck = S.done.has(l.id);
+    html += `
+      <div class="plan-row${ck?' done-row':''}" onclick="openLesson('${l.id}','plan')">
+        <div class="pr-date">
+          <div class="pr-day">${DAYS[d.getDay()]}</div>
+          <div class="pr-num">${d.getDate()}</div>
+        </div>
+        <div class="pr-info">
+          <div class="pr-title">${l.title}</div>
+          <div class="pr-meta">⏱ ${l.duration} · ${l.videos?.length||0} videos</div>
+        </div>
+        <div class="pr-check ${ck?'ck':''}" onclick="toggleDone('${l.id}',event)">${ck?'✓':''}</div>
+      </div>`;
+  });
+  wrap.innerHTML = html;
+}
+
+// ── Lesson detail ───────────────────────────────────────────
+function openLesson(id, from) {
+  const l = S.lessons.find(x => x.id === id);
+  if (!l) return;
+  S.curLesson = l;
+  S.prevTab = from || 'home';
+
+  document.getElementById('lesson-back-btn').onclick = () => {
+    showScreen(S.prevTab === 'plan' ? 'plan' : S.prevTab === 'calendar' ? 'calendar' : 'home');
+    setActiveTab(S.prevTab === 'plan' ? 'plan' : S.prevTab === 'calendar' ? 'calendar' : 'home');
+    vcHide();
+  };
+
+  const typeColors = { basics:'var(--a-light)', technique:'rgba(244,114,182,.15)', practice:'rgba(52,211,153,.12)', review:'rgba(251,191,36,.12)' };
+  const typeText   = { basics:'var(--accent)', technique:'var(--pink)', practice:'var(--green)', review:'var(--amber)' };
+
+  const tag = document.getElementById('l-type-tag');
+  tag.textContent = l.type.charAt(0).toUpperCase()+l.type.slice(1);
+  tag.style.background = typeColors[l.type];
+  tag.style.color = typeText[l.type];
+
+  document.getElementById('l-title').textContent = l.title;
+  const d = new Date(l.date+'T12:00:00');
+  document.getElementById('l-date').textContent = d.toLocaleDateString('en-US',{weekday:'long',month:'long',day:'numeric'});
+  document.getElementById('l-dur').textContent = `⏱ ${l.duration}`;
+
+  const gradients = ['linear-gradient(135deg,#1d1b40,#0d1a30)','linear-gradient(135deg,#1a1030,#0a1a1a)','linear-gradient(135deg,#0a1a0a,#1a1030)'];
+
+  document.getElementById('l-videos').innerHTML = (l.videos||[]).map((v,i) => {
+    const pc = v.platform === 'YouTube' ? 'plat-yt' : v.platform === 'Instagram' ? 'plat-ig' : 'plat-tt';
+
+    // No video ID found — show greyed-out unavailable card, never a search link
+    if (!v.videoId) {
+      return `
+        <div class="vid-card" style="opacity:.45;cursor:default">
+          <div class="vid-thumb" style="background:${gradients[i%gradients.length]};position:relative;overflow:hidden">
+            <div class="vid-platform-chip ${pc}" style="position:absolute;top:10px;left:10px;z-index:2">${v.platform||'YouTube'}</div>
+            <div style="font-size:28px;opacity:.4">🎬</div>
+          </div>
+          <div class="vid-info">
+            <div class="vid-title" style="color:var(--sub)">Video unavailable</div>
+            <div class="vid-meta">Could not be matched at this time</div>
+          </div>
+        </div>`;
+    }
+
+    const tParam = v.watchSecs ? `&t=${v.watchSecs}` : '';
+    const url = `https://www.youtube.com/watch?v=${v.videoId}${tParam}`;
+    const thumb = v.thumb || `https://img.youtube.com/vi/${v.videoId}/hqdefault.jpg`;
+    const durationLabel = v.durMins ? `${v.durMins} min` : v.d;
+    const watchNote = v.watchNote ? `<div style="font-size:10px;color:var(--amber);margin-top:3px">⏱ ${v.watchNote}</div>` : '';
+    return `
+      <div class="vid-card" onclick="window.open('${url}','_blank')">
+        <div class="vid-thumb" style="background:${gradients[i%gradients.length]};position:relative;overflow:hidden">
+          <img src="${thumb}" alt="" style="position:absolute;inset:0;width:100%;height:100%;object-fit:cover;" onerror="this.style.display='none'">
+          <div class="vid-platform-chip ${pc}" style="position:absolute;top:10px;left:10px;z-index:2">${v.platform}</div>
+          <div class="vid-play" style="position:relative;z-index:2">▶</div>
+        </div>
+        <div class="vid-info">
+          <div class="vid-title">${v.t}</div>
+          <div class="vid-meta">${v.c} · ${durationLabel}</div>
+          ${watchNote}
+        </div>
+      </div>`;
+  }).join('');
+
+  document.getElementById('l-tips').innerHTML = `
+    <div class="tip-box">
+      <strong>Focus:</strong> ${l.description}<br><br>
+      <strong>Practice tip:</strong> ${l.tip}
+    </div>`;
+
+  const btn = document.getElementById('done-btn');
+  if (S.done.has(l.id)) {
+    btn.textContent = '✓ Completed'; btn.className = 'done-btn completed';
+  } else {
+    btn.textContent = '✓ Mark as complete'; btn.className = 'done-btn';
+  }
+
+  showScreen('lesson');
+  // Start the video countdown timer if not already completed
+  if (!S.done.has(l.id)) {
+    if (S.focus.countdown) {
+      showDistractionOverlay(l);
+    } else {
+      vcStart(l.duration);
+    }
+  } else {
+    vcHide();
+  }
+}
+
+function markDone() {
+  if (!S.curLesson) return;
+  const id = S.curLesson.id;
+  if (!S.done.has(id)) {
+    S.done.add(id);
+    showToast('🎉 Session complete!');
+    renderProgress(); renderHome(); renderCalendar(); renderPlanList();
+  }
+  document.getElementById('done-btn').textContent = '✓ Completed';
+  document.getElementById('done-btn').className = 'done-btn completed';
+  stopSessionTimer();
+}
+
+function toggleDone(id, e) {
+  e.stopPropagation();
+  if (S.done.has(id)) S.done.delete(id);
+  else { S.done.add(id); showToast('🎉 Done!'); }
+  renderProgress(); renderHome(); renderCalendar(); renderPlanList();
+}
+
+// ═══════════════════════════════════════════════════════════
+// ANTI-ADDICTION / FOCUS SHIELD SYSTEM
+// ═══════════════════════════════════════════════════════════
+
+// ── Focus settings panel ─────────────────────────────────
+function openFocusSettings() {
+  document.getElementById('focus-settings').classList.add('open');
+  document.getElementById('focus-overlay-bg').classList.add('show');
+}
+function closeFocusSettings() {
+  document.getElementById('focus-settings').classList.remove('open');
+  document.getElementById('focus-overlay-bg').classList.remove('show');
+}
+function toggleSetting(key) {
+  S.focus[key] = !S.focus[key];
+  const el = document.getElementById(`tog-${key}`);
+  if (el) el.classList.toggle('on', S.focus[key]);
+  // Update badge
+  updateFocusBadge();
+  if (key === 'reminders') {
+    if (S.focus.reminders) startReminderCycle();
+    else stopReminderCycle();
+  }
+}
+function updateFocusBadge() {
+  const badge = document.getElementById('focus-badge');
+  if (!badge) return;
+  const anyOn = S.focus.reminders || S.focus.countdown || S.focus.timerbar;
+  badge.textContent = anyOn ? '🛡️ Focus On' : '🛡️ Focus Off';
+  badge.className = 'focus-badge' + (anyOn ? ' on' : ' off');
+}
+
+// ── Floating reminder bubbles ─────────────────────────────
+const REMINDER_MSGS = [
+  { icon:'🎯', title:'Learning check-in', msg:`Are you on track with your ${() => S.skill} practice today?` },
+  { icon:'⏱️', title:'Time check', msg:'Still watching educational content? Great! If not, it might be time to switch back.' },
+  { icon:'🧠', title:'Deep work reminder', msg:'The best learning happens in focused blocks. Close other tabs and go deep.' },
+  { icon:'🔥', title:'Streak at stake', msg:'Don\'t break your learning streak today. A short session is better than none.' },
+  { icon:'📵', title:'Distraction alert', msg:'Social feeds are designed to keep you scrolling. Your skills won\'t build themselves.' },
+  { icon:'💡', title:'Did you know?', msg:'Consistent 20-minute sessions beat irregular 2-hour marathons for skill building.' },
+  { icon:'🏆', title:'Progress reminder', msg:'Every session compounds. The best time to practise was earlier — second best is now.' },
+];
+
+let reminderIdx = 0;
+
+function initFocusSystem() {
+  if (S.focus.reminders) startReminderCycle();
+  // Sync toggle UI
+  ['reminders','countdown','timerbar'].forEach(k => {
+    const el = document.getElementById(`tog-${k}`);
+    if (el) el.classList.toggle('on', S.focus[k]);
+  });
+  updateFocusBadge();
+}
+
+function startReminderCycle() {
+  stopReminderCycle();
+  const freqMs = (parseInt(document.getElementById('sel-freq-reminder')?.value || 30)) * 60 * 1000;
+  // First reminder after a short delay in demo mode (15s), then on schedule
+  S.reminderTimeout = setTimeout(() => {
+    triggerReminder('scheduled');
+    S.reminderInterval = setInterval(() => triggerReminder('scheduled'), freqMs);
+  }, 15000);
+}
+
+function stopReminderCycle() {
+  clearTimeout(S.reminderTimeout);
+  clearInterval(S.reminderInterval);
+}
+
+function triggerReminder(source) {
+  if (!S.focus.reminders && source !== 'test') return;
+  const nextLesson = S.lessons.find(l => !S.done.has(l.id));
+  const r = source === 'test'
+    ? { icon:'🛡️', title:'Focus Shield active', msg:`Your reminders are working! You have ${S.lessons.filter(l=>!S.done.has(l.id)).length} sessions remaining in your ${S.skill} plan.` }
+    : REMINDER_MSGS[reminderIdx % REMINDER_MSGS.length];
+  reminderIdx++;
+
+  document.getElementById('fb-icon').textContent = r.icon;
+  document.getElementById('fb-title').textContent = r.title;
+  document.getElementById('fb-msg').textContent = typeof r.msg === 'function' ? r.msg() : r.msg.replace(/\$\{.*?\}/g, S.skill);
+
+  const bubble = document.getElementById('focus-bubble');
+  bubble.classList.add('visible');
+
+  // Auto-dismiss after 8 seconds
+  clearTimeout(bubble._autoDismiss);
+  bubble._autoDismiss = setTimeout(dismissReminder, 8000);
+}
+
+function dismissReminder() {
+  document.getElementById('focus-bubble').classList.remove('visible');
+}
+
+function reminderGoToLesson() {
+  dismissReminder();
+  closeFocusSettings();
+  const nextLesson = S.lessons.find(l => !S.done.has(l.id));
+  if (nextLesson) openLesson(nextLesson.id, 'home');
+}
+
+// ── Session countdown overlay ─────────────────────────────
+function showDistractionOverlay(lesson) {
+  const mins = parseInt(lesson.duration) || 30;
+  let secs = 10; // 10-second breathing countdown before session starts
+  document.getElementById('do-sub').textContent =
+    `Your ${lesson.duration} ${S.skill} session is starting. Take a breath.`;
+  document.getElementById('do-timer').textContent = `0:${String(secs).padStart(2,'0')}`;
+  document.getElementById('distraction-overlay').classList.add('show');
+
+  const interval = setInterval(() => {
+    secs--;
+    document.getElementById('do-timer').textContent = `0:${String(secs).padStart(2,'0')}`;
+    if (secs <= 0) {
+      clearInterval(interval);
+      closeDistractionOverlay();
+      startSessionTimer(lesson.duration);
+    }
+  }, 1000);
+  document.getElementById('distraction-overlay')._interval = interval;
+}
+
+function closeDistractionOverlay() {
+  clearInterval(document.getElementById('distraction-overlay')._interval);
+  document.getElementById('distraction-overlay').classList.remove('show');
+  if (S.curLesson) vcStart(S.curLesson.duration);
+}
+
+// ── Session progress timer bar ────────────────────────────
+function startSessionTimer(durationStr) {
+  if (!S.focus.timerbar) return;
+  stopSessionTimer();
+  const totalMins = parseInt(durationStr) || 30;
+  const totalSecs = totalMins * 60;
+  S.sessionTimerStart = Date.now();
+  S.sessionTimerDuration = totalSecs;
+
+  const bar = document.getElementById('session-timer-bar');
+  const fill = document.getElementById('stb-fill');
+  bar.classList.add('active');
+  fill.style.width = '0%';
+
+  S.sessionTimerInterval = setInterval(() => {
+    const elapsed = (Date.now() - S.sessionTimerStart) / 1000;
+    const pct = Math.min((elapsed / totalSecs) * 100, 100);
+    fill.style.width = `${pct}%`;
+    if (pct >= 100) {
+      stopSessionTimer();
+      showToast('⏱ Session time reached!');
+    }
+  }, 2000);
+}
+
+function stopSessionTimer() {
+  clearInterval(S.sessionTimerInterval);
+  const bar = document.getElementById('session-timer-bar');
+  bar.classList.remove('active');
+  document.getElementById('stb-fill').style.width = '0%';
+}
+
+// ═══════════════════════════════════════════════════════════
+// NAVIGATION
+// ═══════════════════════════════════════════════════════════
+const SCREENS = { home:'s-home', calendar:'s-calendar', plan:'s-plan', lesson:'s-lesson', onboard:'s-onboard', loading:'s-loading' };
+const TABS    = { home:'tab-home', calendar:'tab-calendar', plan:'tab-plan' };
+
+function showScreen(name) {
+  Object.values(SCREENS).forEach(id => {
+    const el = document.getElementById(id);
+    if (el) el.classList.remove('active');
+  });
+  const el = document.getElementById(SCREENS[name]);
+  if (el) el.classList.add('active');
+}
+function setActiveTab(name) {
+  Object.values(TABS).forEach(id => document.getElementById(id)?.classList.remove('active'));
+  if (TABS[name]) document.getElementById(TABS[name])?.classList.add('active');
+}
+function goTab(name) { showScreen(name); setActiveTab(name); }
+
+function resetToOnboard() {
+  S.lessons = []; S.done = new Set();
+  stopReminderCycle();
+  if (typeof stopSessionTimer === 'function') stopSessionTimer();
+  vcHide();
+  // Reset skill picker
+  document.querySelectorAll('.skill-tile').forEach(t => t.classList.remove('selected'));
+  document.getElementById('other-input-wrap').style.display = 'none';
+  const btn = document.getElementById('ob0-continue');
+  if (btn) { btn.disabled = true; btn.style.opacity = '.4'; btn.style.cursor = 'default'; }
+  document.getElementById('discovery-sheet').classList.remove('ds-open');
+  document.getElementById('schedule-sheet').classList.remove('ds-open');
+  document.getElementById('inp-skill').value = '';
+  document.getElementById('bottom-nav').style.display = 'none';
+  showScreen('onboard');
+}
+
+// ═══════════════════════════════════════════════════════════
+// TOAST
+// ═══════════════════════════════════════════════════════════
+function showToast(msg) {
+  const t = document.getElementById('toast');
+  t.textContent = msg;
+  t.classList.add('show');
+  setTimeout(() => t.classList.remove('show'), 2200);
+}
+
+// ═══════════════════════════════════════════════════════════
+// VIDEO COUNTDOWN TIMER — drag, pause, minimise
+// ═══════════════════════════════════════════════════════════
+const VC = {
+  total:0, left:0, running:false, paused:false,
+  startedAt:null, interval:null,
+  pausedAt:null, totalPausedMs:0, minimised:false,
+  dragging:false, dragOffX:0, dragOffY:0,
+};
+
+function vcStart(durationStr) {
+  const mins = parseInt(durationStr) || 30;
+  VC.total = mins * 60; VC.left = VC.total;
+  VC.running = true; VC.paused = false;
+  VC.startedAt = Date.now(); VC.totalPausedMs = 0; VC.minimised = false;
+
+  const el = document.getElementById('vid-countdown');
+  el.classList.remove('vc-urgent','vc-done','vc-paused');
+
+  const pb = document.getElementById('vc-pause-btn');
+  if (pb) { pb.textContent = '⏸'; pb.title = 'Pause'; }
+  document.getElementById('vc-min-btn').textContent = '−';
+  document.getElementById('vc-body').style.display = 'block';
+  document.getElementById('vc-mini').style.display = 'none';
+
+  // Reset position to bottom-right default
+  el.style.left = ''; el.style.top = '';
+  el.style.right = '14px'; el.style.bottom = '80px';
+
+  vcUpdateDisplay();
+  el.classList.add('vc-visible');
+  clearInterval(VC.interval);
+  VC.interval = setInterval(() => {
+    if (VC.paused) return;
+    const elapsed = Math.round((Date.now() - VC.startedAt - VC.totalPausedMs) / 1000);
+    VC.left = Math.max(0, VC.total - elapsed);
+    vcUpdateDisplay();
+    if (VC.left <= 0) { clearInterval(VC.interval); VC.running = false; vcExpired(); }
+  }, 1000);
+
+  vcInitDrag();
+}
+
+function vcUpdateDisplay() {
+  const m   = Math.floor(VC.left / 60);
+  const s   = VC.left % 60;
+  const str = String(m).padStart(2,'0') + ':' + String(s).padStart(2,'0');
+  const d   = document.getElementById('vc-time');      if (d) d.textContent = str;
+  const n   = document.getElementById('vc-mini-time'); if (n) n.textContent = str;
+
+  const pct  = VC.total > 0 ? VC.left / VC.total : 0;
+  const circ = 2 * Math.PI * 33;
+  const ring = document.getElementById('vc-ring');
+  if (ring) { ring.style.strokeDasharray = circ; ring.style.strokeDashoffset = circ * (1 - pct); }
+  const bar = document.getElementById('vc-bar');
+  if (bar) bar.style.width = Math.round((1 - pct) * 100) + '%';
+
+  const el = document.getElementById('vid-countdown');
+  el.classList.toggle('vc-urgent', VC.left <= 60 && VC.left > 0 && !VC.paused);
+
+  const st = document.getElementById('vc-status');
+  if (st && !VC.paused) {
+    st.textContent = VC.left <= 0 ? "Time's up!" : VC.left <= 60 ? '⚠️ Almost done!' : 'Watching your lesson';
+  }
+}
+
+function vcTogglePause() {
+  const el = document.getElementById('vid-countdown');
+  const pb = document.getElementById('vc-pause-btn');
+  const st = document.getElementById('vc-status');
+  if (!VC.paused) {
+    VC.paused = true; VC.pausedAt = Date.now();
+    if (pb) { pb.textContent = '▶'; pb.title = 'Resume'; }
+    if (st) { st.textContent = '⏸ Paused'; }
+    el.classList.add('vc-paused'); el.classList.remove('vc-urgent');
+  } else {
+    VC.totalPausedMs += Date.now() - VC.pausedAt;
+    VC.paused = false;
+    if (pb) { pb.textContent = '⏸'; pb.title = 'Pause'; }
+    el.classList.remove('vc-paused');
+    vcUpdateDisplay();
+  }
+}
+
+function vcToggleMin() {
+  VC.minimised = !VC.minimised;
+  document.getElementById('vc-body').style.display = VC.minimised ? 'none' : 'block';
+  document.getElementById('vc-mini').style.display = VC.minimised ? 'flex' : 'none';
+  document.getElementById('vc-min-btn').textContent = VC.minimised ? '+' : '−';
+}
+
+function vcAddTime(mins) {
+  VC.total += mins * 60; VC.left += mins * 60;
+  vcUpdateDisplay(); showToast('+' + mins + ' min added');
+}
+
+function vcDone() {
+  clearInterval(VC.interval); VC.running = false; VC.paused = false;
+  vcHide(); markDone();
+}
+
+function vcExpired() {
+  document.getElementById('vid-countdown').classList.add('vc-done');
+  document.getElementById('vc-status').textContent = "Time's up!";
+  showToast('⏰ Session time reached!');
+}
+
+function vcHide() {
+  clearInterval(VC.interval); VC.running = false; VC.paused = false;
+  const el = document.getElementById('vid-countdown');
+  if (el) el.classList.remove('vc-visible');
+}
+
+function vcInitDrag() {
+  const widget = document.getElementById('vid-countdown');
+  const handle = document.getElementById('vc-drag-handle');
+  if (!widget || !handle) return;
+
+  function start(cx, cy, e) {
+    if (e.target.closest('.vc-ctrl-btn')) return;
+    VC.dragging = true;
+    // Switch from right/bottom anchoring to left/top for free positioning
+    const rect = widget.getBoundingClientRect();
+    const phone = widget.closest('.app-body') || document.querySelector('.phone') || document.body;
+    const pr = phone.getBoundingClientRect();
+    widget.style.right = 'auto'; widget.style.bottom = 'auto';
+    widget.style.left  = (rect.left - pr.left) + 'px';
+    widget.style.top   = (rect.top  - pr.top)  + 'px';
+    VC.dragOffX = cx - rect.left;
+    VC.dragOffY = cy - rect.top;
+    widget.style.transition = 'opacity .3s';
+    e.preventDefault();
+  }
+
+  function move(cx, cy) {
+    if (!VC.dragging) return;
+    const phone = widget.closest('.app-body') || document.querySelector('.phone') || document.body;
+    const pr = phone.getBoundingClientRect();
+    const x = Math.min(Math.max(cx - VC.dragOffX - pr.left, 4), pr.width  - widget.offsetWidth  - 4);
+    const y = Math.min(Math.max(cy - VC.dragOffY - pr.top,  4), pr.height - widget.offsetHeight - 4);
+    widget.style.left = x + 'px';
+    widget.style.top  = y + 'px';
+  }
+
+  function end() { VC.dragging = false; widget.style.transition = ''; }
+
+  handle.onmousedown = (e) => start(e.clientX, e.clientY, e);
+  handle.ontouchstart = (e) => { const t = e.touches[0]; start(t.clientX, t.clientY, e); };
+  document.addEventListener('mousemove', (e) => move(e.clientX, e.clientY));
+  document.addEventListener('mouseup', end);
+  document.addEventListener('touchmove', (e) => { const t=e.touches[0]; move(t.clientX,t.clientY); }, {passive:false});
+  document.addEventListener('touchend', end);
+}
+
+</script>
+
+</body>
+</html>
