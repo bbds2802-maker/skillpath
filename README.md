@@ -7,8 +7,8 @@ AI-powered skill learning planner. Zero distraction.
 
 ## Pages
 
-* [App](app2.2.1.html) — Mobile learning planner with YouTube video scheduling
-* [App (Test/Beta)](app.html) — 辅助页面（备注测试版）
+* [App](app2.2.1.html) — Mobile learning planner with AI
+* [App (Test/Beta)](app.html) 
 * [Web](web.html.html) — Desktop version
 
 ## How it works
