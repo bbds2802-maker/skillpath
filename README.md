@@ -1,4 +1,4 @@
-# SkillPath v2.2.1
+# SkillPath v2.3.1
 
 AI-powered skill learning planner. Zero distraction.
 
