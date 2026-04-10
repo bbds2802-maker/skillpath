@@ -7,7 +7,7 @@ AI-powered skill learning planner. Zero distraction.
 
 ## Pages
 
-* [App](skillpath-app2.3.1.html) — Mobile learning planner with AI
+* [App](skillpath-app-2.3.1.html) – Mobile learning planner with AI
 * [App (Test/Beta)](app.html) 
 * [Web](web.html.html) — Desktop version
 
