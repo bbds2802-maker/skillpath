@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-<title>skill-appv2.3.1</title>
+<title>SkillPath App — v2.3.1</title>
 <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
 <!-- YouTube IFrame API — loaded async so it doesn't block render -->
 <script src="https://www.youtube.com/iframe_api"></script>
@@ -532,11 +532,21 @@ select.field-input option { background: #1e1e2c; }
   padding: 4px 2px;
   cursor: pointer;
   position: relative;
-  transition: background .15s;
+  transition: background .15s, transform .15s, box-shadow .15s;
   gap: 3px;
 }
 .cal-cell:active { background: var(--card2); }
 .cal-cell.other-m { opacity: .3; }
+.cal-cell.drag-over {
+  background: var(--a-light);
+  box-shadow: inset 0 0 0 2px var(--accent);
+  transform: scale(1.08);
+  z-index: 5;
+}
+.cal-cell.drag-over .cal-cell-num {
+  background: var(--accent);
+  color: #fff;
+}
 .cal-cell-num {
   font-size: 13px; font-weight: 600;
   width: 28px; height: 28px;
@@ -574,11 +584,26 @@ select.field-input option { background: #1e1e2c; }
 }
 .dlp-item:last-child { border-bottom: none; }
 .dlp-item:active { background: var(--card2); }
+.dlp-item.dragging { opacity: .25; }
 .dlp-color { width: 4px; height: 40px; border-radius: 2px; flex-shrink: 0; }
 .dlp-info { flex: 1; min-width: 0; }
 .dlp-title { font-size: 14px; font-weight: 600; }
 .dlp-meta { font-size: 11px; color: var(--sub); margin-top: 2px; }
-.dlp-chevron { color: var(--sub); font-size: 14px; }
+.dlp-chevron {
+  color: var(--sub); font-size: 18px; touch-action: none;
+  width: 32px; height: 32px;
+  display: flex; align-items: center; justify-content: center;
+  flex-shrink: 0; border-radius: 8px;
+  margin-right: -6px;
+}
+.dlp-chevron:active { background: var(--border); color: var(--text); }
+#drag-ghost {
+  background: var(--card2);
+  border-radius: 14px;
+  box-shadow: 0 18px 40px rgba(0,0,0,.55), 0 0 0 1px var(--accent);
+  transform: scale(1.04) rotate(-1.5deg);
+  transition: none;
+}
 
 /* ── LESSON DETAIL SCREEN ────────────────────────────────── */
 #s-lesson { padding: 0; background: var(--bg); }
@@ -1733,8 +1758,8 @@ select.field-input option { background: #120d28; }
       <div class="sp-sub">Your keys are stored locally on this device only and never sent anywhere except the respective API endpoints.</div>
 
       <div class="sp-key-row">
-        <label class="field-lbl">Gemini API Key (for AI plan generation)</label>
-        <input class="field-input" id="inp-gemini-key" type="password" placeholder="AIzaSy… (Google AI Studio key)" autocomplete="off" />
+        <label class="field-lbl">Groq API Key (for AI plan generation)</label>
+        <input class="field-input" id="inp-groq-key" type="password" placeholder="gsk_… (console.groq.com key)" autocomplete="off" />
       </div>
       <div class="sp-key-row">
         <label class="field-lbl">YouTube Data API Key (for video search)</label>
@@ -1800,22 +1825,22 @@ select.field-input option { background: #120d28; }
           </div>
         </div>
 
-        <!-- AI toggle (shown only if Gemini key present) -->
+        <!-- AI toggle (shown only if Groq key present) -->
         <div id="yt-ai-row" style="display:flex;justify-content:space-between;
           align-items:center;padding:12px 14px;margin-bottom:14px;
           background:var(--card2);border:1px solid var(--border);border-radius:14px">
           <div>
             <div style="font-size:13px;font-weight:600">✦ AI description</div>
             <div style="font-size:11px;color:var(--sub);margin-top:2px">
-              Gemini generates a lesson summary &amp; tip
+              Groq generates a lesson summary &amp; tip
             </div>
           </div>
           <div class="toggle on" id="yt-ai-toggle"
             onclick="this.classList.toggle('on')"></div>
         </div>
-        <div id="yt-nogemini-note" style="display:none;
+        <div id="yt-nogroq-note" style="display:none;
           font-size:11px;color:var(--sub);margin-bottom:14px">
-          Add a Gemini key in ⚙️ Settings to enable AI descriptions.
+          Add a Groq key in ⚙️ Settings to enable AI descriptions.
         </div>
 
         <!-- Date chips -->
@@ -1893,7 +1918,7 @@ const S = {
 // ═══════════════════════════════════════════════════════════
 // API KEY MANAGEMENT
 // ═══════════════════════════════════════════════════════════
-function getGeminiKey() { return localStorage.getItem('sp_gemini_key') || ''; }
+function getGroqKey() { return localStorage.getItem('sp_groq_key') || ''; }
 function getYtKey()    { return localStorage.getItem('sp_yt_key') || ''; }
 
 // ── YT IMPORT ───────────────────────────────────────────────
@@ -1922,10 +1947,10 @@ function openYtImport() {
   document.getElementById('yt-date-pick').style.display = 'none';
   document.querySelectorAll('#yt-type-chips .chip').forEach(c => c.classList.remove('on'));
   document.querySelector('#yt-type-chips .chip[data-v="practice"]').classList.add('on');
-  const hasGemini = !!getGeminiKey();
-  document.getElementById('yt-ai-row').style.display = hasGemini ? 'flex' : 'none';
-  document.getElementById('yt-nogemini-note').style.display = hasGemini ? 'none' : 'block';
-  if (hasGemini) document.getElementById('yt-ai-toggle').classList.add('on');
+  const hasGroq = !!getGroqKey();
+  document.getElementById('yt-ai-row').style.display = hasGroq ? 'flex' : 'none';
+  document.getElementById('yt-nogroq-note').style.display = hasGroq ? 'none' : 'block';
+  if (hasGroq) document.getElementById('yt-ai-toggle').classList.add('on');
   document.getElementById('yt-import-sheet').classList.add('open');
   document.getElementById('yt-import-bg').classList.add('show');
   setTimeout(() => document.getElementById('yt-import-url').focus(), 300);
@@ -1997,7 +2022,7 @@ async function ytImportFetch() {
 }
 
 async function generateLessonMeta(title, channel, ytDesc) {
-  const key = getGeminiKey();
+  const key = getGroqKey();
   if (!key) return null;
   const prompt = `You are a learning coach. Given this YouTube video:
 Title: "${title}"
@@ -2007,15 +2032,20 @@ Description excerpt: "${(ytDesc||'').slice(0,400)}"
 Write a short lesson description (1–2 sentences) and one concrete practice tip.
 Respond ONLY with valid JSON: {"description":"...","tip":"..."}`;
   try {
-    const res = await fetch(
-      `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${key}`,
-      { method:'POST', headers:{'Content-Type':'application/json'},
-        body: JSON.stringify({ contents:[{parts:[{text:prompt}]}],
-          generationConfig:{temperature:0.6, maxOutputTokens:256, responseMimeType:'application/json'} }) }
-    );
-    if (!res.ok) { dbg(`Gemini meta: ${res.status}`, 'warn'); return null; }
+    const res = await fetch('https://api.groq.com/openai/v1/chat/completions', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${key}` },
+      body: JSON.stringify({
+        model: 'llama-3.3-70b-versatile',
+        messages: [{ role: 'user', content: prompt }],
+        temperature: 0.6,
+        max_tokens: 256,
+        response_format: { type: 'json_object' },
+      }),
+    });
+    if (!res.ok) { dbg(`Groq meta: ${res.status}`, 'warn'); return null; }
     const data = await res.json();
-    const raw  = (data.candidates?.[0]?.content?.parts??[]).map(p=>p.text||'').join('').trim();
+    const raw  = data.choices?.[0]?.message?.content?.trim() || '';
     return JSON.parse(raw.replace(/^```(?:json)?\s*/i,'').replace(/\s*```$/,'').trim());
   } catch(e) { dbg(`generateLessonMeta: ${e.message}`, 'warn'); return null; }
 }
@@ -2041,7 +2071,7 @@ async function ytImportAdd() {
   let tip = 'Pause at key moments and attempt the technique before continuing.';
 
   const aiOn = document.getElementById('yt-ai-toggle')?.classList.contains('on');
-  if (aiOn && getGeminiKey()) {
+  if (aiOn && getGroqKey()) {
     const btn = document.getElementById('yt-add-btn');
     btn.textContent = 'Generating…'; btn.disabled = true;
     const meta = await generateLessonMeta(title, d?.channel||'', d?.ytDesc||'');
@@ -2078,7 +2108,7 @@ async function ytImportAdd() {
 }
 
 function openSettings() {
-  document.getElementById('inp-gemini-key').value = getGeminiKey();
+  document.getElementById('inp-groq-key').value = getGroqKey();
   document.getElementById('inp-yt-key').value = getYtKey();
   document.getElementById('settings-panel').classList.add('open');
   document.getElementById('settings-overlay-bg').classList.add('show');
@@ -2089,10 +2119,10 @@ function closeSettings() {
   document.getElementById('settings-overlay-bg').classList.remove('show');
 }
 function saveSettings() {
-  const ak = document.getElementById('inp-gemini-key').value.trim();
+  const ak = document.getElementById('inp-groq-key').value.trim();
   const yk = document.getElementById('inp-yt-key').value.trim();
-  if (ak) localStorage.setItem('sp_gemini_key', ak);
-  else    localStorage.removeItem('sp_gemini_key');
+  if (ak) localStorage.setItem('sp_groq_key', ak);
+  else    localStorage.removeItem('sp_groq_key');
   if (yk) localStorage.setItem('sp_yt_key', yk);
   else    localStorage.removeItem('sp_yt_key');
   closeSettings();
@@ -2102,37 +2132,38 @@ function saveSettings() {
 function updateKeyStatusHint() {
   const hint = document.getElementById('key-status-hint');
   if (!hint) return;
-  const ak = getGeminiKey(), yk = getYtKey();
+  const ak = getGroqKey(), yk = getYtKey();
   if (ak && yk) hint.textContent = '✓ Both keys configured';
   else if (ak)  hint.textContent = '⚠ YouTube key missing';
-  else if (yk)  hint.textContent = '⚠ Gemini key missing';
+  else if (yk)  hint.textContent = '⚠ Groq key missing';
   else          hint.textContent = 'Tap Configure to add keys';
 }
 async function testApiKeys() {
   dbg('Testing API keys…', 'info');
-  const gk = getGeminiKey();
+  const gk = getGroqKey();
   const yk = getYtKey();
-  if (!gk) { dbg('No Gemini key found. Add one above.', 'warn'); }
+  if (!gk) { dbg('No Groq key found. Add one above.', 'warn'); }
   if (!yk) { dbg('No YouTube key found. Add one above.', 'warn'); }
   if (!gk && !yk) return;
-  // Quick ping to Gemini
+  // Quick ping to Groq
   if (gk) {
     try {
-      const r = await fetch(
-        `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${gk}`,
-        {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ contents:[{ parts:[{ text:'hi' }] }], generationConfig:{ maxOutputTokens:5 } }),
-        }
-      );
-      if (r.ok) dbg('✓ gemini-2.0-flash key valid', 'ok');
-      else if (r.status === 400) dbg('✗ Gemini key format invalid (400)', 'error');
-      else if (r.status === 403) dbg('✗ Gemini key unauthorized (403) — check Google AI Studio', 'error');
-      else if (r.status === 429) dbg('⚠ Gemini quota exceeded (429) — try again later', 'warn');
-      else dbg(`Gemini responded with status ${r.status}`, 'warn');
+      const r = await fetch('https://api.groq.com/openai/v1/chat/completions', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${gk}` },
+        body: JSON.stringify({
+          model: 'llama-3.3-70b-versatile',
+          messages: [{ role: 'user', content: 'hi' }],
+          max_tokens: 5,
+        }),
+      });
+      if (r.ok) dbg('✓ llama-3.3-70b-versatile key valid', 'ok');
+      else if (r.status === 400) dbg('✗ Groq key format invalid (400)', 'error');
+      else if (r.status === 401) dbg('✗ Groq key unauthorized (401) — check console.groq.com', 'error');
+      else if (r.status === 429) dbg('⚠ Groq quota exceeded (429) — try again later', 'warn');
+      else dbg(`Groq responded with status ${r.status}`, 'warn');
     } catch(e) {
-      dbg(`Gemini fetch error: ${e.message}`, 'error');
+      dbg(`Groq fetch error: ${e.message}`, 'error');
     }
   }
   // Quick ping to YouTube
@@ -2402,15 +2433,15 @@ async function startGenerate() {
   }, Math.max(0, 5400 - (Date.now() % 5400)));
 }
 
-// ── AI generation via Google gemini-2.0-flash ───────────────
+// ── AI generation via Groq (llama-3.3-70b-versatile) ────────
 async function generateWithAI() {
   // 1. 获取并彻底清理 Key 里的空格
-  const rawKey = localStorage.getItem('sp_gemini_key') || '';
+  const rawKey = localStorage.getItem('sp_groq_key') || '';
   const cleanKey = rawKey.trim();
 
   if (!cleanKey) {
-    alert("请先在设置中输入 Gemini API Key");
-    throw new Error('No Gemini key');
+    alert("请先在设置中输入 Groq API Key");
+    throw new Error('No Groq key');
   }
 
   const dates = (S.selectedDates && S.selectedDates.length)
@@ -2423,7 +2454,7 @@ async function generateWithAI() {
       })();
   const totalSessions = dates.length;
 
-  const systemPrompt = 'You are a learning plan generator. Output ONLY a valid JSON array with no markdown fences, no preamble, and no explanation. The response must start with [ and end with ].';
+  const systemPrompt = 'You are a learning plan generator. Output ONLY a valid JSON object with no markdown fences, no preamble, and no explanation. The response must be a JSON object with a single key "lessons" whose value is the array described by the user.';
 
   const userPrompt = `Create a ${S.duration} learning plan for "${S.skill}" (level: ${S.level}).
 
@@ -2436,45 +2467,44 @@ CRITICAL for videos: Each lesson needs 2 videos with HIGHLY SPECIFIC search quer
 - "how to [very specific movement/concept] ${S.skill} complete guide"
 - "${S.skill} [exact topic] breakdown tutorial beginner"
 
-Output format — a JSON array:
-[
-  {
-    "id": "l1",
-    "title": "Specific lesson title",
-    "type": "basics|technique|practice|review",
-    "date": "${dates[0]}",
-    "duration": "${S.len}",
-    "description": "What to focus on in this session (1-2 sentences)",
-    "tip": "One concrete, actionable practice tip",
-    "videos": [
-      {
-        "t": "Very specific video title a real creator would use",
-        "c": "Realistic channel name",
-        "d": "X:XX",
-        "platform": "${S.platforms[0]}",
-        "q": "short YouTube search query max 7 words including full course or tutorial"
-      }
-    ]
-  }
-]
+Respond with a JSON object: {"lessons": [ ... ]} where each array item has this shape:
+{
+  "id": "l1",
+  "title": "Specific lesson title",
+  "type": "basics|technique|practice|review",
+  "date": "${dates[0]}",
+  "duration": "${S.len}",
+  "description": "What to focus on in this session (1-2 sentences)",
+  "tip": "One concrete, actionable practice tip",
+  "videos": [
+    {
+      "t": "Very specific video title a real creator would use",
+      "c": "Realistic channel name",
+      "d": "X:XX",
+      "platform": "${S.platforms[0]}",
+      "q": "short YouTube search query max 7 words including full course or tutorial"
+    }
+  ]
+}
 
 Use these exact dates in order: ${dates.join(', ')}.
-Make every lesson title, description, tip, and video query UNIQUE. Return ONLY the JSON array.`;
+Make every lesson title, description, tip, and video query UNIQUE. Return ONLY the JSON object.`;
 
-  // 2. 使用你选定的 Gemini 2.0 Flash 模型
-  const model = "gemini-2.0-flash";
-  const endpoint = `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${cleanKey}`;
+  // 2. 使用 Groq 上的 llama-3.3-70b-versatile 模型
+  const model = "llama-3.3-70b-versatile";
+  const endpoint = 'https://api.groq.com/openai/v1/chat/completions';
 
   dbg(`正在呼叫 ${model} API...`, 'info');
 
   const body = JSON.stringify({
-    systemInstruction: { parts: [{ text: systemPrompt }] },
-    contents: [{ parts: [{ text: userPrompt }] }],
-    generationConfig: {
-      temperature: 0.7,
-      maxOutputTokens: 8192,
-      responseMimeType: 'application/json',
-    },
+    model,
+    messages: [
+      { role: 'system', content: systemPrompt },
+      { role: 'user', content: userPrompt },
+    ],
+    temperature: 0.7,
+    max_tokens: 8192,
+    response_format: { type: 'json_object' },
   });
 
   const MAX_RETRIES = 3;
@@ -2490,15 +2520,18 @@ Make every lesson title, description, tip, and video query UNIQUE. Return ONLY t
 
       const response = await fetch(endpoint, {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${cleanKey}`,
+        },
         body,
       });
 
       if (response.status === 429) {
         const retryAfter = response.headers.get('Retry-After');
         const waitSec = retryAfter ? parseInt(retryAfter) : attempt * 20;
-        dbg(`Gemini 429 — quota exceeded. Will retry in ${waitSec}s (attempt ${attempt}/${MAX_RETRIES})`, 'warn');
-        lastErr = new Error(`Gemini rate limit exceeded (429). Try again in a minute.`);
+        dbg(`Groq 429 — quota exceeded. Will retry in ${waitSec}s (attempt ${attempt}/${MAX_RETRIES})`, 'warn');
+        lastErr = new Error(`Groq rate limit exceeded (429). Try again in a minute.`);
         if (attempt < MAX_RETRIES) {
           await new Promise(r => setTimeout(r, waitSec * 1000));
           continue;
@@ -2508,17 +2541,18 @@ Make every lesson title, description, tip, and video query UNIQUE. Return ONLY t
 
       if (!response.ok) {
         const errorData = await response.json().catch(() => ({ error: { message: 'Unknown error' } }));
-        throw new Error(`Gemini Error ${response.status}: ${errorData.error?.message || 'Unknown error'}`);
+        throw new Error(`Groq Error ${response.status}: ${errorData.error?.message || 'Unknown error'}`);
       }
 
       const data = await response.json();
-      const raw = (data.candidates?.[0]?.content?.parts ?? []).map(p => p.text || '').join('').trim();
-      if (!raw) throw new Error('Gemini returned empty response');
+      const raw = data.choices?.[0]?.message?.content?.trim() || '';
+      if (!raw) throw new Error('Groq returned empty response');
 
       const clean = raw.replace(/^```(?:json)?\s*/i, '').replace(/\s*```$/, '').trim();
-      const lessons = JSON.parse(clean);
-      if (!Array.isArray(lessons) || !lessons[0]?.id) throw new Error('Invalid JSON structure from Gemini');
-      dbg(`Gemini generated ${lessons.length} lessons ✓`, 'ok');
+      const parsed = JSON.parse(clean);
+      const lessons = Array.isArray(parsed) ? parsed : parsed.lessons;
+      if (!Array.isArray(lessons) || !lessons[0]?.id) throw new Error('Invalid JSON structure from Groq');
+      dbg(`Groq generated ${lessons.length} lessons ✓`, 'ok');
       return lessons;
 
     } catch (err) {
@@ -3081,21 +3115,34 @@ let _drag = null;
 
 function initDayPanelDrag() {
   document.querySelectorAll('#day-panel .dlp-item[data-lid]').forEach(item => {
-    item.addEventListener('pointerdown', e => {
+    const handle = item.querySelector('.dlp-chevron');
+    if (!handle) return;
+    handle.addEventListener('click', e => e.stopPropagation());
+
+    handle.addEventListener('pointerdown', e => {
+      e.preventDefault();
+      e.stopPropagation();
       const lid = item.dataset.lid;
       const startX = e.clientX, startY = e.clientY;
       let dragging = false;
 
+      function startDrag(e2) {
+        dragging = true;
+        const rect = item.getBoundingClientRect();
+        const ghost = item.cloneNode(true);
+        ghost.id = 'drag-ghost';
+        ghost.style.cssText = `position:fixed;left:${rect.left}px;top:${rect.top}px;width:${rect.width}px;z-index:9999;pointer-events:none;`;
+        document.body.appendChild(ghost);
+        item.classList.add('dragging');
+        document.body.style.overflow = 'hidden';
+        document.body.style.touchAction = 'none';
+        _drag = { lid, ghost, ox: e2.clientX - rect.left, oy: e2.clientY - rect.top, item };
+        if (navigator.vibrate) navigator.vibrate(8);
+      }
+
       function onMove(e2) {
         if (!dragging && (Math.abs(e2.clientX-startX) > 6 || Math.abs(e2.clientY-startY) > 6)) {
-          dragging = true;
-          const rect = item.getBoundingClientRect();
-          const ghost = item.cloneNode(true);
-          ghost.id = 'drag-ghost';
-          ghost.style.cssText = `position:fixed;left:${rect.left}px;top:${rect.top}px;width:${rect.width}px;z-index:9999;pointer-events:none;opacity:.92;`;
-          document.body.appendChild(ghost);
-          item.style.opacity = '.3';
-          _drag = { lid, ghost, ox: e2.clientX - rect.left, oy: e2.clientY - rect.top, item };
+          startDrag(e2);
         }
         if (dragging && _drag) {
           _drag.ghost.style.left = (e2.clientX - _drag.ox) + 'px';
@@ -3112,11 +3159,14 @@ function initDayPanelDrag() {
       function onUp(e2) {
         document.removeEventListener('pointermove', onMove);
         document.removeEventListener('pointerup', onUp);
+        document.removeEventListener('pointercancel', onUp);
+        document.body.style.overflow = '';
+        document.body.style.touchAction = '';
         if (!dragging || !_drag) { _drag = null; return; }
         _drag.ghost.style.visibility = 'hidden';
         const under = document.elementFromPoint(e2.clientX, e2.clientY);
         _drag.ghost.remove();
-        _drag.item.style.opacity = '';
+        _drag.item.classList.remove('dragging');
         document.querySelectorAll('.cal-cell.drag-over').forEach(c => c.classList.remove('drag-over'));
         const cell = under?.closest('.cal-cell[data-date]');
         if (cell && !cell.classList.contains('other-m')) {
@@ -3129,7 +3179,7 @@ function initDayPanelDrag() {
             renderCalendar();
             renderHome();
             renderPlanList();
-            showToast('✓ Lesson moved');
+            showToast('✓ Moved to ' + newDate);
           } else {
             renderDayPanel(cell.dataset.date);
           }
@@ -3139,7 +3189,8 @@ function initDayPanelDrag() {
 
       document.addEventListener('pointermove', onMove);
       document.addEventListener('pointerup', onUp);
-    }, { passive: true });
+      document.addEventListener('pointercancel', onUp);
+    });
   });
 }
 
@@ -3207,7 +3258,7 @@ function renderDayPanel(ds) {
             <div class="dlp-title" style="${S.done.has(l.id)?'text-decoration:line-through;opacity:.5':''}">${l.title}</div>
             <div class="dlp-meta">⏱ ${l.duration} · ${durBadgeHtml(l)} · <span style="text-transform:capitalize">${l.type}</span></div>
           </div>
-          <div class="dlp-chevron" style="cursor:grab;font-size:18px;color:var(--sub)">⠿</div>
+          <div class="dlp-chevron">⠿</div>
         </div>`).join('')}
     </div>`;
   initDayPanelDrag();
