@@ -1160,6 +1160,137 @@ select.field-input option { background: #1e1e2c; }
 .skill-tile.selected .st-name { color: var(--accent); }
 .skill-tile.other-tile { border-style: dashed; }
 .skill-tile.other-tile .st-emoji { font-size: 22px; color: var(--sub); }
+
+/* ── Quick Mode ────────────────────────────────────────── */
+.qm-bar {
+  display: flex; align-items: center; gap: 12px;
+  background: linear-gradient(135deg, var(--a-light), rgba(108,99,255,.05));
+  border: 1.5px solid var(--accent);
+  border-radius: 18px;
+  padding: 14px 14px;
+  margin-bottom: 16px;
+  cursor: pointer;
+  transition: transform .15s;
+}
+.qm-bar:active { transform: scale(.97); }
+.qm-bar-icon {
+  font-size: 22px;
+  width: 38px; height: 38px;
+  border-radius: 12px;
+  background: var(--accent);
+  display: flex; align-items: center; justify-content: center;
+  flex-shrink: 0;
+}
+.qm-bar-text { flex: 1; min-width: 0; }
+.qm-bar-title { font-size: 14px; font-weight: 700; color: var(--text); }
+.qm-bar-sub {
+  font-size: 11px; color: var(--sub); margin-top: 2px;
+  white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+}
+.qm-bar-mic { font-size: 18px; flex-shrink: 0; opacity: .8; }
+
+.qm-overlay {
+  position: fixed; inset: 0;
+  background: rgba(0,0,0,.6);
+  z-index: 200;
+  opacity: 0; pointer-events: none;
+  transition: opacity .25s;
+}
+.qm-overlay.show { opacity: 1; pointer-events: auto; }
+.qm-sheet {
+  position: fixed; left: 0; right: 0; bottom: 0;
+  background: var(--bg2, var(--card));
+  background: var(--card);
+  border-radius: 24px 24px 0 0;
+  padding: 22px 20px calc(22px + env(safe-area-inset-bottom));
+  z-index: 201;
+  transform: translateY(100%);
+  transition: transform .3s cubic-bezier(.22,1,.36,1);
+  max-height: 80vh;
+  overflow-y: auto;
+}
+.qm-sheet.open { transform: translateY(0); }
+.qm-sheet-handle {
+  width: 36px; height: 4px; border-radius: 2px;
+  background: var(--border);
+  margin: 0 auto 16px;
+}
+.qm-title { font-size: 18px; font-weight: 700; margin-bottom: 4px; }
+.qm-sub { font-size: 12px; color: var(--sub); margin-bottom: 16px; line-height: 1.5; }
+.qm-input-wrap {
+  position: relative;
+  margin-bottom: 14px;
+}
+.qm-textarea {
+  width: 100%;
+  background: var(--card2);
+  border: 1.5px solid var(--border);
+  border-radius: 16px;
+  padding: 14px 52px 14px 14px;
+  font-size: 14px;
+  color: var(--text);
+  resize: none;
+  min-height: 84px;
+  font-family: inherit;
+  line-height: 1.5;
+  box-sizing: border-box;
+}
+.qm-textarea:focus { outline: none; border-color: var(--accent); }
+.qm-mic-btn {
+  position: absolute;
+  right: 10px; bottom: 10px;
+  width: 38px; height: 38px;
+  border-radius: 50%;
+  background: var(--accent);
+  border: none;
+  color: #fff;
+  font-size: 16px;
+  display: flex; align-items: center; justify-content: center;
+  cursor: pointer;
+  transition: all .2s;
+}
+.qm-mic-btn.listening {
+  background: #ff4d6d;
+  animation: qm-pulse 1.2s ease-in-out infinite;
+}
+@keyframes qm-pulse {
+  0%,100% { box-shadow: 0 0 0 0 rgba(255,77,109,.5); }
+  50% { box-shadow: 0 0 0 10px rgba(255,77,109,0); }
+}
+.qm-examples {
+  display: flex; flex-wrap: wrap; gap: 6px;
+  margin-bottom: 18px;
+}
+.qm-example-chip {
+  font-size: 11px; color: var(--sub);
+  background: var(--card2);
+  border: 1px solid var(--border);
+  border-radius: 999px;
+  padding: 6px 11px;
+  cursor: pointer;
+}
+.qm-example-chip:active { background: var(--border); }
+.qm-status {
+  font-size: 12px; color: var(--accent);
+  margin-bottom: 12px; min-height: 16px;
+  display: flex; align-items: center; gap: 6px;
+}
+.qm-parsed-card {
+  display: none;
+  background: var(--card2);
+  border: 1px solid var(--border);
+  border-radius: 16px;
+  padding: 14px;
+  margin-bottom: 16px;
+}
+.qm-parsed-row {
+  display: flex; justify-content: space-between;
+  font-size: 12.5px; padding: 5px 0;
+  border-bottom: 1px solid var(--border);
+}
+.qm-parsed-row:last-child { border-bottom: none; }
+.qm-parsed-label { color: var(--sub); }
+.qm-parsed-val { font-weight: 600; }
 .discovery-sheet {
   position: absolute;
   inset: 0;
@@ -1442,6 +1573,17 @@ select.field-input option { background: #120d28; }
         <!-- Step 0: Popular skill picker -->
         <div class="ob-sheet" id="ob-sheet-0">
           <div class="ob-sheet-handle"></div>
+
+          <!-- ⚡ Quick Mode: one-sentence + voice plan generation -->
+          <div class="qm-bar" id="qm-bar" onclick="openQuickMode()">
+            <div class="qm-bar-icon">⚡</div>
+            <div class="qm-bar-text">
+              <div class="qm-bar-title">Quick Mode</div>
+              <div class="qm-bar-sub">"I want to learn longboarding in 10 days" — just say it</div>
+            </div>
+            <div class="qm-bar-mic">🎙️</div>
+          </div>
+
           <div class="ob-section-lbl">🔥 Popular skills</div>
           <div class="skill-grid" id="skill-grid">
             <div class="skill-tile" data-skill="Skateboarding" data-emoji="🛹" onclick="selectSkillTile(this)"><div class="st-emoji">🛹</div><div class="st-name">Skateboarding</div></div>
@@ -1537,6 +1679,37 @@ select.field-input option { background: #120d28; }
           <button class="btn-cta" onclick="startGenerate()" style="margin-top:4px">Build my plan ✦</button>
         </div>
       </div>
+    </div>
+
+    <!-- ░░ QUICK MODE ░░ -->
+    <div class="qm-overlay" id="qm-overlay" onclick="closeQuickMode()"></div>
+    <div class="qm-sheet" id="qm-sheet">
+      <div class="qm-sheet-handle"></div>
+      <div class="qm-title">⚡ Quick Mode</div>
+      <div class="qm-sub">Say or type one sentence — AI figures out the skill, timeline, and urgency, and builds your full plan.</div>
+
+      <div class="qm-input-wrap">
+        <textarea class="qm-textarea" id="qm-textarea"
+          placeholder="e.g. I want to learn longboarding in 10 days"></textarea>
+        <button class="qm-mic-btn" id="qm-mic-btn" onclick="toggleQuickModeMic()" title="Speak instead">🎙️</button>
+      </div>
+
+      <div class="qm-examples">
+        <div class="qm-example-chip" onclick="qmFillExample(this)">I want to learn longboarding in 10 days</div>
+        <div class="qm-example-chip" onclick="qmFillExample(this)">Teach me guitar, total beginner, no rush</div>
+        <div class="qm-example-chip" onclick="qmFillExample(this)">I need to learn Python fast for a job interview in 3 weeks</div>
+      </div>
+
+      <div class="qm-status" id="qm-status"></div>
+
+      <div class="qm-parsed-card" id="qm-parsed-card">
+        <div class="qm-parsed-row"><span class="qm-parsed-label">Skill</span><span class="qm-parsed-val" id="qm-p-skill">—</span></div>
+        <div class="qm-parsed-row"><span class="qm-parsed-label">Level</span><span class="qm-parsed-val" id="qm-p-level">—</span></div>
+        <div class="qm-parsed-row"><span class="qm-parsed-label">Timeline</span><span class="qm-parsed-val" id="qm-p-duration">—</span></div>
+        <div class="qm-parsed-row"><span class="qm-parsed-label">Pace</span><span class="qm-parsed-val" id="qm-p-pace">—</span></div>
+      </div>
+
+      <button class="btn-cta" id="qm-submit-btn" onclick="submitQuickMode()">Generate my plan ✦</button>
     </div>
 
     <!-- ░░ LOADING ░░ -->
@@ -2021,6 +2194,206 @@ async function ytImportFetch() {
   dbg(`Fetched: "${snippet.title}" (${durMins} min)`, 'ok');
 }
 
+// ═══════════════════════════════════════════════════════════
+// QUICK MODE — one-sentence + voice plan generation
+// ═══════════════════════════════════════════════════════════
+let qmRecognition = null;
+let qmListening = false;
+let qmParsed = null; // last successfully parsed result, used by submitQuickMode
+
+function openQuickMode() {
+  document.getElementById('qm-overlay').classList.add('show');
+  document.getElementById('qm-sheet').classList.add('open');
+  document.getElementById('qm-status').textContent = '';
+  document.getElementById('qm-parsed-card').style.display = 'none';
+  qmParsed = null;
+  setTimeout(() => document.getElementById('qm-textarea').focus(), 300);
+}
+function closeQuickMode() {
+  document.getElementById('qm-overlay').classList.remove('show');
+  document.getElementById('qm-sheet').classList.remove('open');
+  if (qmListening) toggleQuickModeMic();
+}
+function qmFillExample(el) {
+  document.getElementById('qm-textarea').value = el.textContent;
+  document.getElementById('qm-status').textContent = '';
+  document.getElementById('qm-parsed-card').style.display = 'none';
+  qmParsed = null;
+}
+
+// ── Voice input via the browser's native Web Speech API ─────
+function toggleQuickModeMic() {
+  const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+  if (!SpeechRecognition) {
+    document.getElementById('qm-status').textContent = '⚠ Voice input isn\'t supported in this browser — try typing instead.';
+    return;
+  }
+  const btn = document.getElementById('qm-mic-btn');
+  const ta  = document.getElementById('qm-textarea');
+  const statusEl = document.getElementById('qm-status');
+
+  if (qmListening) {
+    qmRecognition?.stop();
+    return;
+  }
+
+  qmRecognition = new SpeechRecognition();
+  qmRecognition.lang = (navigator.language || 'en-US');
+  qmRecognition.interimResults = true;
+  qmRecognition.continuous = false;
+  qmRecognition.maxAlternatives = 1;
+
+  let finalTranscript = '';
+
+  qmRecognition.onstart = () => {
+    qmListening = true;
+    btn.classList.add('listening');
+    statusEl.textContent = '🎙️ Listening…';
+  };
+  qmRecognition.onresult = (e) => {
+    let interim = '';
+    for (let i = e.resultIndex; i < e.results.length; i++) {
+      const transcript = e.results[i][0].transcript;
+      if (e.results[i].isFinal) finalTranscript += transcript;
+      else interim += transcript;
+    }
+    ta.value = (finalTranscript + interim).trim();
+  };
+  qmRecognition.onerror = (e) => {
+    statusEl.textContent = `⚠ Voice input error: ${e.error}`;
+  };
+  qmRecognition.onend = () => {
+    qmListening = false;
+    btn.classList.remove('listening');
+    if (ta.value.trim()) statusEl.textContent = '';
+  };
+
+  try {
+    qmRecognition.start();
+  } catch (e) {
+    statusEl.textContent = `⚠ ${e.message}`;
+  }
+}
+
+// ── AI parsing of the free-text sentence into structured plan fields ──
+async function parseQuickPrompt(sentence) {
+  const key = getGroqKey();
+  if (!key) throw new Error('No Groq key configured');
+
+  const today = fmtDate(new Date());
+  const prompt = `A user wants to learn a skill and described it in one free-form sentence. Extract structured fields from it.
+
+User's sentence: "${sentence}"
+Today's date: ${today}
+
+Infer the following:
+- "skill": the specific skill or topic name (clean, capitalized, e.g. "Longboarding", "Guitar", "Python Programming")
+- "level": one of "complete beginner", "some experience", "intermediate" (default to "complete beginner" if unclear)
+- "duration": snap the requested timeframe to the CLOSEST of these exact options: "2 weeks", "1 month", "3 months", "6 months". If the user states a very short timeframe like "10 days" or "1 week", use "2 weeks" but raise the pace/urgency instead.
+- "urgency": one of "relaxed", "normal", "urgent" — infer from wording. Phrases like "fast", "ASAP", "in X days", "for an interview", "deadline" imply "urgent". Phrases like "no rush", "whenever", "eventually" imply "relaxed". Otherwise "normal".
+- "freqPerWeek": integer 2-7. Urgent → 5-7. Normal → 3-4. Relaxed → 2-3.
+- "sessionMinutes": one of "15 min", "30 min", "45 min", "60 min" — default "30 min" unless the sentence implies otherwise.
+- "tone": a short (max 6 words) human description of the tone you detected, e.g. "urgent, time-boxed", "casual, no pressure", "high-stakes, focused".
+
+Respond ONLY with a valid JSON object with exactly these keys: skill, level, duration, urgency, freqPerWeek, sessionMinutes, tone.`;
+
+  const res = await fetch('https://api.groq.com/openai/v1/chat/completions', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${key}` },
+    body: JSON.stringify({
+      model: 'llama-3.3-70b-versatile',
+      messages: [{ role: 'user', content: prompt }],
+      temperature: 0.3,
+      max_tokens: 300,
+      response_format: { type: 'json_object' },
+    }),
+  });
+
+  if (!res.ok) {
+    const errData = await res.json().catch(() => ({}));
+    throw new Error(`Groq Error ${res.status}: ${errData.error?.message || 'Unknown error'}`);
+  }
+  const data = await res.json();
+  const raw = data.choices?.[0]?.message?.content?.trim() || '';
+  const clean = raw.replace(/^```(?:json)?\s*/i, '').replace(/\s*```$/, '').trim();
+  const parsed = JSON.parse(clean);
+  if (!parsed.skill) throw new Error('Could not identify a skill from that sentence');
+  return parsed;
+}
+
+async function submitQuickMode() {
+  const sentence = document.getElementById('qm-textarea').value.trim();
+  const statusEl = document.getElementById('qm-status');
+  const btn = document.getElementById('qm-submit-btn');
+
+  if (!sentence) { statusEl.textContent = '⚠ Say or type what you want to learn first.'; return; }
+  if (!getGroqKey()) {
+    statusEl.textContent = '⚠ Add a Groq API key in ⚙️ Settings to use Quick Mode.';
+    return;
+  }
+
+  btn.disabled = true;
+  btn.textContent = 'Understanding you…';
+  statusEl.textContent = '✦ Parsing your sentence…';
+  document.getElementById('qm-parsed-card').style.display = 'none';
+
+  try {
+    const parsed = await parseQuickPrompt(sentence);
+    qmParsed = parsed;
+
+    // Show what the AI understood, briefly, before generating
+    document.getElementById('qm-p-skill').textContent = parsed.skill;
+    document.getElementById('qm-p-level').textContent = parsed.level;
+    document.getElementById('qm-p-duration').textContent = parsed.duration;
+    document.getElementById('qm-p-pace').textContent = `${parsed.tone} · ${parsed.freqPerWeek}x/week`;
+    document.getElementById('qm-parsed-card').style.display = 'block';
+    statusEl.textContent = '✓ Got it — building your plan…';
+
+    // Populate global state S exactly like the manual flow does
+    S.skill = parsed.skill;
+    S.level = parsed.level || 'complete beginner';
+    S.duration = ['2 weeks','1 month','3 months','6 months'].includes(parsed.duration) ? parsed.duration : '1 month';
+    S.freq = Math.min(7, Math.max(2, parseInt(parsed.freqPerWeek) || 3));
+    S.len = ['15 min','30 min','45 min','60 min'].includes(parsed.sessionMinutes) ? parsed.sessionMinutes : '30 min';
+    S.style = 'visual demos';
+    S.platforms = ['YouTube'];
+
+    // Build session dates. For "urgent" requests, schedule near-daily
+    // sessions starting tomorrow regardless of weekday, since the user
+    // implied a tight real-world deadline (e.g. "in 10 days").
+    const weeks = getDurWeeks();
+    const maxSessions = Math.min(weeks * S.freq, 48);
+    S.selectedDates = [];
+    const cur = new Date(); cur.setDate(cur.getDate() + 1); cur.setHours(0,0,0,0);
+    if (parsed.urgency === 'urgent') {
+      // Pack sessions on consecutive days first
+      while (S.selectedDates.length < maxSessions) {
+        S.selectedDates.push(fmtDate(cur));
+        cur.setDate(cur.getDate() + 1);
+      }
+    } else {
+      // Spread across the week like the manual flow (Mon/Wed/Fri-style cadence)
+      const pattern = [1,3,5,2,4,6,0].slice(0, S.freq).sort((a,b)=>a-b);
+      const patternSet = new Set(pattern);
+      while (S.selectedDates.length < maxSessions) {
+        if (patternSet.has(cur.getDay())) S.selectedDates.push(fmtDate(cur));
+        cur.setDate(cur.getDate() + 1);
+      }
+    }
+
+    await new Promise(r => setTimeout(r, 700)); // let the user see the parsed summary
+    closeQuickMode();
+    await runGeneration();
+
+  } catch (err) {
+    statusEl.textContent = `✗ ${err.message}`;
+    dbg(`Quick Mode parse failed: ${err.message}`, 'error');
+  } finally {
+    btn.disabled = false;
+    btn.textContent = 'Generate my plan ✦';
+  }
+}
+
 async function generateLessonMeta(title, channel, ytDesc) {
   const key = getGroqKey();
   if (!key) return null;
@@ -2383,6 +2756,13 @@ async function startGenerate() {
   S.platforms = [...document.querySelectorAll('#cr-plat .chip.on')].map(c => c.dataset.v);
   if (!S.platforms.length) S.platforms = ['YouTube'];
 
+  await runGeneration();
+}
+
+// Shared generation + loading-screen pipeline. Assumes S.skill, S.level,
+// S.duration, S.freq, S.selectedDates, S.len, S.style, S.platforms are
+// already populated by the caller (manual form OR Quick Mode parser).
+async function runGeneration() {
   showScreen('loading');
   document.getElementById('bottom-nav').style.display = 'none';
 
