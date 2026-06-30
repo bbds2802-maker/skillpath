@@ -1456,7 +1456,7 @@ select.field-input option { background: #1e1e2c; }
 
 .phone { background: #07040f; box-shadow: 0 0 0 10px #0e0a1a, 0 0 0 11px rgba(124,111,247,.22), 0 40px 100px rgba(0,0,0,.9); }
 .screen { background: transparent; }
-#s-home,#s-calendar,#s-plan,#s-lesson,#s-onboard,#s-loading { background: transparent; }
+#s-home,#s-calendar,#s-plan,#s-lesson,#s-review,#s-onboard,#s-loading { background: transparent; }
 .home-header  { background: rgba(7,4,15,.5); backdrop-filter: blur(18px); -webkit-backdrop-filter: blur(18px); }
 .cal-header   { background: rgba(7,4,15,.5); backdrop-filter: blur(18px); -webkit-backdrop-filter: blur(18px); }
 .plan-header  { background: rgba(7,4,15,.5); backdrop-filter: blur(18px); -webkit-backdrop-filter: blur(18px); }
@@ -1824,6 +1824,12 @@ select.field-input option { background: #120d28; }
         <div id="l-videos"></div>
         <div class="l-section-lbl">💡 Tips for this session</div>
         <div id="l-tips"></div>
+
+        <div class="l-section-lbl">📝 My Notes</div>
+        <div class="qm-input-wrap" style="margin-bottom:4px">
+          <textarea class="qm-textarea" id="l-notes" style="min-height:90px;padding:14px" placeholder="What clicked? What didn't? Questions for next time…" oninput="onLessonNotesInput()"></textarea>
+        </div>
+        <div style="font-size:11px;color:var(--sub);min-height:16px;margin-bottom:4px" id="notes-save-hint"></div>
       </div>
 
       <!-- Video Countdown Timer -->
@@ -1862,6 +1868,20 @@ select.field-input option { background: #120d28; }
       <div class="lesson-footer">
         <button class="done-btn" id="done-btn" onclick="markDone()">✓ Mark as complete</button>
       </div>
+    </div>
+
+    <!-- ░░ REVIEW SCREEN ░░ -->
+    <div class="screen" id="s-review">
+      <div class="plan-header">
+        <div class="plan-header-title">Review</div>
+        <div class="plan-header-sub">Your notes, recapped by AI</div>
+      </div>
+      <div style="padding:0 16px 14px">
+        <button class="btn-cta" id="review-gen-btn" onclick="generateReviewSummary()">✦ Generate AI Review</button>
+      </div>
+      <div id="review-summary-wrap" style="display:none;margin:0 16px 18px"></div>
+      <div class="section-head">📝 Lesson Notes</div>
+      <div id="review-notes-list"></div>
     </div>
 
     <!-- TOAST -->
@@ -2064,6 +2084,11 @@ select.field-input option { background: #120d28; }
       <div class="nav-label">Plan</div>
       <div class="nav-dot"></div>
     </div>
+    <div class="nav-tab" id="tab-review" onclick="goTab('review')">
+      <div class="nav-icon">📓</div>
+      <div class="nav-label">Review</div>
+      <div class="nav-dot"></div>
+    </div>
     <div class="nav-tab" id="tab-new" onclick="resetToOnboard()">
       <div class="nav-icon">＋</div>
       <div class="nav-label">New Skill</div>
@@ -2228,12 +2253,26 @@ function qmFillExample(el) {
 }
 
 // ── Voice input via the browser's native Web Speech API ─────
+const QM_MIC_ERR_MSG = {
+  'not-allowed':   '⚠ Microphone access was blocked. Allow mic access for this page in your browser\'s site settings, then try again.',
+  'service-not-allowed': '⚠ Microphone access was blocked. Allow mic access for this page in your browser\'s site settings, then try again.',
+  'no-speech':     '⚠ Didn\'t catch that — no speech detected. Try again and speak right after the mic turns red.',
+  'audio-capture': '⚠ No microphone was found. Check that a mic is connected and not in use by another app.',
+  'network':       '⚠ Voice recognition needs an internet connection (it relies on your browser\'s speech service).',
+  'aborted':       '',
+};
+
 function toggleQuickModeMic() {
   const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
   if (!SpeechRecognition) {
     document.getElementById('qm-status').textContent = '⚠ Voice input isn\'t supported in this browser — try typing instead.';
     return;
   }
+  if (location.protocol !== 'https:' && location.hostname !== 'localhost' && location.protocol !== 'file:') {
+    document.getElementById('qm-status').textContent = '⚠ Voice input requires HTTPS (or localhost). Try typing instead.';
+    return;
+  }
+
   const btn = document.getElementById('qm-mic-btn');
   const ta  = document.getElementById('qm-textarea');
   const statusEl = document.getElementById('qm-status');
@@ -2243,41 +2282,77 @@ function toggleQuickModeMic() {
     return;
   }
 
-  qmRecognition = new SpeechRecognition();
-  qmRecognition.lang = (navigator.language || 'en-US');
-  qmRecognition.interimResults = true;
-  qmRecognition.continuous = false;
-  qmRecognition.maxAlternatives = 1;
+  // Explicitly request mic permission first. On some browsers/setups
+  // SpeechRecognition.start() fails silently (no error event, no result)
+  // if the underlying mic permission was never actually granted — asking
+  // via getUserMedia forces the real permission prompt and lets us show
+  // a clear message if the user denies or has no mic, instead of the
+  // recognizer just sitting there capturing nothing.
+  const beginRecognition = () => {
+    qmRecognition = new SpeechRecognition();
+    qmRecognition.lang = (navigator.language || 'en-US');
+    qmRecognition.interimResults = true;
+    qmRecognition.continuous = true;
+    qmRecognition.maxAlternatives = 1;
 
-  let finalTranscript = '';
+    let finalTranscript = '';
+    let gotAnySpeech = false;
 
-  qmRecognition.onstart = () => {
-    qmListening = true;
-    btn.classList.add('listening');
-    statusEl.textContent = '🎙️ Listening…';
-  };
-  qmRecognition.onresult = (e) => {
-    let interim = '';
-    for (let i = e.resultIndex; i < e.results.length; i++) {
-      const transcript = e.results[i][0].transcript;
-      if (e.results[i].isFinal) finalTranscript += transcript;
-      else interim += transcript;
+    qmRecognition.onstart = () => {
+      qmListening = true;
+      btn.classList.add('listening');
+      statusEl.textContent = '🎙️ Listening… speak now';
+    };
+    qmRecognition.onresult = (e) => {
+      gotAnySpeech = true;
+      let interim = '';
+      for (let i = e.resultIndex; i < e.results.length; i++) {
+        const transcript = e.results[i][0].transcript;
+        if (e.results[i].isFinal) finalTranscript += transcript + ' ';
+        else interim += transcript;
+      }
+      ta.value = (finalTranscript + interim).trim();
+      statusEl.textContent = '🎙️ Listening… tap the mic again to stop';
+    };
+    qmRecognition.onerror = (e) => {
+      dbg(`Voice input error: ${e.error}`, 'error');
+      const friendly = QM_MIC_ERR_MSG[e.error];
+      if (friendly === undefined) statusEl.textContent = `⚠ Voice input error: ${e.error}`;
+      else if (friendly) statusEl.textContent = friendly;
+    };
+    qmRecognition.onend = () => {
+      qmListening = false;
+      btn.classList.remove('listening');
+      if (ta.value.trim()) statusEl.textContent = '';
+      else if (!gotAnySpeech) statusEl.textContent = '⚠ No speech captured. Check your mic input level and try again.';
+    };
+
+    try {
+      qmRecognition.start();
+    } catch (e) {
+      statusEl.textContent = `⚠ ${e.message}`;
     }
-    ta.value = (finalTranscript + interim).trim();
-  };
-  qmRecognition.onerror = (e) => {
-    statusEl.textContent = `⚠ Voice input error: ${e.error}`;
-  };
-  qmRecognition.onend = () => {
-    qmListening = false;
-    btn.classList.remove('listening');
-    if (ta.value.trim()) statusEl.textContent = '';
   };
 
-  try {
-    qmRecognition.start();
-  } catch (e) {
-    statusEl.textContent = `⚠ ${e.message}`;
+  if (navigator.mediaDevices?.getUserMedia) {
+    statusEl.textContent = '🎙️ Requesting microphone access…';
+    navigator.mediaDevices.getUserMedia({ audio: true })
+      .then((stream) => {
+        stream.getTracks().forEach(t => t.stop()); // we only needed the permission grant
+        beginRecognition();
+      })
+      .catch((err) => {
+        dbg(`getUserMedia failed: ${err.name}`, 'error');
+        if (err.name === 'NotAllowedError' || err.name === 'PermissionDeniedError') {
+          statusEl.textContent = QM_MIC_ERR_MSG['not-allowed'];
+        } else if (err.name === 'NotFoundError' || err.name === 'DevicesNotFoundError') {
+          statusEl.textContent = QM_MIC_ERR_MSG['audio-capture'];
+        } else {
+          statusEl.textContent = `⚠ Couldn't access microphone: ${err.message || err.name}`;
+        }
+      });
+  } else {
+    beginRecognition();
   }
 }
 
@@ -3695,8 +3770,10 @@ function openLesson(id, from) {
 
   document.getElementById('lesson-back-btn').onclick = () => {
     ytHide();
-    showScreen(S.prevTab === 'plan' ? 'plan' : S.prevTab === 'calendar' ? 'calendar' : 'home');
-    setActiveTab(S.prevTab === 'plan' ? 'plan' : S.prevTab === 'calendar' ? 'calendar' : 'home');
+    const dest = ['plan','calendar','review'].includes(S.prevTab) ? S.prevTab : 'home';
+    showScreen(dest);
+    setActiveTab(dest);
+    if (dest === 'review') renderReview();
     vcHide();
   };
 
@@ -3765,6 +3842,9 @@ function openLesson(id, from) {
       <strong>Focus:</strong> ${l.description}<br><br>
       <strong>Practice tip:</strong> ${l.tip}
     </div>`;
+
+  document.getElementById('l-notes').value = (getAllNotes()[l.id]?.text) || '';
+  document.getElementById('notes-save-hint').textContent = '';
 
   const btn = document.getElementById('done-btn');
   if (S.done.has(l.id)) {
@@ -3938,11 +4018,163 @@ function stopSessionTimer() {
 }
 
 // ═══════════════════════════════════════════════════════════
+// NOTES & REVIEW (NotebookLM-style recap)
+// ═══════════════════════════════════════════════════════════
+function getAllNotes() {
+  try { return JSON.parse(localStorage.getItem('sp_notes') || '{}'); }
+  catch { return {}; }
+}
+function saveNote(lessonId, text) {
+  const notes = getAllNotes();
+  if (text.trim()) {
+    notes[lessonId] = {
+      text: text.trim(),
+      updatedAt: Date.now(),
+      skill: S.skill,
+      title: S.curLesson?.title || '',
+      date: S.curLesson?.date || '',
+    };
+  } else {
+    delete notes[lessonId];
+  }
+  localStorage.setItem('sp_notes', JSON.stringify(notes));
+}
+
+let notesSaveTimer = null;
+function onLessonNotesInput() {
+  const ta = document.getElementById('l-notes');
+  const hint = document.getElementById('notes-save-hint');
+  hint.textContent = 'Saving…';
+  clearTimeout(notesSaveTimer);
+  notesSaveTimer = setTimeout(() => {
+    if (!S.curLesson) return;
+    saveNote(S.curLesson.id, ta.value);
+    hint.textContent = '✓ Saved';
+    setTimeout(() => { if (hint.textContent === '✓ Saved') hint.textContent = ''; }, 1500);
+  }, 500);
+}
+
+function renderReview() {
+  const notes = getAllNotes();
+  const entries = Object.entries(notes).sort((a, b) => b[1].updatedAt - a[1].updatedAt);
+  const listEl = document.getElementById('review-notes-list');
+
+  if (!entries.length) {
+    listEl.innerHTML = `
+      <div class="empty-state">
+        <div class="e-icon">📓</div>
+        <div class="e-text">No notes yet. Jot a few lines on any lesson page and they'll show up here, ready to be turned into an AI recap.</div>
+      </div>`;
+  } else {
+    listEl.innerHTML = entries.map(([id, n]) => {
+      const snippet = n.text.length > 90 ? n.text.slice(0, 90) + '…' : n.text;
+      const dateLabel = n.date ? new Date(n.date + 'T12:00:00').toLocaleDateString('en-US', { month: 'short', day: 'numeric' }) : '';
+      return `
+        <div class="plan-row" onclick="openLesson('${id}','review')">
+          <div class="pr-info">
+            <div class="pr-title">${(n.title || 'Lesson').replace(/</g, '&lt;')}</div>
+            <div class="pr-meta">${dateLabel ? dateLabel + ' · ' : ''}${snippet.replace(/</g, '&lt;')}</div>
+          </div>
+        </div>`;
+    }).join('');
+  }
+
+  const cached = localStorage.getItem('sp_review_summary');
+  const wrap = document.getElementById('review-summary-wrap');
+  if (cached) {
+    try {
+      const { summary, ts, skill } = JSON.parse(cached);
+      if (skill === S.skill) { showReviewSummary(summary, ts); return; }
+    } catch {}
+  }
+  wrap.style.display = 'none';
+  wrap.innerHTML = '';
+}
+
+function showReviewSummary(summary, ts) {
+  const wrap = document.getElementById('review-summary-wrap');
+  const bullets = (arr) => (arr || []).map(s => `<li style="margin-bottom:6px">${String(s).replace(/</g, '&lt;')}</li>`).join('');
+  wrap.innerHTML = `
+    <div class="tip-box" style="margin-bottom:0">
+      <div style="font-size:11px;color:var(--sub);margin-bottom:12px">Generated ${new Date(ts).toLocaleString()}</div>
+      <strong>✅ Key takeaways</strong>
+      <ul style="margin:8px 0 14px 18px">${bullets(summary.keyTakeaways)}</ul>
+      <strong style="color:var(--amber)">⚠️ Struggle points</strong>
+      <ul style="margin:8px 0 14px 18px">${bullets(summary.strugglePoints)}</ul>
+      <strong style="color:var(--pink)">🎯 Next focus</strong>
+      <ul style="margin:8px 0 0 18px">${bullets(summary.nextFocus)}</ul>
+    </div>`;
+  wrap.style.display = 'block';
+}
+
+async function generateReviewSummary() {
+  const key = getGroqKey();
+  const btn = document.getElementById('review-gen-btn');
+  const notes = getAllNotes();
+  const entries = Object.values(notes);
+
+  if (!entries.length) { showToast('Add some notes first'); return; }
+  if (!key) { showToast('Add a Groq API key in ⚙️ Settings'); return; }
+
+  btn.disabled = true;
+  btn.textContent = 'Reviewing your notes…';
+
+  const notesBlob = entries
+    .slice().sort((a, b) => (a.date || '').localeCompare(b.date || ''))
+    .map(n => `• [${n.date || '?'}] ${n.title || 'Lesson'}: ${n.text}`)
+    .join('\n');
+
+  const prompt = `You are a learning coach reviewing a student's session notes for "${S.skill || 'their skill'}".
+
+Notes (chronological):
+${notesBlob}
+
+Write a short, encouraging recap. Identify recurring patterns across the notes, not just one-off remarks.
+Respond ONLY with valid JSON with exactly these keys:
+- "keyTakeaways": array of 3-5 short strings — what they've understood well
+- "strugglePoints": array of 2-4 short strings — recurring difficulties or confusion
+- "nextFocus": array of 2-3 short strings — concrete things to focus on next session`;
+
+  try {
+    const res = await fetch('https://api.groq.com/openai/v1/chat/completions', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${key}` },
+      body: JSON.stringify({
+        model: 'llama-3.3-70b-versatile',
+        messages: [{ role: 'user', content: prompt }],
+        temperature: 0.4,
+        max_tokens: 500,
+        response_format: { type: 'json_object' },
+      }),
+    });
+    if (!res.ok) {
+      const errData = await res.json().catch(() => ({}));
+      throw new Error(errData.error?.message || `Groq Error ${res.status}`);
+    }
+    const data = await res.json();
+    const raw = data.choices?.[0]?.message?.content?.trim() || '{}';
+    const clean = raw.replace(/^```(?:json)?\s*/i, '').replace(/\s*```$/, '').trim();
+    const parsed = JSON.parse(clean);
+
+    const ts = Date.now();
+    localStorage.setItem('sp_review_summary', JSON.stringify({ summary: parsed, ts, skill: S.skill }));
+    showReviewSummary(parsed, ts);
+    dbg('Review summary generated', 'ok');
+  } catch (err) {
+    showToast(`✗ ${err.message}`);
+    dbg(`Review generation failed: ${err.message}`, 'error');
+  } finally {
+    btn.disabled = false;
+    btn.textContent = '✦ Generate AI Review';
+  }
+}
+
+// ═══════════════════════════════════════════════════════════
 // NAVIGATION
 // ═══════════════════════════════════════════════════════════
-const SCREENS = { home:'s-home', calendar:'s-calendar', plan:'s-plan', lesson:'s-lesson', onboard:'s-onboard', loading:'s-loading' };
-const TABS    = { home:'tab-home', calendar:'tab-calendar', plan:'tab-plan' };
-const TAB_ORDER = ['home','calendar','plan','new'];
+const SCREENS = { home:'s-home', calendar:'s-calendar', plan:'s-plan', lesson:'s-lesson', review:'s-review', onboard:'s-onboard', loading:'s-loading' };
+const TABS    = { home:'tab-home', calendar:'tab-calendar', plan:'tab-plan', review:'tab-review' };
+const TAB_ORDER = ['home','calendar','plan','review','new'];
 
 function showScreen(name) {
   Object.values(SCREENS).forEach(id => { const el = document.getElementById(id); if (el) el.classList.remove('active'); });
@@ -3954,7 +4186,7 @@ function setActiveTab(name) {
   if (TABS[name]) document.getElementById(TABS[name])?.classList.add('active');
   positionNavLiquid(name);
 }
-function goTab(name) { showScreen(name); setActiveTab(name); }
+function goTab(name) { showScreen(name); setActiveTab(name); if (name === 'review') renderReview(); }
 
 function positionNavLiquid(name) {
   const liquid = document.getElementById('nav-liquid');
