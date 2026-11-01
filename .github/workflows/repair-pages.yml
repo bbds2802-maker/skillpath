@@ -14,11 +14,11 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 5
     steps:
-      - name: Safely finish recovery of the originally approved stale deployment
+      - name: Safely finish recovery of the stale deployment blocking the current verified release
         env:
           GH_TOKEN: ${{ github.token }}
         run: |
-          if repair_output=$(gh api --method POST "repos/$GITHUB_REPOSITORY/pages/deployments/4f7e04d89232a854f62086a85a924eef221c66ff/cancel" 2>&1); then
+          if repair_output=$(gh api --method POST "repos/$GITHUB_REPOSITORY/pages/deployments/ec3faffdb1e9bfc6a17ff6022e44f09152bf5792/cancel" 2>&1); then
             echo 'The specified stale deployment was cancelled.'
           else
             case "$repair_output" in
