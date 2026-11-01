@@ -1559,7 +1559,7 @@ select.field-input option { background: #1e1e2c; }
           <label class="field-lbl">Platforms</label>
           <div class="chip-row" id="cr-plat">
             <button class="chip on" data-v="B站">B站</button>
-            <button class="chip" data-v="YouTube">YouTube</button>
+            <button class="chip on" data-v="YouTube">YouTube</button>
           </div>
           <!-- Public service access -->
           <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:16px;padding:12px 14px;background:var(--a-light);border:1px solid var(--a-light);border-radius:14px">
@@ -1712,7 +1712,9 @@ select.field-input option { background: #1e1e2c; }
         <div class="l-section-lbl">课程视频</div>
         <form class="lesson-video-search" onsubmit="event.preventDefault();searchLessonVideos()">
           <label for="lesson-video-query">搜索 B 站教程</label>
-          <div class="video-search-row"><input id="lesson-video-query" type="search" maxlength="120" placeholder="例如：吉他 C 和弦教程" required><button id="lesson-video-search-btn" type="submit">搜索</button></div>
+          <div class="video-search-row"><input id="lesson-video-query" type="search" maxlength="120" placeholder="教程关键词，或 B站完整视频链接" oninput="updateBiliSearchLink()" required><button id="lesson-video-search-btn" type="submit">搜索</button></div>
+          <p class="video-search-help">输入关键词搜索，或粘贴 B站完整视频链接，添加到本课。</p>
+          <a id="bili-search-external" target="_blank" rel="noopener noreferrer">去 B站搜索这些关键词 ↗</a>
           <p id="lesson-video-search-status" role="status"></p>
           <div id="lesson-video-results"></div>
         </form>
@@ -1992,7 +1994,7 @@ select.field-input option { background: #1e1e2c; }
 const S = {
   skill: '', level: 'complete beginner',
   duration: '1 month', freq: 3, selectedDates: [], len: '30 min',
-  style: 'visual demos', platforms: ['B站'],
+  style: 'visual demos', platforms: ['B站','YouTube'],
   lessons: [], done: new Set(),
   curLesson: null, prevTab: 'home',
   calMonth: new Date().getMonth(), calYear: new Date().getFullYear(),
@@ -2268,7 +2270,7 @@ async function submitQuickMode() {
     S.freq = Math.min(7, Math.max(2, parseInt(parsed.freqPerWeek) || 3));
     S.len = ['15 min','30 min','45 min','60 min'].includes(parsed.sessionMinutes) ? parsed.sessionMinutes : '30 min';
     S.style = 'visual demos';
-    S.platforms = ['B站'];
+    S.platforms = ['B站','YouTube'];
 
     // Build session dates. For "urgent" requests, schedule near-daily
     // sessions starting tomorrow regardless of weekday, since the user
@@ -2594,7 +2596,7 @@ async function startGenerate() {
   S.len = chipVal('cr-len') || '30 min';
   S.style = chipVal('cr-style') || 'visual demos';
   S.platforms = [...document.querySelectorAll('#cr-plat .chip.on')].map(c => c.dataset.v);
-  if (!S.platforms.length) S.platforms = ['B站'];
+  if (!S.platforms.length) S.platforms = ['B站','YouTube'];
 
   await runGeneration();
 }
@@ -3216,9 +3218,15 @@ function renderPlanList() {
 
 // ── Lesson detail ───────────────────────────────────────────
 let lessonSearchVersion=0,lessonSearchResults=[];
+function updateBiliSearchLink(){
+  const value=document.getElementById('lesson-video-query').value.trim();
+  document.getElementById('bili-search-external').href='https://search.bilibili.com/all?keyword='+encodeURIComponent(value.slice(0,120));
+  document.getElementById('lesson-video-search-btn').textContent=SkillPathVideos.parse(value)?.platform==='B站'?'添加':'搜索';
+}
 function resetLessonVideoSearch(lesson){
   lessonSearchVersion++;lessonSearchResults=[];
   document.getElementById('lesson-video-query').value=lesson.bilibiliQuery||(({'Guitar':'吉他','Piano':'钢琴','Photography':'摄影','Drawing':'绘画','Cooking':'烹饪','Yoga':'瑜伽'}[S.skill]||S.skill)+' '+lesson.title+' 教程').slice(0,120);
+  updateBiliSearchLink();
   document.getElementById('lesson-video-search-status').textContent='';
   document.getElementById('lesson-video-results').innerHTML='';
   document.getElementById('lesson-video-search-btn').disabled=false;
@@ -3226,6 +3234,11 @@ function resetLessonVideoSearch(lesson){
 async function searchLessonVideos(){
   if(!S.curLesson)return;
   const query=document.getElementById('lesson-video-query').value.trim();if(!query){showToast('请输入教程搜索词');return;}
+  const parsed=SkillPathVideos.parse(query);
+  if(parsed?.platform==='B站'){
+    lessonSearchResults=[{...parsed,t:'B站视频 · '+parsed.bvid+(parsed.page>1?' · 第 '+parsed.page+' 集':''),c:'B站',durMins:null}];
+    addLessonSearchVideo(0);return;
+  }
   const version=++lessonSearchVersion,lessonId=S.curLesson.id,button=document.getElementById('lesson-video-search-btn'),status=document.getElementById('lesson-video-search-status');
   button.disabled=true;status.textContent='正在搜索 B站教程…';document.getElementById('lesson-video-results').innerHTML='';lessonSearchResults=[];
   try{
@@ -3234,7 +3247,7 @@ async function searchLessonVideos(){
     lessonSearchResults=(result.videos||[]).filter(SkillPathVideos.valid);
     status.textContent=lessonSearchResults.length?'找到 '+lessonSearchResults.length+' 个视频，选择后添加到本课并播放。':'没有找到教程，请缩短关键词或粘贴视频链接。';
     document.getElementById('lesson-video-results').innerHTML=lessonSearchResults.map((v,i)=>`<button type="button" class="video-search-result" onclick="addLessonSearchVideo(${i})"><span>${escapeHTML(v.t)}</span><small>${escapeHTML(v.c)}${v.durMins?' · '+v.durMins+' min':''}</small><em>添加并播放 →</em></button>`).join('');
-  }catch(error){if(version===lessonSearchVersion)status.textContent=error.message;}
+  }catch(error){if(version===lessonSearchVersion)status.textContent=/412|限制/.test(error.message)?'B站暂时限制了自动搜索。可点击上方入口在 B站搜索，再把完整视频链接粘贴到这里添加。':error.message;}
   finally{if(version===lessonSearchVersion)button.disabled=false;}
 }
 function addLessonSearchVideo(index){

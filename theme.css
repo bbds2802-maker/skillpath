@@ -376,3 +376,6 @@ button:disabled { transform: none; box-shadow: var(--rt-edge); }
 .qm-bar { box-shadow: none; background: transparent; border: 1px solid var(--border); }
 .skill-tile { box-shadow: var(--rt-edge), 1px 2px 4px #595c4f22; }
 .skill-tile.selected { box-shadow: var(--rt-inset); }
+
+.video-search-help { font-size:10px; line-height:1.65; color:var(--sub); margin:9px 0 6px; }
+#bili-search-external { font-size:11px; line-height:1.65; color:var(--accent); text-decoration:underline; text-underline-offset:3px; }
