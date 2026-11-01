@@ -1,0 +1,19 @@
+{
+  "id": "./",
+  "name": "SkillPath",
+  "short_name": "SkillPath",
+  "lang": "zh-CN",
+  "start_url": "./",
+  "scope": "./",
+  "display": "standalone",
+  "background_color": "#d8d5c5",
+  "theme_color": "#d8d5c5",
+  "icons": [
+    {
+      "src": "./web-icon.png",
+      "sizes": "160x160",
+      "type": "image/png",
+      "purpose": "any"
+    }
+  ]
+}
