@@ -1,3 +1,4 @@
+@import url('https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400&display=swap');
 /* SkillPath × Figma RT / Soft ABS. Keep the established mobile layout. */
 :root {
   color-scheme: light;
@@ -328,3 +329,33 @@ button:disabled { transform: none; box-shadow: var(--rt-edge); }
 .progress-strip { margin-bottom: 0; }
 .home-header { padding-bottom: 0; }
 .pr-title { white-space: normal; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; line-height: 1.6; font-size: 13px; }
+
+/* Component hierarchy: RT / Progress stays flat; raised keys signal actions. */
+.progress-strip { display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: 8px 12px; padding: 12px 0 16px; }
+.prog-text { display: contents; }
+.prog-title { grid-column: 1; grid-row: 1; margin: 0; font-size: 14px; line-height: 22px; }
+.prog-sub { grid-column: 1 / -1; grid-row: 2; font-size: 11px; }
+.prog-ring-wrap { grid-column: 2; grid-row: 1; align-self: center; }
+.prog-ring { display: none; }
+.prog-pct { position: static; font-family: 'IBM Plex Mono', ui-monospace, monospace; font-size: 12px; font-weight: 400; color: var(--text); }
+.prog-bar-thin { grid-column: 1 / -1; grid-row: 3; height: 8px; margin: 4px 0 0; background: #c8c5b9; border-radius: 999px; box-shadow: none; }
+.prog-bar-thin-fill { background: #a96744; border-radius: inherit; }
+/* Lesson information is a quiet panel; the small key holds the action affordance. */
+.today-card { background: var(--card); border: 1px solid var(--border); border-radius: 16px; box-shadow: none; padding: 20px; }
+.today-card:active { background: #d4d0c0; box-shadow: none; }
+.tc-title { padding-right: 24px; max-width: 100%; font-size: 18px; line-height: 1.5; }
+.tc-arrow { right: 16px; width: 28px; height: 32px; display: grid; place-items: center; background: var(--rt-surface); border-radius: 9px; box-shadow: var(--rt-raised); font-size: 21px; }
+.tc-meta { font-size: 10px; gap: 6px 10px; }
+/* Plan and notes use readable rows rather than a bank of oversized keycaps. */
+.plan-row { background: transparent; box-shadow: none; border: none; border-bottom: 1px solid var(--border); border-radius: 0; margin: 0 22px; padding: 18px 0; }
+.plan-row:last-child { border-bottom: none; }
+.plan-row:hover { background: #dedbce66; }
+.pr-date { border-right: 0; padding-left: 0; }
+.pr-check { flex-shrink: 0; box-shadow: none; border: 1px solid #aaa994; }
+.pr-check.ck { background: var(--accent); border-color: var(--accent); }
+.week-label { margin-top: 4px; padding-bottom: 4px; color: var(--accent); font-size: 10px; }
+.day-lessons-panel, .tip-box { box-shadow: none; background: var(--card); }
+.web-plan-notice { border: none; border-left: 2px solid var(--border); border-radius: 0; padding: 3px 10px; font-size: 10px; }
+.qm-bar { box-shadow: none; background: transparent; border: 1px solid var(--border); }
+.skill-tile { box-shadow: var(--rt-edge), 1px 2px 4px #595c4f22; }
+.skill-tile.selected { box-shadow: var(--rt-inset); }
