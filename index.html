@@ -1559,7 +1559,7 @@ select.field-input option { background: #1e1e2c; }
           <label class="field-lbl">Platforms</label>
           <div class="chip-row" id="cr-plat">
             <button class="chip on" data-v="B站">B站</button>
-            <button class="chip on" data-v="YouTube">YouTube</button>
+            <button class="chip" data-v="YouTube">YouTube</button>
           </div>
           <!-- Public service access -->
           <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:16px;padding:12px 14px;background:var(--a-light);border:1px solid var(--a-light);border-radius:14px">
@@ -1994,7 +1994,7 @@ select.field-input option { background: #1e1e2c; }
 const S = {
   skill: '', level: 'complete beginner',
   duration: '1 month', freq: 3, selectedDates: [], len: '30 min',
-  style: 'visual demos', platforms: ['B站','YouTube'],
+  style: 'visual demos', platforms: ['B站'],
   lessons: [], done: new Set(),
   curLesson: null, prevTab: 'home',
   calMonth: new Date().getMonth(), calYear: new Date().getFullYear(),
@@ -2270,7 +2270,7 @@ async function submitQuickMode() {
     S.freq = Math.min(7, Math.max(2, parseInt(parsed.freqPerWeek) || 3));
     S.len = ['15 min','30 min','45 min','60 min'].includes(parsed.sessionMinutes) ? parsed.sessionMinutes : '30 min';
     S.style = 'visual demos';
-    S.platforms = ['B站','YouTube'];
+    S.platforms = ['B站'];
 
     // Build session dates. For "urgent" requests, schedule near-daily
     // sessions starting tomorrow regardless of weekday, since the user
@@ -2596,7 +2596,7 @@ async function startGenerate() {
   S.len = chipVal('cr-len') || '30 min';
   S.style = chipVal('cr-style') || 'visual demos';
   S.platforms = [...document.querySelectorAll('#cr-plat .chip.on')].map(c => c.dataset.v);
-  if (!S.platforms.length) S.platforms = ['B站','YouTube'];
+  if (!S.platforms.length) S.platforms = ['B站'];
 
   await runGeneration();
 }
