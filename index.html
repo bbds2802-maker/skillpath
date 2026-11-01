@@ -1850,7 +1850,7 @@ select.field-input option { background: #1e1e2c; }
     <div class="settings-overlay-bg" id="settings-overlay-bg" onclick="closeSettings()"></div>
     <div class="settings-panel" id="settings-panel">
       <div class="sp-handle"></div>
-      <div class="sp-title">Connected services</div><p class="sp-sub">iPhone：用 Safari 的分享菜单选择“添加到主屏幕”，即可从桌面打开。<br>网页版 · 20261101-bilibili-1</p>
+      <div class="sp-title">Connected services</div><p class="sp-sub">iPhone：用 Safari 的分享菜单选择“添加到主屏幕”，即可从桌面打开。<br>网页版 · 20261101-bilibili-auto-1</p>
       <div class="sp-sub">当前计划和笔记保存在本机，清除浏览器数据会丢失记录。网页版目前同时保存一份计划。联网功能通过应用后端使用 Groq、B站和 YouTube，不需要你填写 API 密钥。</div>
       <p class="sp-sub">连接时由 Cloudflare 验证访问并限制请求次数。生成计划会发送学习目标和时间安排，搜索会发送技能与查询词；笔记仅在你确认生成回顾后发送。验证凭证最长有效两小时，不代表账号或跨设备同步。</p>
       <p class="sp-sub" id="web-connection-status" role="status">尚未连接联网服务</p>
@@ -3242,10 +3242,10 @@ async function searchLessonVideos(){
   const version=++lessonSearchVersion,lessonId=S.curLesson.id,button=document.getElementById('lesson-video-search-btn'),status=document.getElementById('lesson-video-search-status');
   button.disabled=true;status.textContent='正在搜索 B站教程…';document.getElementById('lesson-video-results').innerHTML='';lessonSearchResults=[];
   try{
-    const result=await WebAPI.run('searchVideos',{platform:'B站',query});
+    const result=await WebAPI.run('searchVideos',{platform:'B站',query,skill:S.skill});
     if(version!==lessonSearchVersion||S.curLesson?.id!==lessonId)return;
     lessonSearchResults=(result.videos||[]).filter(SkillPathVideos.valid);
-    status.textContent=lessonSearchResults.length?'找到 '+lessonSearchResults.length+' 个视频，选择后添加到本课并播放。':'没有找到教程，请缩短关键词或粘贴视频链接。';
+    status.textContent=lessonSearchResults.length?(result.source==='verified-catalog'?'已从教程库找到 ':'找到 ')+lessonSearchResults.length+' 个视频，选择后添加到本课并播放。'+(result.source==='verified-catalog'?'（教程库匹配，非实时搜索）':''):'没有找到教程，请缩短关键词或粘贴视频链接。';
     document.getElementById('lesson-video-results').innerHTML=lessonSearchResults.map((v,i)=>`<button type="button" class="video-search-result" onclick="addLessonSearchVideo(${i})"><span>${escapeHTML(v.t)}</span><small>${escapeHTML(v.c)}${v.durMins?' · '+v.durMins+' min':''}</small><em>添加并播放 →</em></button>`).join('');
   }catch(error){if(version===lessonSearchVersion)status.textContent=/412|限制/.test(error.message)?'B站暂时限制了自动搜索。可点击上方入口在 B站搜索，再把完整视频链接粘贴到这里添加。':error.message;}
   finally{if(version===lessonSearchVersion)button.disabled=false;}
@@ -3331,7 +3331,7 @@ function openLesson(id, from) {
         </div>
         <div class="vid-info">
           <div class="vid-title">${escapeHTML(v.t)}</div>
-          <div class="vid-meta">${escapeHTML(v.c)}</div>
+          <div class="vid-meta">${escapeHTML(v.c)}${v.source==='verified-catalog'?' · 教程库匹配':''}</div>
           ${watchNote}
         </div>
       </div>`;
