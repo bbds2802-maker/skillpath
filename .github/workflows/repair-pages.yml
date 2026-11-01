@@ -14,8 +14,15 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 5
     steps:
-      - name: Cancel the stale icon deployment blocking the verified web release
+      - name: Safely finish recovery of the originally approved stale deployment
         env:
           GH_TOKEN: ${{ github.token }}
         run: |
-          gh api --method POST "repos/$GITHUB_REPOSITORY/pages/deployments/4f7e04d89232a854f62086a85a924eef221c66ff/cancel"
+          if repair_output=$(gh api --method POST "repos/$GITHUB_REPOSITORY/pages/deployments/4f7e04d89232a854f62086a85a924eef221c66ff/cancel" 2>&1); then
+            echo 'The specified stale deployment was cancelled.'
+          else
+            case "$repair_output" in
+              *"as it's finished"*) echo 'The specified deployment has already finished; recovery is complete.' ;;
+              *) echo 'GitHub did not complete recovery of the specified deployment.'; exit 1 ;;
+            esac
+          fi
