@@ -1,6 +1,6 @@
 # SkillPath
 
-把学习目标变成课程计划，结合真实 YouTube 教程、页面内播放器、学习笔记与完成进度。
+把学习目标变成课程计划，结合真实 B站 / YouTube 教程、页面内播放器、学习笔记与完成进度。
 
 - [在线使用](https://bbds2802-maker.github.io/skillpath/)
 - [Cloudflare 备用入口](https://skillpath-entry.pages.dev/app/)
@@ -13,11 +13,13 @@
 
 当前计划、笔记与完成状态保存在当前浏览器，不跨设备或域名同步；清除浏览器数据会删除本地记录。目前同时保留一份当前计划，创建新计划会先提示替换。未连接或服务失败时会明确显示本地大纲，不虚构视频。
 
-在 iPhone 上使用 Safari 打开网页，可从分享菜单添加到主屏幕。视频播放受网络对 YouTube 的可达性及视频嵌入权限影响。
+在 iPhone 上使用 Safari 打开网页，可从分享菜单添加到主屏幕。B站通过官方外链播放器播放，支持 `?p=2` 等合集分集链接；YouTube 使用原有播放器。视频是否可播放取决于平台限制和本机网络。
+
+新计划默认选择 B站，可同时选择 YouTube 作为补充。课时内可搜索 B站教程，选中后加入当前课时并播放。公开搜索接口可能限流或调整，失败时会显示原因；也可以通过＋粘贴 B站完整 BV 链接（短链接请先打开并复制完整网址）。不下载或转存平台视频。
 
 ## 前端文件
 
-`index.html`、`theme.css`、`web-session.js`、`web-api.js`、`web-ui.js`、`manifest.webmanifest`、`web-icon.png`、`youtube-player.html` 与 `assets/figma/` 构成当前网页。保留的历史 HTML 文件不是当前入口。
+`index.html`、`theme.css`、`web-videos.js`、`web-session.js`、`web-api.js`、`web-ui.js`、`manifest.webmanifest`、`web-icon.png`、`youtube-player.html` 与 `assets/figma/` 构成当前网页。保留的历史 HTML 文件不是当前入口。
 
 本次同步仅发布前端运行文件和说明，不包含运营密钥、本地备份、私有资料或云开发账号配置。后端沿用已部署的 Cloudflare 服务与访问验证、请求限额。
 

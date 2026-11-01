@@ -10,6 +10,7 @@
 <meta name="apple-mobile-web-app-title" content="SkillPath">
 <link rel="manifest" href="./manifest.webmanifest">
 <link rel="apple-touch-icon" href="./web-icon.png">
+<script src="./web-videos.js"></script>
 <script src="./web-session.js"></script>
 <script src="./web-api.js"></script>
 <script src="./web-ui.js"></script>
@@ -1557,7 +1558,8 @@ select.field-input option { background: #1e1e2c; }
           </div>
           <label class="field-lbl">Platforms</label>
           <div class="chip-row" id="cr-plat">
-            <button class="chip on" data-v="YouTube">YouTube</button>
+            <button class="chip on" data-v="B站">B站</button>
+            <button class="chip" data-v="YouTube">YouTube</button>
           </div>
           <!-- Public service access -->
           <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:16px;padding:12px 14px;background:var(--a-light);border:1px solid var(--a-light);border-radius:14px">
@@ -1621,7 +1623,7 @@ select.field-input option { background: #1e1e2c; }
           </div>
           <div style="display:flex;align-items:center;gap:8px">
             <div class="focus-badge on" id="focus-badge" onclick="openFocusSettings()">Focus on</div>
-            <button class="settings-gear-btn" onclick="openYtImport()" aria-label="Import YouTube lesson" title="Import YouTube lesson" style="font-size:18px">＋</button>
+            <button class="settings-gear-btn" onclick="openYtImport()" aria-label="导入 B站 / YouTube 教程" title="导入 B站 / YouTube 教程" style="font-size:18px">＋</button>
             <button class="settings-gear-btn" onclick="openSettings()" title="API Settings" aria-label="Settings"><svg class="" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.35" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m9 3-1 3-3 1-2 3 2 2v3l3 2 1 4h6l1-4 3-2v-3l2-2-2-3-3-1-1-3H9Z"/><circle cx="12" cy="12" r="3"/></svg></button>
             <div class="avatar" id="home-avatar">S</div>
           </div>
@@ -1674,7 +1676,7 @@ select.field-input option { background: #1e1e2c; }
             <div class="plan-header-title">Your learning plan</div>
             <div class="plan-header-sub" id="plan-header-sub">0 sessions</div>
           </div>
-          <button class="settings-gear-btn" onclick="openYtImport()" aria-label="Import YouTube lesson" title="Import YouTube lesson" style="font-size:18px">＋</button>
+          <button class="settings-gear-btn" onclick="openYtImport()" aria-label="导入 B站 / YouTube 教程" title="导入 B站 / YouTube 教程" style="font-size:18px">＋</button>
         </div>
       </div>
       <div id="plan-list-wrap"></div>
@@ -1695,18 +1697,25 @@ select.field-input option { background: #1e1e2c; }
       <div class="lesson-body">
         <!-- Embedded YouTube Player -->
         <div class="yt-player-wrap" id="yt-player-wrap">
-          <div id="yt-player-container"></div>
+          <div id="yt-host"><div id="yt-player-container"></div></div>
+          <iframe id="bili-player" title="B站视频播放器" hidden allow="fullscreen; autoplay; encrypted-media; picture-in-picture" allowfullscreen referrerpolicy="strict-origin-when-cross-origin"></iframe>
           <div class="yt-player-info">
             <div class="yt-now-title" id="yt-now-title">Loading…</div>
             <div style="display:flex;justify-content:space-between;align-items:center;margin-top:2px">
               <div class="yt-playlist-status" id="yt-playlist-status">Video 1 of 1</div>
-              <div class="yt-autoplay-note">↪ Auto-advances on finish</div>
+              <div class="yt-autoplay-note" id="video-playback-note"></div>
             </div>
             <a id="yt-external" target="_blank" rel="noopener" hidden>在 YouTube 打开当前视频 →</a>
           </div>
         </div>
 
-        <div class="l-section-lbl">Curated videos</div>
+        <div class="l-section-lbl">课程视频</div>
+        <form class="lesson-video-search" onsubmit="event.preventDefault();searchLessonVideos()">
+          <label for="lesson-video-query">搜索 B 站教程</label>
+          <div class="video-search-row"><input id="lesson-video-query" type="search" maxlength="120" placeholder="例如：吉他 C 和弦教程" required><button id="lesson-video-search-btn" type="submit">搜索</button></div>
+          <p id="lesson-video-search-status" role="status"></p>
+          <div id="lesson-video-results"></div>
+        </form>
         <div id="l-videos"></div>
         <div class="l-section-lbl">Practice notes</div>
         <div id="l-tips"></div>
@@ -1839,8 +1848,8 @@ select.field-input option { background: #1e1e2c; }
     <div class="settings-overlay-bg" id="settings-overlay-bg" onclick="closeSettings()"></div>
     <div class="settings-panel" id="settings-panel">
       <div class="sp-handle"></div>
-      <div class="sp-title">Connected services</div><p class="sp-sub">iPhone：用 Safari 的分享菜单选择“添加到主屏幕”，即可从桌面打开。<br>网页版 · 20261101-soft-abs-1</p>
-      <div class="sp-sub">当前计划和笔记保存在本机，清除浏览器数据会丢失记录。网页版目前同时保存一份计划。联网功能通过应用后端使用 Groq 和 YouTube，不需要你填写 API 密钥。</div>
+      <div class="sp-title">Connected services</div><p class="sp-sub">iPhone：用 Safari 的分享菜单选择“添加到主屏幕”，即可从桌面打开。<br>网页版 · 20261101-bilibili-1</p>
+      <div class="sp-sub">当前计划和笔记保存在本机，清除浏览器数据会丢失记录。网页版目前同时保存一份计划。联网功能通过应用后端使用 Groq、B站和 YouTube，不需要你填写 API 密钥。</div>
       <p class="sp-sub">连接时由 Cloudflare 验证访问并限制请求次数。生成计划会发送学习目标和时间安排，搜索会发送技能与查询词；笔记仅在你确认生成回顾后发送。验证凭证最长有效两小时，不代表账号或跨设备同步。</p>
       <p class="sp-sub" id="web-connection-status" role="status">尚未连接联网服务</p>
       <button class="sp-save-btn" id="web-connect-button" onclick="saveSettings()">连接联网服务</button>
@@ -1862,19 +1871,19 @@ select.field-input option { background: #1e1e2c; }
     <div class="settings-panel" id="yt-import-sheet">
       <div class="sp-handle"></div>
       <div class="sp-title">Import a lesson</div>
-      <div class="sp-sub">Paste a YouTube link to add it to your plan.</div>
+      <div class="sp-sub">粘贴 B站或 YouTube 视频链接，加入学习计划。</div>
 
       <!-- URL row -->
-      <label class="field-lbl">YouTube URL</label>
+      <label class="field-lbl" for="yt-import-url">视频链接</label>
       <div style="display:flex;gap:8px;margin-bottom:18px">
         <input class="field-input" id="yt-import-url" type="url"
-          placeholder="https://youtu.be/… or youtube.com/watch?v=…"
+          placeholder="bilibili.com/video/BV… 或 YouTube 链接"
           style="margin-bottom:0;flex:1" oninput="onYtUrlInput()" />
         <button id="yt-fetch-btn" onclick="ytImportFetch()"
           style="background:var(--accent);border:none;border-radius:16px;color:#fff;
                  font-family:var(--font);font-size:14px;font-weight:700;
                  padding:0 18px;cursor:pointer;white-space:nowrap;flex-shrink:0">
-          Fetch
+          读取
         </button>
       </div>
 
@@ -1882,7 +1891,7 @@ select.field-input option { background: #1e1e2c; }
       <div id="yt-import-nokey" style="display:none;
         background:rgba(251,191,36,.08);border:1px solid rgba(251,191,36,.25);
         border-radius:12px;padding:12px 14px;margin-bottom:16px;font-size:12px;color:var(--amber)">
-        ⚠ No YouTube key — enter the video title manually.
+        <span id="video-manual-hint">视频资料暂时无法读取，请输入标题。B站链接仍可用官方播放器观看。</span>
         <input class="field-input" id="yt-manual-title" type="text"
           placeholder="Video title" style="margin-top:10px;margin-bottom:0" />
       </div>
@@ -1918,7 +1927,7 @@ select.field-input option { background: #1e1e2c; }
         </div>
         <div id="yt-nogroq-note" style="display:none;
           font-size:11px;color:var(--sub);margin-bottom:14px">
-          Add a Groq key in ⚙️ Settings to enable AI descriptions.
+          连接联网服务后可生成课程简介。
         </div>
 
         <!-- Date chips -->
@@ -1983,7 +1992,7 @@ select.field-input option { background: #1e1e2c; }
 const S = {
   skill: '', level: 'complete beginner',
   duration: '1 month', freq: 3, selectedDates: [], len: '30 min',
-  style: 'visual demos', platforms: ['YouTube'],
+  style: 'visual demos', platforms: ['B站'],
   lessons: [], done: new Set(),
   curLesson: null, prevTab: 'home',
   calMonth: new Date().getMonth(), calYear: new Date().getFullYear(),
@@ -2002,7 +2011,7 @@ const S = {
 // API KEY MANAGEMENT
 // ═══════════════════════════════════════════════════════════
 function hasAIService() { return WebAPI.connected && WebAPI.services.ai; }
-function hasVideoService() { return WebAPI.connected && WebAPI.services.youtube; }
+function hasVideoService() { return WebAPI.connected && (WebAPI.services.bilibili || WebAPI.services.youtube); }
 
 // ── YT IMPORT ───────────────────────────────────────────────
 function extractYtVideoId(url) {
@@ -2021,6 +2030,7 @@ function insertLessonByDate(lesson) {
 }
 
 function openYtImport() {
+  window._ytImp=null;document.getElementById('yt-manual-title').value='';
   document.getElementById('yt-import-url').value = '';
   document.getElementById('yt-import-preview').style.display = 'none';
   document.getElementById('yt-import-nokey').style.display = 'none';
@@ -2045,8 +2055,11 @@ function closeYtImport() {
 }
 
 function onYtUrlInput() {
-  const ok = /youtu\.?be/.test(document.getElementById('yt-import-url').value);
-  document.getElementById('yt-fetch-btn').style.opacity = ok ? '1' : '0.5';
+  window._ytImp=null;
+  document.getElementById('yt-import-preview').style.display='none';
+  document.getElementById('yt-import-nokey').style.display='none';
+  const ok=!!SkillPathVideos.parse(document.getElementById('yt-import-url').value);
+  document.getElementById('yt-fetch-btn').style.opacity=ok?'1':'0.5';
 }
 
 function ytDateChip(el) {
@@ -2061,17 +2074,25 @@ function ytTypeChip(el) {
 }
 
 async function ytImportFetch() {
-  const url=document.getElementById('yt-import-url').value.trim(),button=document.getElementById('yt-fetch-btn');
+  const url=document.getElementById('yt-import-url').value.trim(),button=document.getElementById('yt-fetch-btn'),parsed=SkillPathVideos.parse(url);
+  if(!parsed){showToast('请粘贴完整的 B站 BV 视频链接或 YouTube 视频链接；B站短链接请先打开再复制完整网址');return;}
   button.disabled=true;button.textContent='读取中…';window._ytImp=null;
   try{
-    const {video}=await WebAPI.run('videoDetails',{url});
-    window._ytImp={videoId:video.videoId,title:video.t,channel:video.c,durMins:video.durMins,thumb:video.thumb,viewCount:video.viewCount,ytDesc:video.description||''};
-    document.getElementById('yt-imp-thumb').src=video.thumb;
+    let video;
+    try{({video}=await WebAPI.run('videoDetails',{url}));}
+    catch(error){
+      if(parsed.platform!=='B站')throw error;
+      video={...parsed,t:'B站视频 · '+parsed.bvid,c:'',durMins:null,manual:true};
+      document.getElementById('yt-import-nokey').style.display='block';
+      document.getElementById('video-manual-hint').textContent=error.message+'。可填写视频标题后添加，仍使用 B站官方播放器。';
+    }
+    window._ytImp={...video,title:video.t,channel:video.c,ytDesc:video.description||'',inputURL:url};
+    const thumb=document.getElementById('yt-imp-thumb');thumb.src=SkillPathVideos.thumbnail(video);thumb.hidden=!thumb.getAttribute('src');
     document.getElementById('yt-imp-title').textContent=video.t;
-    document.getElementById('yt-imp-meta').textContent=video.c+' · '+(video.durMins||'未知')+' min';
+    document.getElementById('yt-imp-meta').textContent=(video.platform||'YouTube')+' · '+(video.c||'')+(video.durMins?' · '+video.durMins+' min':'');
     document.getElementById('yt-import-preview').style.display='block';
   }catch(error){document.getElementById('yt-import-preview').style.display='none';showToast(error.message);}
-  finally{button.disabled=false;button.textContent='Fetch';}
+  finally{button.disabled=false;button.textContent='读取';}
 }
 
 // ═══════════════════════════════════════════════════════════
@@ -2247,7 +2268,7 @@ async function submitQuickMode() {
     S.freq = Math.min(7, Math.max(2, parseInt(parsed.freqPerWeek) || 3));
     S.len = ['15 min','30 min','45 min','60 min'].includes(parsed.sessionMinutes) ? parsed.sessionMinutes : '30 min';
     S.style = 'visual demos';
-    S.platforms = ['YouTube'];
+    S.platforms = ['B站'];
 
     // Build session dates. For "urgent" requests, schedule near-daily
     // sessions starting tomorrow regardless of weekday, since the user
@@ -2293,10 +2314,10 @@ async function generateLessonMeta(title, channel, ytDesc) {
 
 async function ytImportAdd() {
   const d      = window._ytImp;
-  const hasYt  = !!hasVideoService();
+  if(!d || !SkillPathVideos.valid(d) || d.inputURL!==document.getElementById('yt-import-url').value.trim()){showToast('请先读取当前视频链接');return;}
   const manual = document.getElementById('yt-manual-title')?.value?.trim();
-  const title  = (hasYt && d?.title) ? d.title : (manual || 'Imported Lesson');
-  if (!title)  { showToast('⚠ Enter a video title'); return; }
+  const title  = d.manual ? manual : d.title;
+  if (!title)  { showToast('请先填写视频标题'); return; }
 
   const dateMode = document.querySelector('#yt-date-chips .chip.on')?.dataset.v;
   let date = fmtDate(new Date());
@@ -2306,7 +2327,7 @@ async function ytImportAdd() {
   }
 
   const type    = document.querySelector('#yt-type-chips .chip.on')?.dataset.v || 'practice';
-  const durMins = (hasYt && d?.durMins) ? d.durMins : 30;
+  const durMins = d.durMins || 30;
 
   let description = `Watch "${title}" and apply the concepts to your ${S.skill || 'skill'} practice.`;
   let tip = 'Pause at key moments and attempt the technique before continuing.';
@@ -2329,19 +2350,12 @@ async function ytImportAdd() {
     duration:      `${durMins} min`,
     description,
     tip,
-    videos: (hasYt && d?.videoId) ? [{
-      videoId:   d.videoId,
-      t:         title,
-      c:         d.channel || '',
-      thumb:     d.thumb || '',
-      durMins:   d.durMins ?? null,
-      viewCount: d.viewCount || 0,
-      platform:  'YouTube',
-    }] : [],
+    videos: [{...d,t:title,c:d.channel||'',platform:d.platform||'YouTube'}],
     totalVideoMins: d?.durMins || 0,
   };
 
   insertLessonByDate(lesson);
+  saveCurrentPlan();
   renderProgress(); renderHome(); renderCalendar(); renderPlanList();
   showToast('✓ Lesson added to plan!');
   closeYtImport();
@@ -2580,7 +2594,7 @@ async function startGenerate() {
   S.len = chipVal('cr-len') || '30 min';
   S.style = chipVal('cr-style') || 'visual demos';
   S.platforms = [...document.querySelectorAll('#cr-plat .chip.on')].map(c => c.dataset.v);
-  if (!S.platforms.length) S.platforms = ['YouTube'];
+  if (!S.platforms.length) S.platforms = ['B站'];
 
   await runGeneration();
 }
@@ -2631,7 +2645,7 @@ async function runGeneration() {
     S.lessons = await resolveAllLessonVideos(S.lessons);
   } catch(err) {
     dbg('Video search did not finish','warn');
-    S.serviceWarnings.push('YouTube 视频未匹配：'+err.message);
+    S.serviceWarnings.push('视频未匹配：'+err.message);
   }
 
   clearInterval(iv);
@@ -2651,7 +2665,7 @@ async function generateWithAI() {
   if(!hasAIService())throw new Error('请先在设置中连接联网服务');
   const base=buildPlan(),lessons=[];
   for(let offset=0;offset<base.length;offset+=8){
-    const result=await WebAPI.run('generatePlan',{skill:S.skill,goal:S.goal||'',level:S.level,style:S.style,minutes:parseInt(S.len)||30,count:Math.min(8,base.length-offset),offset,totalCount:base.length,previousTopics:lessons.map(l=>l.title)});
+    const result=await WebAPI.run('generatePlan',{skill:S.skill,goal:S.goal||'',level:S.level,style:S.style,platforms:S.platforms,minutes:parseInt(S.len)||30,count:Math.min(8,base.length-offset),offset,totalCount:base.length,previousTopics:lessons.map(l=>l.title)});
     lessons.push(...result.lessons.map((row,i)=>({...base[offset+i],...row,id:base[offset+i].id,date:base[offset+i].date,duration:base[offset+i].duration,videos:[]})));
   }
   return lessons;
@@ -2683,9 +2697,10 @@ const ytSearchCache = new Map();
 
 async function resolveAllLessonVideos(lessons) {
   if(!hasVideoService())throw new Error('请先在设置中连接联网服务，再匹配真实视频');
-  const result=await WebAPI.run('resolveVideos',{skill:S.skill,level:S.level,minutes:parseInt(S.len)||30,lessons:lessons.map(l=>({id:l.id,title:l.title,query:l.query||S.skill+' '+l.title,videoQueries:l.videoQueries||[],minutes:parseInt(l.duration)||30}))});
+  const result=await WebAPI.run('resolveVideos',{skill:S.skill,level:S.level,platforms:S.platforms,minutes:parseInt(S.len)||30,lessons:lessons.map(l=>({id:l.id,title:l.title,query:l.query||S.skill+' '+l.title,bilibiliQuery:l.bilibiliQuery||'',videoQueries:l.videoQueries||[],minutes:parseInt(l.duration)||30}))});
+  if(result.warnings?.length)S.serviceWarnings.push(...result.warnings);
   const rows=new Map(result.lessons.map(row=>[row.id,row]));
-  return lessons.map(l=>{const row=rows.get(l.id);return {...l,videos:(row?.videos||[]).filter(v=>/^[A-Za-z0-9_-]{11}$/.test(v.videoId||'')).map(v=>({...v,platform:'YouTube'})),totalVideoMins:row?.totalVideoMins||0};});
+  return lessons.map(l=>{const row=rows.get(l.id);return {...l,videos:(row?.videos||[]).filter(SkillPathVideos.valid).map(v=>({...v,platform:SkillPathVideos.isBili(v)?'B站':'YouTube'})),totalVideoMins:row?.totalVideoMins||0};});
 }
 
 function getDurWeeks() {
@@ -2751,6 +2766,17 @@ let ytInstanceReady = false;
 let ytPending = null;
 let ytWaitTimer = null;
 let ytLessonTimer = null;
+let activeVideoProvider = '';
+function playCurrentVideo(v){
+  if(SkillPathVideos.isBili(v)){
+    activeVideoProvider='B站';ytPending=null;clearTimeout(ytWaitTimer);
+    if(ytPlayer&&ytInstanceReady)ytPlayer.stopVideo();
+    document.getElementById('yt-host').hidden=true;
+    const frame=document.getElementById('bili-player');frame.hidden=false;frame.src=SkillPathVideos.embed(v);
+    document.getElementById('yt-player-wrap').classList.add('visible');
+    const external=document.getElementById('yt-external');external.href=SkillPathVideos.url(v);external.textContent='在 B站打开当前视频 →';external.hidden=false;
+  }else ytInitPlayer(v.videoId,0,v.watchSecs||0);
+}
 
 // Called by YouTube IFrame API when script is loaded
 function onYouTubeIframeAPIReady() {
@@ -2761,11 +2787,14 @@ function onYouTubeIframeAPIReady() {
 
 function ytInitPlayer(videoId, startSecs = 0, endSecs = 0) {
   if (!/^[A-Za-z0-9_-]{11}$/.test(videoId || '')) return;
+  activeVideoProvider='YouTube';
+  document.getElementById('yt-host').hidden=false;
+  const biliFrame=document.getElementById('bili-player');biliFrame.hidden=true;biliFrame.removeAttribute('src');
   const wrap = document.getElementById('yt-player-wrap');
   wrap.classList.add('visible');
   const external = document.getElementById('yt-external');
   external.href = 'https://www.youtube.com/watch?v=' + videoId;
-  external.hidden = false;
+  external.hidden = false;external.textContent='在 YouTube 打开当前视频 →';
   ytPending = {videoId, startSecs, endSecs};
   clearTimeout(ytWaitTimer);
   if (typeof YT === 'undefined' || !YT.Player) {
@@ -2803,12 +2832,12 @@ function ytInitPlayer(videoId, startSecs = 0, endSecs = 0) {
 
 function onYtStateChange(event) {
   // YT.PlayerState.ENDED === 0
-  if (event.data === 0) {
+  if (activeVideoProvider==='YouTube' && event.data === 0) {
     const nextIdx = ytPlaylistIdx + 1;
     if (nextIdx < ytPlaylist.length) {
       ytPlaylistIdx = nextIdx;
       const next = ytPlaylist[ytPlaylistIdx];
-      ytInitPlayer(next.videoId, 0, next.watchSecs || 0);
+      playCurrentVideo(next);
       ytUpdateInfo();
       ytHighlightCard(ytPlaylistIdx);
       dbg(`Auto-advancing to video ${ytPlaylistIdx + 1}: ${next.t}`, 'info');
@@ -2826,7 +2855,7 @@ function onYtError(event) {
 }
 
 function ytPlayLesson(lesson) {
-  ytPlaylist    = (lesson.videos || []).filter(v => v.videoId);
+  ytPlaylist    = (lesson.videos || []).filter(SkillPathVideos.valid);
   ytPlaylistIdx = 0;
   ytTargetMins  = parseInt(lesson.duration) || 30;
 
@@ -2836,7 +2865,7 @@ function ytPlayLesson(lesson) {
   }
 
   const first = ytPlaylist[0];
-  ytInitPlayer(first.videoId, 0, first.watchSecs || 0);
+  playCurrentVideo(first);
   ytUpdateInfo();
   ytHighlightCard(0);
 }
@@ -2845,7 +2874,7 @@ function ytJumpTo(idx) {
   if (!ytPlaylist[idx]) return;
   ytPlaylistIdx = idx;
   const vid = ytPlaylist[idx];
-  ytInitPlayer(vid.videoId, 0, vid.watchSecs || 0);
+  playCurrentVideo(vid);
   ytUpdateInfo();
   ytHighlightCard(idx);
 }
@@ -2853,6 +2882,7 @@ function ytJumpTo(idx) {
 function ytUpdateInfo() {
   const vid = ytPlaylist[ytPlaylistIdx];
   if (!vid) return;
+  document.getElementById('video-playback-note').textContent=SkillPathVideos.isBili(vid)?'B站 · 分集请点下方卡片切换':'播完自动切换';
   document.getElementById('yt-now-title').textContent     = vid.t || 'Playing…';
   document.getElementById('yt-playlist-status').textContent =
     `Video ${ytPlaylistIdx + 1} of ${ytPlaylist.length}` +
@@ -2870,6 +2900,8 @@ function ytHighlightCard(activeIdx) {
 }
 
 function ytHide() {
+  activeVideoProvider='';
+  const biliFrame=document.getElementById('bili-player');biliFrame.hidden=true;biliFrame.removeAttribute('src');
   ytPending = null; clearTimeout(ytWaitTimer); clearTimeout(ytLessonTimer);
   const wrap = document.getElementById('yt-player-wrap');
   if (wrap) wrap.classList.remove('visible');
@@ -3183,11 +3215,44 @@ function renderPlanList() {
 }
 
 // ── Lesson detail ───────────────────────────────────────────
+let lessonSearchVersion=0,lessonSearchResults=[];
+function resetLessonVideoSearch(lesson){
+  lessonSearchVersion++;lessonSearchResults=[];
+  document.getElementById('lesson-video-query').value=lesson.bilibiliQuery||(({'Guitar':'吉他','Piano':'钢琴','Photography':'摄影','Drawing':'绘画','Cooking':'烹饪','Yoga':'瑜伽'}[S.skill]||S.skill)+' '+lesson.title+' 教程').slice(0,120);
+  document.getElementById('lesson-video-search-status').textContent='';
+  document.getElementById('lesson-video-results').innerHTML='';
+  document.getElementById('lesson-video-search-btn').disabled=false;
+}
+async function searchLessonVideos(){
+  if(!S.curLesson)return;
+  const query=document.getElementById('lesson-video-query').value.trim();if(!query){showToast('请输入教程搜索词');return;}
+  const version=++lessonSearchVersion,lessonId=S.curLesson.id,button=document.getElementById('lesson-video-search-btn'),status=document.getElementById('lesson-video-search-status');
+  button.disabled=true;status.textContent='正在搜索 B站教程…';document.getElementById('lesson-video-results').innerHTML='';lessonSearchResults=[];
+  try{
+    const result=await WebAPI.run('searchVideos',{platform:'B站',query});
+    if(version!==lessonSearchVersion||S.curLesson?.id!==lessonId)return;
+    lessonSearchResults=(result.videos||[]).filter(SkillPathVideos.valid);
+    status.textContent=lessonSearchResults.length?'找到 '+lessonSearchResults.length+' 个视频，选择后添加到本课并播放。':'没有找到教程，请缩短关键词或粘贴视频链接。';
+    document.getElementById('lesson-video-results').innerHTML=lessonSearchResults.map((v,i)=>`<button type="button" class="video-search-result" onclick="addLessonSearchVideo(${i})"><span>${escapeHTML(v.t)}</span><small>${escapeHTML(v.c)}${v.durMins?' · '+v.durMins+' min':''}</small><em>添加并播放 →</em></button>`).join('');
+  }catch(error){if(version===lessonSearchVersion)status.textContent=error.message;}
+  finally{if(version===lessonSearchVersion)button.disabled=false;}
+}
+function addLessonSearchVideo(index){
+  const video=lessonSearchResults[index],lesson=S.curLesson;if(!video||!lesson||!SkillPathVideos.valid(video))return;
+  const existing=(lesson.videos||[]).findIndex(v=>SkillPathVideos.identity(v)===SkillPathVideos.identity(video));
+  if(existing<0){lesson.videos= [...(lesson.videos||[]),video];saveCurrentPlan();}
+  const playKey=SkillPathVideos.identity(video),from=S.prevTab;
+  openLesson(lesson.id,from);clearTimeout(ytLessonTimer);ytPlayLesson(lesson);
+  const idx=ytPlaylist.findIndex(v=>SkillPathVideos.identity(v)===playKey);if(idx>=0)ytJumpTo(idx);
+  showToast(existing<0?'已添加 B站教程':'已选择这个视频');
+}
+
 function openLesson(id, from) {
   flushPendingNote();if(pendingNote)return;
   const l = S.lessons.find(x => x.id === id);
   if (!l) return;
   S.curLesson = l;
+  resetLessonVideoSearch(l);
   S.prevTab = from || 'home';
 
   document.getElementById('lesson-back-btn').onclick = () => {
@@ -3215,12 +3280,12 @@ function openLesson(id, from) {
 
   const gradients = ['#e8ecf5', '#ececf0', '#e5eaf0'];
 
-  const playableVideos = (l.videos || []).filter(v => /^[A-Za-z0-9_-]{11}$/.test(v.videoId||''));
+  const playableVideos = (l.videos || []).filter(SkillPathVideos.valid);
 
   document.getElementById('l-videos').innerHTML = (l.videos||[]).map((v,i) => {
-    const pc = v.platform === 'YouTube' ? 'plat-yt' : v.platform === 'Instagram' ? 'plat-ig' : 'plat-tt';
+    const pc = SkillPathVideos.isBili(v) ? 'plat-bili' : 'plat-yt';
 
-    if (!v.videoId) {
+    if (!SkillPathVideos.valid(v)) {
       return `
         <div class="vid-card" style="opacity:.45;cursor:default">
           <div class="vid-thumb" style="background:${gradients[i%gradients.length]};position:relative;overflow:hidden">
@@ -3235,9 +3300,8 @@ function openLesson(id, from) {
     }
 
     // Find index in playable playlist for click handler
-    const playIdx = playableVideos.findIndex(pv => pv.videoId === v.videoId);
-    if(!/^[A-Za-z0-9_-]{11}$/.test(v.videoId))return '';
-    const thumb = `https://i.ytimg.com/vi/${v.videoId}/hqdefault.jpg`;
+    const playIdx = playableVideos.findIndex(pv => SkillPathVideos.identity(pv) === SkillPathVideos.identity(v));
+    const thumb = SkillPathVideos.thumbnail(v);
     const durLabel = v.watchNote
       ? v.watchNote
       : v.durMins ? `${v.durMins} min` : v.d || '';
@@ -3245,10 +3309,10 @@ function openLesson(id, from) {
       ? `<div class="vid-watch-note">⏩ ${escapeHTML(v.watchNote)}</div>` : '';
 
     return `
-      <div class="vid-card" id="vid-card-${i}" onclick="ytJumpTo(${playIdx})">
+      <div class="vid-card" id="vid-card-${i}" role="button" tabindex="0" aria-label="播放 ${escapeHTML(v.t)}" onclick="ytJumpTo(${playIdx})" onkeydown="if(event.key==='Enter'||event.key===' '){event.preventDefault();ytJumpTo(${playIdx})}">
         <div class="vid-thumb" style="background:${gradients[i%gradients.length]};position:relative;overflow:hidden">
-          <img src="${thumb}" alt="" style="position:absolute;inset:0;width:100%;height:100%;object-fit:cover;" onerror="this.style.display='none'">
-          <div class="vid-platform-chip ${pc}">${escapeHTML(v.platform)}</div>
+          <img src="${escapeHTML(thumb)}" alt="" referrerpolicy="no-referrer" style="position:absolute;inset:0;width:100%;height:100%;object-fit:cover;" onerror="this.style.display='none'">
+          <div class="vid-platform-chip ${pc}">${escapeHTML(SkillPathVideos.isBili(v)?'B站':'YouTube')}</div>
           <div class="vid-dur-chip">${escapeHTML(durLabel)}</div>
           <div class="vid-play" style="position:relative;z-index:2">▶</div>
         </div>
@@ -3258,7 +3322,7 @@ function openLesson(id, from) {
           ${watchNote}
         </div>
       </div>`;
-  }).join('') || '<p class="web-plan-notice">这一课尚未匹配视频。请连接联网服务，或导入自己的 YouTube 教程。</p>';
+  }).join('') || '<p class="web-plan-notice">这一课尚未匹配视频。可在上方搜索 B站教程，或用＋导入 B站 / YouTube 链接。</p>';
 
   document.getElementById('l-tips').innerHTML = `
     <div class="tip-box">
