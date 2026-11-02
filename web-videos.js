@@ -18,5 +18,12 @@
  function url(v){return valid(v)?(isBili(v)?'https://www.bilibili.com/video/'+(v.bvid||v.videoId)+'/?p='+(v.page||1):'https://www.youtube.com/watch?v='+v.videoId):'';}
  function embed(v){return valid(v)&&isBili(v)?'https://player.bilibili.com/player.html?bvid='+(v.bvid||v.videoId)+'&p='+(v.page||1)+'&autoplay=0&danmaku=0&poster=1':'';}
  function thumbnail(v){if(!valid(v))return '';if(!isBili(v))return 'https://i.ytimg.com/vi/'+v.videoId+'/hqdefault.jpg';try{const u=new URL(v.thumb||'');return u.protocol==='https:'&&/(^|\.)hdslb\.com$/.test(u.hostname)&&!u.username&&!u.password&&!u.port?u.href:'';}catch(_){return '';}}
- return {parse,valid,isBili,identity,url,embed,thumbnail};
+ function searchQuery(skill,lesson){
+  if(lesson?.bilibiliQuery?.trim())return lesson.bilibiliQuery.trim().slice(0,100);
+  const aliases={guitar:'吉他',piano:'钢琴',photography:'摄影',drawing:'绘画',cooking:'烹饪',yoga:'瑜伽',coding:'编程',skateboarding:'滑板'};
+  const name=Object.keys(aliases).find(k=>new RegExp('\\b'+k+'\\b','i').test(skill||''));
+  const topic=String(lesson?.title||'').replace(/fingerpicking/ig,'指弹').replace(/thumb/ig,'拇指').replace(/index/ig,'食指').replace(/\b(simple|basics?|pattern|introduction|beginner|coordination)\b/ig,' ').replace(/[():&]/g,' ').replace(/\s+/g,' ').trim();
+  return ((name?aliases[name]:String(skill||'').replace(/\([^)]*\)/g,'').trim())+' '+topic+' 教程').trim().slice(0,100);
+ }
+ return {parse,valid,isBili,identity,url,embed,thumbnail,searchQuery};
 });
