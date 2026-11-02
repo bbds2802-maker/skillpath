@@ -26,7 +26,7 @@
   return ((name?aliases[name]:String(skill||'').replace(/\([^)]*\)/g,'').trim())+' '+topic+' 教程').trim().slice(0,100);
  }
  function noteURL(note){
-  if(note?.kind!=='xiaohongshu'||note.source!=='live-search'||!/^[a-f0-9]{24}$/.test(note.id||''))return '';
+  if(note?.kind!=='xiaohongshu'||!['live-search','provider-search'].includes(note.source)||!/^[a-f0-9]{24}$/.test(note.id||''))return '';
   try{const u=new URL(note.url);return u.protocol==='https:'&&['www.xiaohongshu.com','xiaohongshu.com'].includes(u.hostname)&&!u.username&&!u.password&&!u.port&&new RegExp('^/(?:explore|discovery/item)/'+note.id+'/?$').test(u.pathname)?u.href:'';}catch(_){return '';}
  }
  return {parse,valid,isBili,identity,url,embed,thumbnail,searchQuery,noteURL};
