@@ -2,7 +2,7 @@
   const api=factory();if(typeof module==='object'&&module.exports)module.exports=api;else root.SkillPathSession=api;
 })(typeof globalThis==='object'?globalThis:this,function(){
   const KEY='sp_current_plan_v1';
-  const fields=['planId','skill','goal','serviceWarnings','level','duration','freq','selectedDates','len','style','platforms','focus'];
+  const fields=['planId','skill','goal','serviceWarnings','level','duration','freq','selectedDates','len','style','platforms','includeXiaohongshu','focus'];
   function encode(state){
     if(!state||!Array.isArray(state.lessons)||!state.lessons.length)return null;
     const plan={};for(const key of fields)plan[key]=state[key];

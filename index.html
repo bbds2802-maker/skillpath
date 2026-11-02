@@ -1561,6 +1561,7 @@ select.field-input option { background: #1e1e2c; }
             <button class="chip on" data-v="B站">B站</button>
             <button class="chip" data-v="YouTube">YouTube</button>
           </div>
+          <label style="display:flex;gap:9px;align-items:center;font-size:12px;margin-bottom:18px"><input id="include-xiaohongshu" type="checkbox" checked>同时匹配小红书补充教程（打开原帖）</label>
           <!-- Public service access -->
           <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:16px;padding:12px 14px;background:var(--a-light);border:1px solid var(--a-light);border-radius:14px">
             <div>
@@ -1719,6 +1720,13 @@ select.field-input option { background: #1e1e2c; }
           <div id="lesson-video-results"></div>
         </form>
         <div id="l-videos"></div>
+        <div class="l-section-lbl">小红书 · 补充教程</div>
+        <form class="lesson-video-search" onsubmit="event.preventDefault();searchLessonNotes()">
+          <label for="lesson-note-query">按本课目标找教程</label>
+          <div class="video-search-row"><input id="lesson-note-query" type="search" maxlength="50" placeholder="学习目标或教程关键词" required><button id="lesson-note-search-btn" type="submit">匹配教程</button></div>
+          <p id="lesson-note-status" role="status"></p>
+        </form>
+        <div id="l-resources"></div>
         <div class="l-section-lbl">Practice notes</div>
         <div id="l-tips"></div>
 
@@ -1850,7 +1858,7 @@ select.field-input option { background: #1e1e2c; }
     <div class="settings-overlay-bg" id="settings-overlay-bg" onclick="closeSettings()"></div>
     <div class="settings-panel" id="settings-panel">
       <div class="sp-handle"></div>
-      <div class="sp-title">Connected services</div><p class="sp-sub">iPhone：用 Safari 的分享菜单选择“添加到主屏幕”，即可从桌面打开。<br>网页版 · 20261102-bilibili-reliability-1</p>
+      <div class="sp-title">Connected services</div><p class="sp-sub">iPhone：用 Safari 的分享菜单选择“添加到主屏幕”，即可从桌面打开。<br>网页版 · 20261102-xiaohongshu-1</p>
       <div class="sp-sub">当前计划和笔记保存在本机，清除浏览器数据会丢失记录。网页版目前同时保存一份计划。联网功能通过应用后端使用 Groq、B站和 YouTube，不需要你填写 API 密钥。</div>
       <p class="sp-sub">连接时由 Cloudflare 验证访问并限制请求次数。生成计划会发送学习目标和时间安排，搜索会发送技能与查询词；笔记仅在你确认生成回顾后发送。验证凭证最长有效两小时，不代表账号或跨设备同步。</p>
       <p class="sp-sub" id="web-connection-status" role="status">尚未连接联网服务</p>
@@ -1994,7 +2002,7 @@ select.field-input option { background: #1e1e2c; }
 const S = {
   skill: '', level: 'complete beginner',
   duration: '1 month', freq: 3, selectedDates: [], len: '30 min',
-  style: 'visual demos', platforms: ['B站'],
+  style: 'visual demos', platforms: ['B站'], includeXiaohongshu:true,
   lessons: [], done: new Set(),
   curLesson: null, prevTab: 'home',
   calMonth: new Date().getMonth(), calYear: new Date().getFullYear(),
@@ -2271,6 +2279,7 @@ async function submitQuickMode() {
     S.len = ['15 min','30 min','45 min','60 min'].includes(parsed.sessionMinutes) ? parsed.sessionMinutes : '30 min';
     S.style = 'visual demos';
     S.platforms = ['B站'];
+    S.includeXiaohongshu = true;
 
     // Build session dates. For "urgent" requests, schedule near-daily
     // sessions starting tomorrow regardless of weekday, since the user
@@ -2596,6 +2605,7 @@ async function startGenerate() {
   S.len = chipVal('cr-len') || '30 min';
   S.style = chipVal('cr-style') || 'visual demos';
   S.platforms = [...document.querySelectorAll('#cr-plat .chip.on')].map(c => c.dataset.v);
+  S.includeXiaohongshu=document.getElementById('include-xiaohongshu').checked;
   if (!S.platforms.length) S.platforms = ['B站'];
 
   await runGeneration();
@@ -2650,6 +2660,10 @@ async function runGeneration() {
     S.serviceWarnings.push('视频未匹配：'+err.message);
   }
 
+  if(S.includeXiaohongshu!==false){
+    try{S.lessons=await resolveAllLessonNotes(S.lessons);}
+    catch(err){S.serviceWarnings.push('小红书教程暂未匹配：'+err.message);}
+  }
   clearInterval(iv);
   bar.style.width='100%';
   S.done = new Set();
@@ -2714,6 +2728,41 @@ async function resolveAllLessonVideos(lessons) {
     if(S.planId===planId){S.lessons=output;saveCurrentPlan();}
   }
   return output;
+}
+
+async function resolveAllLessonNotes(lessons){
+  const planId=S.planId;let output=lessons.map(l=>({...l}));
+  for(let offset=0;offset<lessons.length;offset+=2){
+    const batch=lessons.slice(offset,offset+2);
+    const result=await WebAPI.run('resolveNotes',{skill:S.skill,lessons:batch.map(l=>({id:l.id,title:l.title,bilibiliQuery:SkillPathVideos.searchQuery(S.skill,l).slice(0,50)}))});
+    if(result.warnings?.length)S.serviceWarnings.push(...result.warnings);
+    const rows=new Map((result.lessons||[]).map(l=>[l.id,l]));
+    output=output.map(l=>{const row=rows.get(l.id);return row&&!row.failed?{...l,resources:[...(l.resources||[]).filter(r=>r.kind!=='xiaohongshu'),...(row.resources||[]).filter(r=>SkillPathVideos.noteURL(r))],notesMatchedAt:new Date().toISOString()}:l;});
+    if(S.planId!==planId)return output;
+    S.lessons=output;saveCurrentPlan();
+    if(result.lessons?.every(l=>l.failed))break;
+  }
+  return output;
+}
+function renderLessonResources(lesson){
+  const notes=(lesson.resources||[]).filter(r=>SkillPathVideos.noteURL(r));
+  document.getElementById('l-resources').innerHTML=notes.length?notes.map(n=>`<a class="vid-card" href="${escapeHTML(SkillPathVideos.noteURL(n))}" target="_blank" rel="noopener noreferrer" style="display:block;text-decoration:none;color:var(--text);padding:16px"><div style="font-size:10px;color:var(--accent);margin-bottom:7px">小红书 · ${n.noteType==='video'?'视频笔记':'图文笔记'}</div><div class="vid-title">${escapeHTML(n.title)}</div><div class="vid-meta" style="margin-top:7px">${escapeHTML(n.author||'小红书作者')} · 打开原帖 ↗</div></a>`).join(''):'<p style="font-size:12px;color:var(--sub);line-height:1.7">暂未匹配到补充教程，可点击上方「匹配教程」再找找。</p>';
+}
+async function searchLessonNotes(){
+  const lesson=S.curLesson,planId=S.planId;
+  if(!lesson)return;
+  const query=document.getElementById('lesson-note-query').value.trim(),button=document.getElementById('lesson-note-search-btn'),status=document.getElementById('lesson-note-status');
+  if(!query)return;
+  button.disabled=true;status.textContent='正在为你寻找教程…';
+  try{
+    const result=await WebAPI.run('searchNotes',{query});
+    if(S.planId!==planId||S.curLesson?.id!==lesson.id)return;
+    const notes=(result.notes||[]).filter(r=>SkillPathVideos.noteURL(r)).slice(0,6);
+    lesson.resources=[...(lesson.resources||[]).filter(r=>r.kind!=='xiaohongshu'),...notes];
+    lesson.notesMatchedAt=new Date().toISOString();saveCurrentPlan();renderLessonResources(lesson);
+    status.textContent=notes.length?'已找到补充教程，点击卡片打开原帖。':'暂未找到相关教程，试试更具体的关键词。';
+  }catch(error){if(S.planId===planId&&S.curLesson?.id===lesson.id)status.textContent=error.message||'暂时无法匹配，请稍后重试。';}
+  finally{button.disabled=false;}
 }
 
 function getDurWeeks() {
@@ -2988,7 +3037,7 @@ function renderProgress() {
 function renderHome() {
   let notice=document.getElementById('plan-service-status');
   if(!notice){notice=document.createElement('p');notice.id='plan-service-status';notice.className='web-plan-notice';document.getElementById('today-card-wrap').before(notice);}
-  notice.textContent=(S.serviceWarnings||[]).length?'部分课程的视频暂未准备完成，可进入课时重新搜索教程。':'';notice.hidden=!notice.textContent;
+  notice.textContent=(S.serviceWarnings||[]).length?'部分课程的教程暂未准备完成，可进入课时重新匹配。':'';notice.hidden=!notice.textContent;
 
   const today = fmtDate(new Date());
   const DAYS = ['Sun','Mon','Tue','Wed','Thu','Fri','Sat'];
@@ -3297,6 +3346,9 @@ function openLesson(id, from) {
   tag.style.color = typeText[l.type];
 
   document.getElementById('l-title').textContent = l.title;
+  document.getElementById('lesson-note-query').value=SkillPathVideos.searchQuery(S.skill,l).slice(0,50);
+  document.getElementById('lesson-note-status').textContent='原帖将在新窗口打开，部分内容可能需要登录小红书。';
+  renderLessonResources(l);
   const d = new Date(l.date+'T12:00:00');
   document.getElementById('l-date').textContent = d.toLocaleDateString('en-US',{weekday:'long',month:'long',day:'numeric'});
   document.getElementById('l-dur').textContent = `⏱ ${l.duration}`;
