@@ -1859,7 +1859,7 @@ select.field-input option { background: #1e1e2c; }
     <div class="settings-panel" id="settings-panel">
       <div class="sp-handle"></div>
       <div class="sp-title">Connected services</div><p class="sp-sub">iPhone：用 Safari 的分享菜单选择“添加到主屏幕”，即可从桌面打开。<br>网页版 · 20261102-xiaohongshu-1</p>
-      <div class="sp-sub">当前计划和笔记保存在本机，清除浏览器数据会丢失记录。网页版目前同时保存一份计划。联网功能通过应用后端使用 Groq、B站和 YouTube，不需要你填写 API 密钥。</div>
+      <div class="sp-sub">当前计划和笔记保存在本机，清除浏览器数据会丢失记录。网页版目前同时保存一份计划。联网功能通过应用后端使用 Groq、B站、YouTube 和小红书；B站与小红书搜索由 Qovia 提供，不需要你填写 API 密钥。</div>
       <p class="sp-sub">连接时由 Cloudflare 验证访问并限制请求次数。生成计划会发送学习目标和时间安排，搜索会发送技能与查询词；笔记仅在你确认生成回顾后发送。验证凭证最长有效两小时，不代表账号或跨设备同步。</p>
       <p class="sp-sub" id="web-connection-status" role="status">尚未连接联网服务</p>
       <button class="sp-save-btn" id="web-connect-button" onclick="saveSettings()">连接联网服务</button>
@@ -2390,7 +2390,7 @@ async function saveSettings() {
   finally{button.disabled=false;button.textContent='连接联网服务';}
 }
 function updateKeyStatusHint() {
-  const message=WebAPI.connected?'联网服务已连接':'连接后可使用 AI 和真实视频搜索';
+  const message=WebAPI.connected?'联网服务已连接':'连接后可使用 AI、视频搜索和小红书教程';
   const hint=document.getElementById('key-status-hint');if(hint)hint.textContent=message;
   const status=document.getElementById('web-connection-status');if(status)status.textContent=message;
 }
