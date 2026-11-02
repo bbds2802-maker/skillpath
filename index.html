@@ -1850,7 +1850,7 @@ select.field-input option { background: #1e1e2c; }
     <div class="settings-overlay-bg" id="settings-overlay-bg" onclick="closeSettings()"></div>
     <div class="settings-panel" id="settings-panel">
       <div class="sp-handle"></div>
-      <div class="sp-title">Connected services</div><p class="sp-sub">iPhone：用 Safari 的分享菜单选择“添加到主屏幕”，即可从桌面打开。<br>网页版 · 20261101-bilibili-auto-1</p>
+      <div class="sp-title">Connected services</div><p class="sp-sub">iPhone：用 Safari 的分享菜单选择“添加到主屏幕”，即可从桌面打开。<br>网页版 · 20261101-bilibili-live-1</p>
       <div class="sp-sub">当前计划和笔记保存在本机，清除浏览器数据会丢失记录。网页版目前同时保存一份计划。联网功能通过应用后端使用 Groq、B站和 YouTube，不需要你填写 API 密钥。</div>
       <p class="sp-sub">连接时由 Cloudflare 验证访问并限制请求次数。生成计划会发送学习目标和时间安排，搜索会发送技能与查询词；笔记仅在你确认生成回顾后发送。验证凭证最长有效两小时，不代表账号或跨设备同步。</p>
       <p class="sp-sub" id="web-connection-status" role="status">尚未连接联网服务</p>
@@ -2699,10 +2699,21 @@ const ytSearchCache = new Map();
 
 async function resolveAllLessonVideos(lessons) {
   if(!hasVideoService())throw new Error('请先在设置中连接联网服务，再匹配真实视频');
-  const result=await WebAPI.run('resolveVideos',{skill:S.skill,level:S.level,platforms:S.platforms,minutes:parseInt(S.len)||30,lessons:lessons.map(l=>({id:l.id,title:l.title,query:l.query||S.skill+' '+l.title,bilibiliQuery:l.bilibiliQuery||'',videoQueries:l.videoQueries||[],minutes:parseInt(l.duration)||30}))});
-  if(result.warnings?.length)S.serviceWarnings.push(...result.warnings);
-  const rows=new Map(result.lessons.map(row=>[row.id,row]));
-  return lessons.map(l=>{const row=rows.get(l.id);return {...l,videos:(row?.videos||[]).filter(SkillPathVideos.valid).map(v=>({...v,platform:SkillPathVideos.isBili(v)?'B站':'YouTube'})),totalVideoMins:row?.totalVideoMins||0};});
+  const usesBili=S.platforms.includes('B站'),batchSize=usesBili?6:48,planId=S.planId;let output=lessons.map(l=>({...l})),completed=0;
+  for(let offset=0;offset<lessons.length;offset+=batchSize){
+    const batch=lessons.slice(offset,offset+batchSize),message=document.getElementById('load-msg');
+    if(message)message.textContent='正在实时搜索教程：'+(offset+1)+'–'+Math.min(lessons.length,offset+batchSize)+' / '+lessons.length+' 课';
+    const excludedVideoIds=output.slice(0,offset).flatMap(l=>(l.videos||[]).filter(SkillPathVideos.isBili).map(v=>(v.bvid||v.videoId)+':'+(v.page||1)));
+    let result;
+    try{result=await WebAPI.run('resolveVideos',{skill:S.skill,goal:S.goal||'',level:S.level,platforms:S.platforms,minutes:parseInt(S.len)||30,excludedVideoIds,lessons:batch.map(l=>({id:l.id,title:l.title,query:l.query||S.skill+' '+l.title,bilibiliQuery:l.bilibiliQuery||'',videoQueries:l.videoQueries||[],minutes:parseInt(l.duration)||30}))});}
+    catch(error){if(!completed)throw error;S.serviceWarnings.push('后续课时的实时搜索未完成：'+error.message);break;}
+    if(result.warnings?.length)S.serviceWarnings.push(...result.warnings);
+    const rows=new Map(result.lessons.map(row=>[row.id,row]));
+    output=output.map(l=>{const row=rows.get(l.id);if(!row)return l;return {...l,videos:(row.videos||[]).filter(v=>SkillPathVideos.valid(v)&&(!SkillPathVideos.isBili(v)||v.source==='live-search')).map(v=>({...v,platform:SkillPathVideos.isBili(v)?'B站':'YouTube'})),totalVideoMins:row.totalVideoMins||0};});
+    completed+=batch.length;
+    if(S.planId===planId){S.lessons=output;saveCurrentPlan();}
+  }
+  return output;
 }
 
 function getDurWeeks() {
@@ -3245,7 +3256,7 @@ async function searchLessonVideos(){
     const result=await WebAPI.run('searchVideos',{platform:'B站',query,skill:S.skill});
     if(version!==lessonSearchVersion||S.curLesson?.id!==lessonId)return;
     lessonSearchResults=(result.videos||[]).filter(SkillPathVideos.valid);
-    status.textContent=lessonSearchResults.length?(result.source==='verified-catalog'?'已从教程库找到 ':'找到 ')+lessonSearchResults.length+' 个视频，选择后添加到本课并播放。'+(result.source==='verified-catalog'?'（教程库匹配，非实时搜索）':''):'没有找到教程，请缩短关键词或粘贴视频链接。';
+    status.textContent=lessonSearchResults.length?'实时搜索找到 '+lessonSearchResults.length+' 个视频，选择后添加到本课并播放。'+(result.searchedAt?'（本次联网结果）':''):'没有找到教程，请缩短关键词或粘贴视频链接。';
     document.getElementById('lesson-video-results').innerHTML=lessonSearchResults.map((v,i)=>`<button type="button" class="video-search-result" onclick="addLessonSearchVideo(${i})"><span>${escapeHTML(v.t)}</span><small>${escapeHTML(v.c)}${v.durMins?' · '+v.durMins+' min':''}</small><em>添加并播放 →</em></button>`).join('');
   }catch(error){if(version===lessonSearchVersion)status.textContent=/412|限制/.test(error.message)?'B站暂时限制了自动搜索。可点击上方入口在 B站搜索，再把完整视频链接粘贴到这里添加。':error.message;}
   finally{if(version===lessonSearchVersion)button.disabled=false;}
@@ -3331,7 +3342,7 @@ function openLesson(id, from) {
         </div>
         <div class="vid-info">
           <div class="vid-title">${escapeHTML(v.t)}</div>
-          <div class="vid-meta">${escapeHTML(v.c)}${v.source==='verified-catalog'?' · 教程库匹配':''}</div>
+          <div class="vid-meta">${escapeHTML(v.c)}${v.source==='live-search'?' · 实时搜索':v.source==='verified-catalog'?' · 已保存的教程库资料':''}</div>
           ${watchNote}
         </div>
       </div>`;
