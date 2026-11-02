@@ -1609,7 +1609,7 @@ select.field-input option { background: #1e1e2c; }
     <div class="screen" id="s-loading">
       <div class="load-orb"></div>
       <div class="load-title">Building your plan…</div>
-      <div class="load-msg" id="load-msg">Searching for the best tutorials…</div>
+      <div class="load-msg" id="load-msg">正在为你准备课程…</div>
       <div class="load-bar-wrap"><div class="load-bar" id="load-bar"></div></div>
     </div>
 
@@ -1850,7 +1850,7 @@ select.field-input option { background: #1e1e2c; }
     <div class="settings-overlay-bg" id="settings-overlay-bg" onclick="closeSettings()"></div>
     <div class="settings-panel" id="settings-panel">
       <div class="sp-handle"></div>
-      <div class="sp-title">Connected services</div><p class="sp-sub">iPhone：用 Safari 的分享菜单选择“添加到主屏幕”，即可从桌面打开。<br>网页版 · 20261101-bilibili-live-1</p>
+      <div class="sp-title">Connected services</div><p class="sp-sub">iPhone：用 Safari 的分享菜单选择“添加到主屏幕”，即可从桌面打开。<br>网页版 · 20261102-loading-copy-1</p>
       <div class="sp-sub">当前计划和笔记保存在本机，清除浏览器数据会丢失记录。网页版目前同时保存一份计划。联网功能通过应用后端使用 Groq、B站和 YouTube，不需要你填写 API 密钥。</div>
       <p class="sp-sub">连接时由 Cloudflare 验证访问并限制请求次数。生成计划会发送学习目标和时间安排，搜索会发送技能与查询词；笔记仅在你确认生成回顾后发送。验证凭证最长有效两小时，不代表账号或跨设备同步。</p>
       <p class="sp-sub" id="web-connection-status" role="status">尚未连接联网服务</p>
@@ -2611,13 +2611,13 @@ async function runGeneration() {
   document.getElementById('bottom-nav').style.display = 'none';
 
   const msgs = [
-    'Analysing your skill level…',
-    'Asking AI to design your curriculum…',
-    'Generating unique video searches per lesson…',
-    'Sequencing topics from beginner to advanced…',
-    'Scheduling sessions across your calendar…',
-    'Finding high-quality videos for each lesson…',
-    'Almost ready — finalising your plan!',
+    '正在了解你的学习目标…',
+    '正在安排适合你的课程…',
+    '正在整理学习内容…',
+    '正在梳理学习顺序…',
+    '正在安排学习时间…',
+    '正在为你准备课程…',
+    '课程正在准备中，请稍候…',
   ];
   const bar = document.getElementById('load-bar');
   const msg = document.getElementById('load-msg');
@@ -2643,7 +2643,7 @@ async function runGeneration() {
 
   try {
     saveCurrentPlan();
-    msg.textContent = 'Matching videos to lesson duration targets…';
+    msg.textContent = '正在为你准备课程…';
     S.lessons = await resolveAllLessonVideos(S.lessons);
   } catch(err) {
     dbg('Video search did not finish','warn');
@@ -2702,7 +2702,7 @@ async function resolveAllLessonVideos(lessons) {
   const usesBili=S.platforms.includes('B站'),batchSize=usesBili?6:48,planId=S.planId;let output=lessons.map(l=>({...l})),completed=0;
   for(let offset=0;offset<lessons.length;offset+=batchSize){
     const batch=lessons.slice(offset,offset+batchSize),message=document.getElementById('load-msg');
-    if(message)message.textContent='正在实时搜索教程：'+(offset+1)+'–'+Math.min(lessons.length,offset+batchSize)+' / '+lessons.length+' 课';
+    if(message)message.textContent='正在为你准备课程…';
     const excludedVideoIds=output.slice(0,offset).flatMap(l=>(l.videos||[]).filter(SkillPathVideos.isBili).map(v=>(v.bvid||v.videoId)+':'+(v.page||1)));
     let result;
     try{result=await WebAPI.run('resolveVideos',{skill:S.skill,goal:S.goal||'',level:S.level,platforms:S.platforms,minutes:parseInt(S.len)||30,excludedVideoIds,lessons:batch.map(l=>({id:l.id,title:l.title,query:l.query||S.skill+' '+l.title,bilibiliQuery:l.bilibiliQuery||'',videoQueries:l.videoQueries||[],minutes:parseInt(l.duration)||30}))});}
