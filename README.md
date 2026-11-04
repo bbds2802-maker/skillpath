@@ -33,6 +33,12 @@ B站实时搜索需要在现有 Worker 的 Secret 中配置 `BILIBILI_API_KEY`�
 
 2026-11-02 已完成 AI 两课→小红书按目标搜索验收：「陶艺拉坯」匹配六篇不同原帖，覆盖提泥、找中心与收口。已点击打开「陶艺课堂｜六种拉坯提泥手法」，页面标题与正文对应，平台同时弹出重新登录提示；没有绕过登录限制。用户原有学习计划与笔记未被替换。
 
+## 当前品牌与界面设计素材
+
+已选定的[闹钟 Logo](assets/brand/skillpath-logo-v3-alarm.png)与[品牌说明](assets/brand/CURRENT.md)保存在 `assets/brand/`。
+
+[三张起始页设计效果图](assets/design/start-page-2026-11-02/README.md)及生成提示词保存在 `assets/design/start-page-2026-11-02/`。这些图片用于选择后实施，当前网页入口仍为 `index.html`，尚未应用其中任何一版。
+
 ## 前端文件
 
 `index.html`、`theme.css`、`web-videos.js`、`web-session.js`、`web-api.js`、`web-ui.js`、`manifest.webmanifest`、`web-icon.png`、`youtube-player.html` 与 `assets/figma/` 构成当前网页。保留的历史 HTML 文件不是当前入口。
