@@ -1,0 +1,20 @@
+# 只发布当前网页运行所需文件；设计稿、截图、备份和本地数据保留在本机。
+/*
+!/.gitignore
+!/.nojekyll
+!/README.md
+!/index.html
+!/theme.css
+!/web-videos.js
+!/web-session.js
+!/web-api.js
+!/web-ui.js
+!/manifest.webmanifest
+!/web-icon.png
+!/youtube-player.html
+!/assets/
+/assets/*
+!/assets/figma/
+/assets/figma/*
+!/assets/figma/arrow-right.svg
+!/assets/figma/arrow-right-light.svg
