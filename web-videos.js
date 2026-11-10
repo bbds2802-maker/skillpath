@@ -20,9 +20,11 @@
  function thumbnail(v){if(!valid(v))return '';if(!isBili(v))return 'https://i.ytimg.com/vi/'+v.videoId+'/hqdefault.jpg';try{const u=new URL(v.thumb||'');return u.protocol==='https:'&&/(^|\.)hdslb\.com$/.test(u.hostname)&&!u.username&&!u.password&&!u.port?u.href:'';}catch(_){return '';}}
  function searchQuery(skill,lesson){
   if(lesson?.bilibiliQuery?.trim())return lesson.bilibiliQuery.trim().slice(0,100);
-  const aliases={guitar:'吉他',piano:'钢琴',photography:'摄影',drawing:'绘画',cooking:'烹饪',yoga:'瑜伽',coding:'编程',skateboarding:'滑板'};
+  const aliases={python:'Python',javascript:'JavaScript',typescript:'TypeScript',guitar:'吉他',piano:'钢琴',photography:'摄影',drawing:'绘画',cooking:'烹饪',yoga:'瑜伽',coding:'编程',skateboarding:'滑板'};
   const name=Object.keys(aliases).find(k=>new RegExp('\\b'+k+'\\b','i').test(skill||''));
-  const topic=String(lesson?.title||'').replace(/fingerpicking/ig,'指弹').replace(/thumb/ig,'拇指').replace(/index/ig,'食指').replace(/\b(simple|basics?|pattern|introduction|beginner|coordination)\b/ig,' ').replace(/[():&]/g,' ').replace(/\s+/g,' ').trim();
+  const programmingTopics={'setting up a practice environment':'开发环境安装 入门','values and variables':'变量 数据类型','conditions and branching':'条件判断 分支','loops and repetition':'循环','functions and small reusable steps':'函数 入门','reading errors and debugging':'报错 调试','a small working project':'入门 项目实战','reviewing and improving your project':'项目 优化'};
+  const title=String(lesson?.title||'');
+  const topic=(/cod|python|program|javascript|typescript|编程/i.test(skill||'')&&programmingTopics[title.toLowerCase()]||title).replace(/fingerpicking/ig,'指弹').replace(/thumb/ig,'拇指').replace(/index/ig,'食指').replace(/\b(simple|basics?|pattern|introduction|beginner|coordination)\b/ig,' ').replace(/[():&]/g,' ').replace(/\s+/g,' ').trim();
   return ((name?aliases[name]:String(skill||'').replace(/\([^)]*\)/g,'').trim())+' '+topic+' 教程').trim().slice(0,100);
  }
  function noteURL(note){

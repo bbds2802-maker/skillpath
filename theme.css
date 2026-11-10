@@ -52,6 +52,9 @@ button:disabled { cursor: not-allowed !important; }
 .status-icons { gap: 5px; align-items: center; }
 .liquid-layer { display: none; }
 .screen { background: var(--bg); }
+/* The canvas is not a scroll container. Only the active screen/sheet scrolls.
+   Unlike hidden, clip prevents focus/scrollIntoView from shifting this ancestor. */
+.app-body { min-height: 0; overflow: clip; }
 .ob-hero-full { display: flex; flex-direction: column; overflow: hidden; background: var(--bg); }
 .ob-hero-top { height: 164px; flex-shrink: 0; padding: 12px 20px 24px; align-items: center; justify-content: center; background: var(--bg); border: 0; }
 .ob-hero-top::before { display: none; }
@@ -373,6 +376,8 @@ button:disabled { transform: none; box-shadow: var(--rt-edge); }
 .week-label { margin-top: 4px; padding-bottom: 4px; color: var(--accent); font-size: 10px; }
 .day-lessons-panel, .tip-box { box-shadow: none; background: var(--card); }
 .web-plan-notice { border: none; border-left: 2px solid var(--border); border-radius: 0; padding: 3px 10px; font-size: 10px; }
+.web-plan-notice .text-button { border: 0; background: transparent; color: var(--accent); font: inherit; font-weight: 600; padding: 8px 2px; cursor: pointer; text-decoration: underline; text-underline-offset: 3px; }
+.web-plan-notice .text-button:disabled { cursor: wait; opacity: .6; text-decoration: none; }
 .qm-bar { box-shadow: none; background: transparent; border: 1px solid var(--border); }
 .skill-tile { box-shadow: var(--rt-edge), 1px 2px 4px #595c4f22; }
 .skill-tile.selected { box-shadow: var(--rt-inset); }

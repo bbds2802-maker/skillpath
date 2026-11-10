@@ -55,4 +55,6 @@ function finishWebVerification(error,token){
  if(error)pending.reject(error);else pending.resolve(token);
 }
 function cancelWebVerification(){finishWebVerification(new Error('已取消联网服务验证'));}
-const WebAPI=SkillPathWebAPI.createClient({base:'https://skillpath-entry.pages.dev',verify:openWebVerification,storage:sessionStorage});
+const WebAPI=SkillPathWebAPI.createClient({base:'https://skillpath-entry.pages.dev',verify:openWebVerification,storage:sessionStorage,beforeConnect:()=>{
+ if(location.protocol==='file:'||['localhost','127.0.0.1'].includes(location.hostname))throw new Error('当前是本地预览，请打开正式联网版使用教程服务，无需配置 API。');
+}});

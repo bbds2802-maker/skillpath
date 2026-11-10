@@ -1,0 +1,3990 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+<meta name="theme-color" content="#d8d5c5">
+<meta name="referrer" content="strict-origin-when-cross-origin">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="default">
+<meta name="apple-mobile-web-app-title" content="SkillPath">
+<link rel="manifest" href="./manifest.webmanifest">
+<link rel="apple-touch-icon" href="./web-icon.png">
+<script src="./web-videos.js"></script>
+<script src="./web-session.js"></script>
+<script src="./web-api.js"></script>
+<script src="./web-ui.js"></script>
+<title>SkillPath — A little every day</title>
+<link href="https://fonts.googleapis.com/css2?family=Noto+Sans+SC:wght@400;500;600;700&display=swap" rel="stylesheet">
+<!-- YouTube IFrame API — loaded async so it doesn't block render -->
+<script src="https://www.youtube.com/iframe_api" async></script>
+<style>
+/* ── TOKENS ─────────────────────────────────────────────── */
+:root {
+  --bg:        #0d0d14;
+  --card:      #161620;
+  --card2:     #1e1e2c;
+  --border:    #272738;
+  --accent:    #4668d7;
+  --a-light:   rgba(108,99,255,.15);
+  --green:     #32816b;
+  --pink:      #926c86;
+  --amber:     #926d31;
+  --text:      #f0f0fa;
+  --sub:       #6b6b96;
+  --font:      'Plus Jakarta Sans', sans-serif;
+  --r:         18px;
+  --safe-b:    env(safe-area-inset-bottom, 0px);
+}
+
+/* ── RESET ──────────────────────────────────────────────── */
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; -webkit-tap-highlight-color: transparent; }
+html, body { width: 100%; height: 100%; overflow: hidden; background: #000; }
+body { font-family: var(--font); color: var(--text); display: flex; justify-content: center; align-items: center; }
+
+/* ── PHONE SHELL ─────────────────────────────────────────── */
+.phone {
+  width: min(390px, 100vw);
+  height: min(844px, 100vh);
+  background: var(--bg);
+  border-radius: min(52px, 8vw);
+  overflow: hidden;
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  box-shadow: 0 0 0 10px #1a1a1a, 0 0 0 11px #2a2a2a, 0 40px 80px rgba(0,0,0,.8);
+}
+@media (max-width: 420px) {
+  .phone { border-radius: 0; box-shadow: none; }
+}
+
+/* ── STATUS BAR ──────────────────────────────────────────── */
+.status-bar {
+  flex-shrink: 0;
+  height: 50px;
+  display: flex;
+  align-items: flex-end;
+  justify-content: space-between;
+  padding: 0 28px 8px;
+  font-size: 12px;
+  font-weight: 600;
+  letter-spacing: .02em;
+  color: var(--text);
+  position: relative;
+  z-index: 10;
+}
+.notch {
+  position: absolute;
+  top: 0; left: 50%; transform: translateX(-50%);
+  width: 120px; height: 30px;
+  background: #000;
+  border-radius: 0 0 20px 20px;
+}
+.status-icons { display: flex; gap: 6px; align-items: center; font-size: 11px; }
+
+/* ── SCROLLABLE BODY ────────────────────────────────────── */
+.app-body {
+  flex: 1;
+  overflow: hidden;
+  position: relative;
+  isolation: isolate;
+}
+
+/* ── BOTTOM NAV ──────────────────────────────────────────── */
+.bottom-nav {
+  flex-shrink: 0;
+  height: calc(64px + var(--safe-b));
+  background: rgba(22,22,32,.96);
+  backdrop-filter: blur(20px);
+  border-top: 1px solid var(--border);
+  display: flex;
+  align-items: flex-start;
+  padding-top: 10px;
+  position: relative;
+  z-index: 20;
+}
+.nav-tab {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 4px;
+  cursor: pointer;
+  opacity: .45;
+  transition: opacity .2s;
+  padding: 2px 0;
+}
+.nav-tab.active { opacity: 1; }
+.nav-tab .nav-icon { font-size: 22px; line-height: 1; }
+.nav-tab .nav-label { font-size: 10px; font-weight: 600; letter-spacing: .04em; }
+.nav-tab.active .nav-label { color: var(--accent); }
+.nav-dot {
+  width: 4px; height: 4px;
+  background: var(--accent);
+  border-radius: 50%;
+  margin-top: 1px;
+  opacity: 0;
+  transition: opacity .2s;
+}
+.nav-tab.active .nav-dot { opacity: 1; }
+
+/* ── SCREENS ─────────────────────────────────────────────── */
+.screen {
+  position: absolute;
+  inset: 0;
+  overflow-y: auto;
+  overflow-x: hidden;
+  -webkit-overflow-scrolling: touch;
+  display: none;
+  flex-direction: column;
+}
+.screen.active { display: flex; }
+.screen::-webkit-scrollbar { display: none; }
+
+/* ── ONBOARDING SCREEN ───────────────────────────────────── */
+#s-onboard {
+  background: var(--bg);
+  padding: 0;
+  justify-content: flex-end;
+}
+.onboard-hero {
+  position: absolute;
+  top: 0; left: 0; right: 0;
+  height: 55%;
+  background: linear-gradient(160deg, #1a1030 0%, #0d0d14 60%);
+  overflow: hidden;
+}
+.hero-glow {
+  position: absolute;
+  width: 300px; height: 300px;
+  border-radius: 50%;
+  background: radial-gradient(circle, rgba(108,99,255,.35) 0%, transparent 70%);
+  top: -60px; left: 50%; transform: translateX(-50%);
+  animation: glow-pulse 3s ease-in-out infinite;
+}
+@keyframes glow-pulse {
+  0%,100% { opacity: .7; transform: translateX(-50%) scale(1); }
+  50% { opacity: 1; transform: translateX(-50%) scale(1.1); }
+}
+.hero-icon {
+  position: absolute;
+  top: 50%; left: 50%;
+  transform: translate(-50%, -56%);
+  font-size: 72px;
+  filter: drop-shadow(0 0 30px rgba(108,99,255,.6));
+}
+.hero-wordmark {
+  position: absolute;
+  bottom: 24px; left: 0; right: 0;
+  text-align: center;
+  font-size: 28px;
+  font-weight: 800;
+  letter-spacing: -1px;
+}
+.hero-wordmark span { color: var(--accent); }
+.hero-tagline {
+  position: absolute;
+  bottom: 4px; left: 0; right: 0;
+  text-align: center;
+  font-size: 12px;
+  color: var(--sub);
+  font-weight: 400;
+}
+.onboard-sheet {
+  position: relative;
+  background: var(--card);
+  border-radius: 28px 28px 0 0;
+  padding: 28px 24px 32px;
+  margin-top: 50%;
+  min-height: 52%;
+  z-index: 2;
+}
+.sheet-handle {
+  width: 36px; height: 4px;
+  background: var(--border);
+  border-radius: 2px;
+  margin: 0 auto 24px;
+}
+
+/* Step dots */
+.step-dots { display: flex; gap: 6px; margin-bottom: 24px; }
+.sdot {
+  height: 4px; border-radius: 2px;
+  background: var(--border);
+  transition: all .3s;
+  width: 20px;
+}
+.sdot.on { background: var(--accent); width: 32px; }
+.sdot.done { background: var(--green); width: 20px; }
+
+.step-head { font-size: 20px; font-weight: 800; margin-bottom: 6px; letter-spacing: -.4px; }
+.step-desc { font-size: 13px; color: var(--sub); margin-bottom: 20px; line-height: 1.6; }
+
+/* Form elements */
+.field-lbl {
+  font-size: 11px; font-weight: 700;
+  letter-spacing: .1em; text-transform: uppercase;
+  color: var(--sub); margin-bottom: 8px; display: block;
+}
+.field-input {
+  width: 100%;
+  background: var(--card2);
+  border: 1.5px solid var(--border);
+  border-radius: 14px;
+  padding: 14px 16px;
+  color: var(--text);
+  font-family: var(--font);
+  font-size: 15px;
+  outline: none;
+  margin-bottom: 18px;
+  transition: border-color .2s;
+  -webkit-appearance: none;
+}
+.field-input:focus { border-color: var(--accent); }
+select.field-input { appearance: none; background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='8' viewBox='0 0 12 8'%3E%3Cpath d='M1 1l5 5 5-5' stroke='%236b6b96' stroke-width='1.5' fill='none' stroke-linecap='round'/%3E%3C/svg%3E"); background-repeat: no-repeat; background-position: right 16px center; padding-right: 40px; }
+select.field-input option { background: #1e1e2c; }
+
+.chip-row { display: flex; flex-wrap: wrap; gap: 8px; margin-bottom: 18px; }
+.chip {
+  padding: 8px 16px;
+  border-radius: 999px;
+  border: 1.5px solid var(--border);
+  background: transparent;
+  color: var(--sub);
+  font-size: 13px;
+  font-weight: 500;
+  font-family: var(--font);
+  cursor: pointer;
+  transition: all .2s;
+  white-space: nowrap;
+}
+.chip.on { background: var(--a-light); border-color: var(--accent); color: var(--accent); }
+
+.two-col { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-bottom: 18px; }
+.two-col > div > .field-lbl { margin-bottom: 6px; }
+.two-col > div > .field-input { margin-bottom: 0; }
+
+.btn-cta {
+  width: 100%;
+  padding: 17px;
+  background: var(--accent);
+  border: none;
+  border-radius: 16px;
+  color: #fff;
+  font-family: var(--font);
+  font-size: 15px;
+  font-weight: 700;
+  cursor: pointer;
+  transition: all .18s;
+  letter-spacing: .02em;
+  position: relative;
+  overflow: hidden;
+}
+.btn-cta::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(180deg, rgba(255,255,255,.12) 0%, transparent 100%);
+}
+.btn-cta:active { transform: scale(.97); }
+.btn-back {
+  background: var(--card2);
+  border: 1.5px solid var(--border);
+  border-radius: 16px;
+  color: var(--sub);
+  font-family: var(--font);
+  font-size: 15px;
+  font-weight: 600;
+  padding: 17px 22px;
+  cursor: pointer;
+}
+.btn-row { display: flex; gap: 10px; }
+.btn-row .btn-cta { flex: 1; }
+
+/* ── LOADING SCREEN ──────────────────────────────────────── */
+#s-loading {
+  justify-content: center;
+  align-items: center;
+  gap: 28px;
+  padding: 40px 32px;
+  background: var(--bg);
+}
+#s-loading.active { display: flex; }
+.load-orb {
+  width: 96px; height: 96px;
+  border-radius: 50%;
+  background: conic-gradient(var(--accent), #a78bfa, #926c86, var(--accent));
+  animation: spin-orb 2s linear infinite;
+  position: relative;
+}
+.load-orb::before {
+  content: '';
+  position: absolute;
+  inset: 6px;
+  background: var(--bg);
+  border-radius: 50%;
+}
+.load-orb::after {
+  content: '✦';
+  position: absolute;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 28px;
+  animation: counter-spin 2s linear infinite;
+}
+@keyframes spin-orb { to { transform: rotate(360deg); } }
+@keyframes counter-spin { to { transform: rotate(-360deg); } }
+.load-title { font-size: 20px; font-weight: 800; text-align: center; letter-spacing: -.4px; }
+.load-msg { font-size: 13px; color: var(--sub); text-align: center; line-height: 1.6; min-height: 40px; }
+.load-bar-wrap { width: 200px; height: 3px; background: var(--border); border-radius: 2px; overflow: hidden; }
+.load-bar { height: 100%; background: linear-gradient(90deg, var(--accent), var(--pink)); border-radius: 2px; width: 0%; transition: width .5s ease; }
+
+/* ── HOME (TODAY) SCREEN ─────────────────────────────────── */
+#s-home { padding: 0 0 16px; background: var(--bg); }
+.home-header {
+  padding: 16px 22px 0;
+  background: var(--bg);
+  position: sticky; top: 0; z-index: 5;
+}
+.home-header-inner {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  margin-bottom: 16px;
+}
+.home-greeting { font-size: 22px; font-weight: 800; letter-spacing: -.5px; }
+.home-date { font-size: 12px; color: var(--sub); margin-top: 2px; }
+.avatar {
+  width: 40px; height: 40px;
+  border-radius: 50%;
+  background: linear-gradient(135deg, var(--accent), var(--pink));
+  display: flex; align-items: center; justify-content: center;
+  font-size: 18px;
+}
+
+/* Progress strip */
+.progress-strip {
+  background: var(--card);
+  border-radius: var(--r);
+  padding: 16px 18px;
+  margin: 0 0 16px;
+  display: flex;
+  gap: 14px;
+  align-items: center;
+}
+.prog-ring-wrap { position: relative; flex-shrink: 0; }
+.prog-ring { width: 52px; height: 52px; transform: rotate(-90deg); }
+.pr-bg { fill: none; stroke: var(--border); stroke-width: 5; }
+.pr-fill { fill: none; stroke: var(--accent); stroke-width: 5; stroke-linecap: round; stroke-dasharray: 126; stroke-dashoffset: 126; transition: stroke-dashoffset 1s ease; }
+.prog-pct {
+  position: absolute; inset: 0;
+  display: flex; align-items: center; justify-content: center;
+  font-size: 12px; font-weight: 800; color: var(--accent);
+}
+.prog-title { font-size: 14px; font-weight: 700; margin-bottom: 3px; }
+.prog-sub { font-size: 12px; color: var(--sub); }
+.prog-bar-thin { height: 3px; background: var(--border); border-radius: 2px; margin-top: 8px; overflow: hidden; }
+.prog-bar-thin-fill { height: 100%; background: linear-gradient(90deg, var(--accent), var(--pink)); border-radius: 2px; transition: width .8s ease; }
+
+.section-head {
+  font-size: 11px; font-weight: 700; text-transform: uppercase;
+  letter-spacing: .1em; color: var(--sub);
+  padding: 0 22px;
+  margin: 16px 0 10px;
+}
+
+/* Today card */
+.today-card {
+  margin: 0 16px 12px;
+  background: linear-gradient(135deg, #1d1b40 0%, #1a1030 100%);
+  border: 1px solid rgba(108,99,255,.3);
+  border-radius: 20px;
+  padding: 20px;
+  cursor: pointer;
+  transition: transform .15s;
+  position: relative;
+  overflow: hidden;
+}
+.today-card::before {
+  content: '';
+  position: absolute;
+  top: -40px; right: -40px;
+  width: 120px; height: 120px;
+  background: radial-gradient(circle, rgba(108,99,255,.2), transparent 70%);
+}
+.today-card:active { transform: scale(.98); }
+.tc-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  font-size: 10px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: .1em;
+  color: var(--accent);
+  background: var(--a-light);
+  padding: 4px 10px;
+  border-radius: 999px;
+  margin-bottom: 12px;
+}
+.tc-title { font-size: 16px; font-weight: 700; margin-bottom: 6px; line-height: 1.35; }
+.tc-meta { font-size: 12px; color: var(--sub); display: flex; gap: 12px; align-items: center; flex-wrap: wrap; }
+.tc-arrow {
+  position: absolute;
+  right: 18px; top: 50%;
+  transform: translateY(-50%);
+  font-size: 20px;
+  color: var(--accent);
+  opacity: .5;
+}
+
+/* Duration badge */
+.dur-badge {
+  display: inline-flex; align-items: center; gap: 3px;
+  font-size: 10px; font-weight: 700;
+  color: var(--green);
+  background: rgba(52,211,153,.1);
+  border: 1px solid rgba(52,211,153,.2);
+  border-radius: 999px;
+  padding: 2px 7px;
+  white-space: nowrap;
+}
+.dur-badge.short { color: var(--amber); background: rgba(251,191,36,.1); border-color: rgba(251,191,36,.2); }
+.dur-badge.none  { color: var(--sub);   background: rgba(107,107,150,.07); border-color: rgba(107,107,150,.15); }
+
+/* Upcoming list */
+.upcoming-item {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 13px 22px;
+  cursor: pointer;
+  transition: background .15s;
+  border-radius: 12px;
+  margin: 0 8px;
+}
+.upcoming-item:active { background: var(--card); }
+.up-date-box {
+  width: 42px; flex-shrink: 0; text-align: center;
+  background: var(--card2);
+  border-radius: 12px;
+  padding: 7px 4px;
+}
+.up-day { font-size: 10px; color: var(--sub); font-weight: 600; text-transform: uppercase; }
+.up-num { font-size: 18px; font-weight: 800; line-height: 1; }
+.up-info { flex: 1; min-width: 0; }
+.up-title { font-size: 13px; font-weight: 600; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.up-meta { font-size: 11px; color: var(--sub); margin-top: 2px; }
+.type-dot {
+  width: 8px; height: 8px; border-radius: 50%; flex-shrink: 0;
+}
+.type-basics    { background: var(--accent); }
+.type-technique { background: var(--pink); }
+.type-practice  { background: var(--green); }
+.type-review    { background: var(--amber); }
+
+/* ── CALENDAR DRAG ────────────────────────────────────────── */
+.cal-cell.drag-over { background: rgba(108,99,255,.2) !important; outline: 2px solid rgba(108,99,255,.55); outline-offset: -2px; border-radius: 10px; }
+.dlp-item { touch-action: none; }
+#drag-ghost { box-shadow: 0 12px 40px rgba(0,0,0,.5); border-radius: 14px; background: var(--card2); border: 1px solid rgba(108,99,255,.4); }
+
+
+/* ── CALENDAR SCREEN ─────────────────────────────────────── */
+#s-calendar { padding: 0 0 16px; background: var(--bg); }
+.cal-header {
+  padding: 16px 22px 12px;
+  position: sticky; top: 0;
+  background: var(--bg);
+  z-index: 5;
+}
+.cal-header-row {
+  display: flex; justify-content: space-between; align-items: center;
+  margin-bottom: 16px;
+}
+.cal-title-h { font-size: 22px; font-weight: 800; letter-spacing: -.5px; }
+.cal-nav-btns { display: flex; gap: 8px; }
+.cal-nav-btn {
+  width: 36px; height: 36px;
+  background: var(--card);
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  color: var(--text);
+  font-size: 15px;
+  cursor: pointer;
+  display: flex; align-items: center; justify-content: center;
+  transition: border-color .2s;
+}
+.cal-nav-btn:active { border-color: var(--accent); }
+.cal-day-labels {
+  display: grid;
+  grid-template-columns: repeat(7,1fr);
+  text-align: center;
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: .06em;
+  text-transform: uppercase;
+  color: var(--sub);
+  margin-bottom: 6px;
+}
+.cal-grid {
+  display: grid;
+  grid-template-columns: repeat(7,1fr);
+  gap: 3px;
+  padding: 0 8px;
+}
+.cal-cell {
+  aspect-ratio: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: flex-start;
+  border-radius: 12px;
+  padding: 4px 2px;
+  cursor: pointer;
+  position: relative;
+  transition: background .15s, transform .15s, box-shadow .15s;
+  gap: 3px;
+}
+.cal-cell:active { background: var(--card2); }
+.cal-cell.other-m { opacity: .3; }
+.cal-cell.drag-over {
+  background: var(--a-light);
+  box-shadow: inset 0 0 0 2px var(--accent);
+  transform: scale(1.08);
+  z-index: 5;
+}
+.cal-cell.drag-over .cal-cell-num {
+  background: var(--accent);
+  color: #fff;
+}
+.cal-cell-num {
+  font-size: 13px; font-weight: 600;
+  width: 28px; height: 28px;
+  display: flex; align-items: center; justify-content: center;
+  border-radius: 50%;
+}
+.cal-cell.is-today .cal-cell-num {
+  background: var(--accent);
+  color: #fff;
+  font-weight: 800;
+}
+.cal-pips { display: flex; gap: 2px; flex-wrap: wrap; justify-content: center; }
+.cal-pip {
+  width: 5px; height: 5px;
+  border-radius: 50%;
+}
+.day-lessons-panel {
+  margin: 8px 16px 0;
+  background: var(--card);
+  border-radius: 20px;
+  overflow: hidden;
+}
+.dlp-header {
+  padding: 14px 18px;
+  font-size: 13px; font-weight: 700;
+  color: var(--sub);
+  border-bottom: 1px solid var(--border);
+}
+.dlp-item {
+  display: flex; align-items: center; gap: 12px;
+  padding: 13px 18px;
+  border-bottom: 1px solid var(--border);
+  cursor: pointer;
+  transition: background .15s;
+}
+.dlp-item:last-child { border-bottom: none; }
+.dlp-item:active { background: var(--card2); }
+.dlp-item.dragging { opacity: .25; }
+.dlp-color { width: 4px; height: 40px; border-radius: 2px; flex-shrink: 0; }
+.dlp-info { flex: 1; min-width: 0; }
+.dlp-title { font-size: 14px; font-weight: 600; }
+.dlp-meta { font-size: 11px; color: var(--sub); margin-top: 2px; }
+.dlp-chevron {
+  color: var(--sub); font-size: 18px; touch-action: none;
+  width: 32px; height: 32px;
+  display: flex; align-items: center; justify-content: center;
+  flex-shrink: 0; border-radius: 8px;
+  margin-right: -6px;
+}
+.dlp-chevron:active { background: var(--border); color: var(--text); }
+#drag-ghost {
+  background: var(--card2);
+  border-radius: 14px;
+  box-shadow: 0 18px 40px rgba(0,0,0,.55), 0 0 0 1px var(--accent);
+  transform: scale(1.04) rotate(-1.5deg);
+  transition: none;
+}
+
+/* ── LESSON DETAIL SCREEN ────────────────────────────────── */
+#s-lesson { padding: 0; background: var(--bg); }
+#s-lesson.active { display: flex; }
+.lesson-header {
+  padding: 16px 20px 20px;
+  background: linear-gradient(180deg, #1a1530 0%, var(--bg) 100%);
+  flex-shrink: 0;
+}
+.back-btn {
+  display: inline-flex; align-items: center; gap: 6px;
+  font-size: 14px; font-weight: 600; color: var(--accent);
+  cursor: pointer; margin-bottom: 16px;
+  background: none; border: none;
+}
+.l-type-tag {
+  display: inline-block;
+  padding: 4px 12px;
+  border-radius: 999px;
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: .08em;
+  text-transform: uppercase;
+  margin-bottom: 10px;
+}
+.l-title { font-size: 20px; font-weight: 800; letter-spacing: -.4px; line-height: 1.3; margin-bottom: 8px; }
+.l-date-row { font-size: 12px; color: var(--sub); display: flex; gap: 14px; align-items: center; flex-wrap: wrap; }
+.lesson-body { flex: 1; overflow-y: auto; padding: 0 16px 16px; }
+.lesson-body::-webkit-scrollbar { display: none; }
+.l-section-lbl {
+  font-size: 11px; font-weight: 700; text-transform: uppercase;
+  letter-spacing: .1em; color: var(--sub);
+  margin: 20px 0 10px;
+}
+
+/* ── YOUTUBE EMBEDDED PLAYER ─────────────────────────────── */
+.yt-player-wrap {
+  margin-top: 8px;
+  margin-bottom: 4px;
+  background: #000;
+  border-radius: 16px;
+  overflow: hidden;
+  border: 1px solid var(--border);
+  display: none;
+}
+.yt-player-wrap.visible { display: block; }
+#yt-player-container { width: 100%; display: block; }
+#yt-player-container iframe { display: block; width: 100%; border: none; }
+.yt-player-info {
+  padding: 10px 14px 12px;
+  background: rgba(255,255,255,.03);
+  border-top: 1px solid var(--border);
+}
+.yt-now-title { font-size: 12px; font-weight: 600; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; margin-bottom: 3px; }
+.yt-playlist-status { font-size: 10px; color: var(--sub); }
+.yt-autoplay-note { font-size: 10px; color: var(--accent); margin-top: 2px; }
+
+/* Video card */
+.vid-card {
+  background: var(--card);
+  border: 1px solid var(--border);
+  border-radius: 18px;
+  overflow: hidden;
+  margin-bottom: 12px;
+  cursor: pointer;
+  transition: transform .15s, border-color .2s;
+}
+.vid-card:active { transform: scale(.98); }
+.vid-card.playing { border-color: var(--accent); }
+.vid-thumb {
+  width: 100%; height: 130px;
+  display: flex; align-items: center; justify-content: center;
+  position: relative;
+  flex-direction: column; gap: 8px;
+}
+.vid-play {
+  width: 44px; height: 44px;
+  background: rgba(255,255,255,.9);
+  border-radius: 50%;
+  display: flex; align-items: center; justify-content: center;
+  font-size: 16px; color: #111;
+  box-shadow: 0 4px 16px rgba(0,0,0,.4);
+  position: relative; z-index: 1;
+}
+.vid-platform-chip {
+  position: absolute; top: 10px; left: 10px;
+  padding: 3px 8px; border-radius: 999px;
+  font-size: 9px; font-weight: 700; letter-spacing: .08em;
+  text-transform: uppercase;
+}
+.plat-yt  { background: rgba(255,80,80,.2);  color: #ff6060; }
+.plat-ig  { background: rgba(244,114,182,.2); color: var(--pink); }
+.plat-tt  { background: rgba(52,211,153,.2);  color: var(--green); }
+.vid-dur-chip {
+  position: absolute; top: 10px; right: 10px;
+  background: rgba(0,0,0,.7);
+  color: #fff;
+  padding: 2px 6px;
+  border-radius: 6px;
+  font-size: 9px; font-weight: 700;
+  font-variant-numeric: tabular-nums;
+}
+.vid-info { padding: 12px 14px; }
+.vid-title { font-size: 13px; font-weight: 600; line-height: 1.4; margin-bottom: 4px; }
+.vid-meta  { font-size: 11px; color: var(--sub); }
+.vid-watch-note { font-size: 10px; color: var(--amber); margin-top: 4px; }
+
+/* Tip card */
+.tip-box {
+  background: rgba(52,211,153,.07);
+  border: 1px solid rgba(52,211,153,.2);
+  border-radius: 16px;
+  padding: 16px;
+  font-size: 13px;
+  line-height: 1.7;
+  color: var(--text);
+}
+.tip-box strong { color: var(--green); }
+
+.lesson-footer {
+  padding: 12px 16px;
+  background: var(--bg);
+  border-top: 1px solid var(--border);
+  flex-shrink: 0;
+}
+.done-btn {
+  width: 100%;
+  padding: 17px;
+  background: var(--green);
+  border: none;
+  border-radius: 16px;
+  color: #0a1a14;
+  font-family: var(--font);
+  font-size: 15px;
+  font-weight: 800;
+  cursor: pointer;
+  transition: all .18s;
+  letter-spacing: .02em;
+}
+.done-btn:active { transform: scale(.97); }
+.done-btn.completed { background: var(--card2); color: var(--sub); border: 1.5px solid var(--border); }
+
+/* ── PLAN (LIST) SCREEN ──────────────────────────────────── */
+#s-plan { padding: 0 0 16px; background: var(--bg); }
+.plan-header {
+  padding: 16px 22px 12px;
+  position: sticky; top: 0;
+  background: var(--bg); z-index: 5;
+}
+.plan-header-title { font-size: 22px; font-weight: 800; letter-spacing: -.5px; }
+.plan-header-sub { font-size: 12px; color: var(--sub); margin-top: 3px; }
+.week-label {
+  font-size: 11px; font-weight: 700;
+  text-transform: uppercase; letter-spacing: .1em;
+  color: var(--sub);
+  padding: 14px 22px 6px;
+}
+.plan-row {
+  display: flex; align-items: center; gap: 12px;
+  padding: 13px 16px;
+  margin: 0 8px 4px;
+  background: var(--card);
+  border-radius: 16px;
+  cursor: pointer;
+  transition: all .15s;
+}
+.plan-row:active { transform: scale(.98); }
+.plan-row.done-row { opacity: .45; }
+.pr-date {
+  text-align: center;
+  background: var(--card2);
+  border-radius: 12px;
+  padding: 7px 8px;
+  min-width: 44px;
+}
+.pr-day { font-size: 9px; font-weight: 700; text-transform: uppercase; color: var(--sub); }
+.pr-num { font-size: 19px; font-weight: 800; line-height: 1; }
+.pr-info { flex: 1; min-width: 0; }
+.pr-title { font-size: 13px; font-weight: 600; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.pr-meta  { font-size: 11px; color: var(--sub); margin-top: 2px; }
+.pr-check {
+  width: 26px; height: 26px;
+  border: 2px solid var(--border);
+  border-radius: 8px;
+  display: flex; align-items: center; justify-content: center;
+  font-size: 13px;
+  flex-shrink: 0;
+  cursor: pointer;
+  transition: all .2s;
+}
+.pr-check.ck { background: var(--green); border-color: var(--green); color: #0a1a14; font-weight: 800; }
+
+/* ── TOAST ───────────────────────────────────────────────── */
+.toast {
+  position: absolute;
+  bottom: 80px; left: 50%;
+  transform: translateX(-50%) translateY(10px);
+  background: var(--card);
+  border: 1px solid var(--green);
+  border-radius: 14px;
+  padding: 11px 20px;
+  font-size: 13px; font-weight: 600;
+  color: var(--green);
+  white-space: nowrap;
+  opacity: 0;
+  transition: all .3s;
+  z-index: 100;
+  pointer-events: none;
+}
+.toast.show { opacity: 1; transform: translateX(-50%) translateY(0); }
+
+/* ── EMPTY STATE ─────────────────────────────────────────── */
+.empty-state {
+  display: flex; flex-direction: column;
+  align-items: center; justify-content: center;
+  padding: 60px 32px;
+  text-align: center; gap: 12px; color: var(--sub);
+}
+.empty-state .e-icon { font-size: 48px; opacity: .4; }
+.empty-state .e-text { font-size: 14px; line-height: 1.6; }
+
+/* ── FLOATING FOCUS REMINDER ─────────────────────────────── */
+.focus-bubble {
+  position: absolute;
+  bottom: 80px; left: 50%;
+  transform: translateX(-50%) translateY(20px) scale(0.92);
+  background: linear-gradient(135deg, #1a1040, #0f0a28);
+  border: 1px solid rgba(108,99,255,.5);
+  border-radius: 20px;
+  padding: 14px 18px;
+  min-width: 280px; max-width: 320px;
+  z-index: 200;
+  opacity: 0;
+  pointer-events: none;
+  transition: all .35s cubic-bezier(0.34,1.56,0.64,1);
+  box-shadow: 0 8px 32px rgba(0,0,0,.6), 0 0 0 1px rgba(108,99,255,.2);
+}
+.focus-bubble.visible {
+  opacity: 1;
+  transform: translateX(-50%) translateY(0) scale(1);
+  pointer-events: all;
+}
+.fb-top { display: flex; align-items: center; gap: 10px; margin-bottom: 8px; }
+.fb-icon { font-size: 22px; }
+.fb-title { font-size: 13px; font-weight: 800; flex: 1; }
+.fb-close {
+  background: rgba(255,255,255,.08);
+  border: none; border-radius: 8px;
+  color: var(--sub); font-size: 13px;
+  width: 26px; height: 26px;
+  cursor: pointer; display: flex;
+  align-items: center; justify-content: center;
+  transition: background .15s;
+}
+.fb-close:hover { background: rgba(255,255,255,.14); color: var(--text); }
+.fb-msg { font-size: 12px; color: var(--sub); line-height: 1.6; margin-bottom: 12px; }
+.fb-actions { display: flex; gap: 8px; }
+.fb-btn-primary {
+  flex: 1; padding: 9px;
+  background: var(--accent); border: none;
+  border-radius: 10px; color: #fff;
+  font-family: var(--font); font-size: 12px; font-weight: 700;
+  cursor: pointer; transition: opacity .15s;
+}
+.fb-btn-primary:active { opacity: .8; }
+.fb-btn-ghost {
+  padding: 9px 14px;
+  background: rgba(255,255,255,.06); border: 1px solid var(--border);
+  border-radius: 10px; color: var(--sub);
+  font-family: var(--font); font-size: 12px; font-weight: 600;
+  cursor: pointer; transition: background .15s;
+}
+.fb-btn-ghost:active { background: rgba(255,255,255,.1); }
+
+/* ── SESSION TIMER BAR ───────────────────────────────────── */
+.session-timer-bar {
+  position: absolute;
+  top: 0; left: 0; right: 0;
+  height: 3px;
+  background: var(--border);
+  z-index: 50;
+  overflow: hidden;
+  display: none;
+}
+.session-timer-bar.active { display: block; }
+.stb-fill {
+  height: 100%;
+  background: linear-gradient(90deg, var(--accent), var(--green));
+  border-radius: 0 2px 2px 0;
+  transition: width 1s linear;
+  width: 0%;
+}
+
+/* ── DISTRACTION BLOCK OVERLAY ───────────────────────────── */
+.distraction-overlay {
+  position: absolute;
+  inset: 0;
+  background: rgba(8,6,20,.97);
+  z-index: 300;
+  display: none;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 20px;
+  padding: 40px 28px;
+  text-align: center;
+  backdrop-filter: blur(10px);
+}
+.distraction-overlay.show { display: flex; }
+.do-icon { font-size: 56px; animation: breathe 3s ease-in-out infinite; }
+@keyframes breathe {
+  0%,100% { transform: scale(1); }
+  50% { transform: scale(1.08); }
+}
+.do-title { font-size: 22px; font-weight: 800; letter-spacing: -.4px; }
+.do-sub { font-size: 14px; color: var(--sub); line-height: 1.7; max-width: 260px; }
+.do-timer { font-size: 48px; font-weight: 800; font-variant-numeric: tabular-nums; color: var(--accent); letter-spacing: -2px; }
+.do-btn {
+  padding: 14px 32px;
+  background: var(--accent); border: none;
+  border-radius: 14px; color: #fff;
+  font-family: var(--font); font-size: 14px; font-weight: 700;
+  cursor: pointer;
+}
+.do-skip {
+  font-size: 12px; color: var(--sub);
+  cursor: pointer; text-decoration: underline;
+  background: none; border: none; font-family: var(--font);
+}
+
+/* ── FOCUS SETTINGS PANEL ────────────────────────────────── */
+.focus-settings {
+  position: absolute;
+  bottom: 0; left: 0; right: 0;
+  background: var(--card);
+  border-radius: 24px 24px 0 0;
+  padding: 20px 22px 32px;
+  z-index: 250;
+  transform: translateY(100%);
+  transition: transform .3s cubic-bezier(0.4,0,0.2,1);
+}
+.focus-settings.open { transform: translateY(0); }
+.fs-handle { width: 36px; height: 4px; background: var(--border); border-radius: 2px; margin: 0 auto 20px; }
+.fs-title { font-size: 17px; font-weight: 800; margin-bottom: 4px; }
+.fs-sub { font-size: 12px; color: var(--sub); margin-bottom: 20px; }
+.fs-row {
+  display: flex; justify-content: space-between;
+  align-items: center; padding: 13px 0;
+  border-bottom: 1px solid var(--border);
+}
+.fs-row:last-of-type { border-bottom: none; }
+.fs-row-label { font-size: 13px; font-weight: 600; }
+.fs-row-sub { font-size: 11px; color: var(--sub); margin-top: 2px; }
+.toggle {
+  width: 44px; height: 26px;
+  background: var(--border);
+  border-radius: 999px;
+  position: relative;
+  cursor: pointer;
+  transition: background .2s;
+  flex-shrink: 0;
+}
+.toggle.on { background: var(--accent); }
+.toggle::after {
+  content: '';
+  position: absolute;
+  width: 20px; height: 20px;
+  background: #fff;
+  border-radius: 50%;
+  top: 3px; left: 3px;
+  transition: transform .2s;
+  box-shadow: 0 1px 4px rgba(0,0,0,.3);
+}
+.toggle.on::after { transform: translateX(18px); }
+.fs-select {
+  background: var(--card2);
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  color: var(--text);
+  font-family: var(--font);
+  font-size: 12px; font-weight: 600;
+  padding: 6px 10px;
+  outline: none;
+  cursor: pointer;
+}
+.focus-overlay-bg {
+  position: absolute; inset: 0;
+  background: rgba(0,0,0,.5);
+  z-index: 240;
+  display: none;
+  backdrop-filter: blur(2px);
+}
+.focus-overlay-bg.show { display: block; }
+.focus-badge {
+  display: inline-flex; align-items: center; gap: 5px;
+  background: rgba(52,211,153,.1);
+  border: 1px solid rgba(52,211,153,.25);
+  border-radius: 999px;
+  padding: 4px 10px;
+  font-size: 10px; font-weight: 700;
+  color: var(--green);
+  cursor: pointer;
+  transition: background .15s;
+}
+.focus-badge:active { background: rgba(52,211,153,.18); }
+.focus-badge.off { background: rgba(107,107,150,.1); border-color: rgba(107,107,150,.2); color: var(--sub); }
+
+/* ── FLOATING VIDEO COUNTDOWN TIMER ─────────────────────── */
+.vid-countdown {
+  position: fixed;
+  bottom: 82px;
+  right: calc(50% - min(195px, 50vw) + 8px);
+  width: 148px;
+  background: linear-gradient(160deg, #16143a 0%, #0f0d28 100%);
+  border: 1px solid rgba(108,99,255,.55);
+  border-radius: 20px;
+  z-index: 500;
+  box-shadow: 0 12px 40px rgba(0,0,0,.7);
+  transform: translateX(20px) scale(.92);
+  opacity: 0;
+  pointer-events: none;
+  transition: all .35s cubic-bezier(0.34,1.56,0.64,1);
+  overflow: hidden;
+}
+.vid-countdown.vc-visible { opacity: 1; transform: translateX(0) scale(1); pointer-events: all; }
+.vid-countdown.vc-urgent  { border-color: rgba(244,114,182,.6); }
+.vid-countdown.vc-done    { border-color: rgba(52,211,153,.6); }
+.vc-header {
+  display: flex; align-items: center; justify-content: space-between;
+  padding: 10px 12px 8px;
+  border-bottom: 1px solid rgba(108,99,255,.18);
+  background: rgba(108,99,255,.08);
+  cursor: grab; user-select: none;
+}
+.vc-header:active { cursor: grabbing; }
+.vc-label { font-size: 9px; font-weight: 700; text-transform: uppercase; letter-spacing: .1em; color: var(--accent); }
+.vc-ctrl-row { display: flex; align-items: center; gap: 4px; }
+.vc-ctrl-btn {
+  background: rgba(255,255,255,.08); border: none; border-radius: 6px;
+  color: var(--sub); width: 22px; height: 22px; font-size: 12px; line-height: 1;
+  cursor: pointer; display: flex; align-items: center; justify-content: center;
+  transition: background .15s, color .15s; font-family: var(--font); flex-shrink: 0;
+}
+.vc-ctrl-btn:active { background: rgba(255,255,255,.18); color: var(--text); }
+.vc-body { padding: 12px 12px 10px; text-align: center; }
+.vc-ring-wrap { position: relative; width: 80px; height: 80px; margin: 0 auto 10px; }
+.vc-ring-svg  { width: 80px; height: 80px; transform: rotate(-90deg); }
+.vc-ring-bg   { fill: none; stroke: rgba(255,255,255,.07); stroke-width: 6; }
+.vc-ring-fill {
+  fill: none; stroke: var(--accent); stroke-width: 6; stroke-linecap: round;
+  stroke-dasharray: 207; stroke-dashoffset: 0;
+  transition: stroke-dashoffset 1s linear, stroke .5s;
+}
+.vc-urgent .vc-ring-fill { stroke: var(--pink); }
+.vc-done   .vc-ring-fill { stroke: var(--green); }
+.vc-ring-center {
+  position: absolute; inset: 0;
+  display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 1px;
+}
+.vc-time { font-size: 19px; font-weight: 800; color: var(--text); font-variant-numeric: tabular-nums; letter-spacing: -.5px; line-height: 1; }
+.vc-urgent .vc-time { color: var(--pink); }
+.vc-done   .vc-time { color: var(--green); }
+.vc-unit   { font-size: 8px; color: var(--sub); text-transform: uppercase; letter-spacing: .08em; font-weight: 600; }
+.vc-bar-wrap  { height: 3px; background: rgba(255,255,255,.07); border-radius: 2px; overflow: hidden; margin-bottom: 10px; }
+.vc-bar-fill  { height: 100%; background: linear-gradient(90deg, var(--accent), var(--green)); border-radius: 2px; width: 0%; transition: width 1s linear; }
+.vc-urgent .vc-bar-fill { background: linear-gradient(90deg, var(--pink), var(--amber)); }
+.vc-status { font-size: 9px; color: var(--sub); margin-bottom: 10px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.vc-actions { display: flex; gap: 5px; }
+.vc-btn-done {
+  flex: 1; padding: 8px 4px; background: var(--green); border: none;
+  border-radius: 10px; color: #0a1a14;
+  font-family: var(--font); font-size: 10px; font-weight: 800;
+  cursor: pointer; transition: opacity .15s;
+}
+.vc-btn-done:active { opacity: .8; }
+.vc-btn-add {
+  padding: 8px 9px; background: rgba(255,255,255,.07);
+  border: 1px solid rgba(255,255,255,.1); border-radius: 10px; color: var(--sub);
+  font-family: var(--font); font-size: 10px; font-weight: 600;
+  cursor: pointer; white-space: nowrap; transition: background .15s;
+}
+.vc-btn-add:active { background: rgba(255,255,255,.13); color: var(--text); }
+.vc-mini { display: none; padding: 8px 12px; align-items: center; gap: 7px; }
+.vc-mini-time { font-size: 16px; font-weight: 800; color: var(--text); font-variant-numeric: tabular-nums; }
+.vc-mini-lbl  { font-size: 9px; color: var(--sub); text-transform: uppercase; letter-spacing: .06em; }
+.vid-countdown.vc-paused .vc-ring-fill { stroke: var(--amber) !important; }
+.vid-countdown.vc-paused .vc-time      { color: var(--amber) !important; }
+.vid-countdown.vc-paused .vc-bar-fill  { background: linear-gradient(90deg,var(--amber),#f59e0b) !important; }
+
+/* ── NEW ONBOARDING — SKILL PICKER ──────────────────────── */
+.ob-hero-full {
+  position: absolute; top: 0; left: 0; right: 0; bottom: 0;
+  background: var(--bg);
+  display: flex; flex-direction: column;
+  overflow: hidden;
+}
+.ob-hero-top {
+  flex-shrink: 0;
+  height: 220px;
+  background: linear-gradient(160deg, #1a1040 0%, #0d0d18 70%);
+  display: flex; flex-direction: column;
+  align-items: center; justify-content: center;
+  position: relative; overflow: hidden;
+}
+.ob-hero-top::before {
+  content: '';
+  position: absolute;
+  width: 280px; height: 280px; border-radius: 50%;
+  background: radial-gradient(circle, rgba(108,99,255,.28) 0%, transparent 70%);
+  top: -80px; left: 50%; transform: translateX(-50%);
+}
+.ob-wordmark { font-size: 30px; font-weight: 800; letter-spacing: -1.5px; position: relative; z-index: 1; }
+.ob-wordmark span { color: var(--accent); }
+.ob-tagline { font-size: 12px; color: var(--sub); margin-top: 6px; position: relative; z-index: 1; }
+.ob-sheet {
+  flex: 1;
+  background: var(--card);
+  border-radius: 28px 28px 0 0;
+  overflow-y: auto; overflow-x: hidden;
+  padding: 20px 20px 32px;
+  position: relative;
+}
+.ob-sheet::-webkit-scrollbar { display: none; }
+.ob-sheet-handle { width: 36px; height: 4px; background: var(--border); border-radius: 2px; margin: 0 auto 18px; }
+.ob-section-lbl { font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: .1em; color: var(--sub); margin-bottom: 12px; }
+.skill-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 10px;
+  margin-bottom: 14px;
+}
+.skill-tile {
+  background: var(--card2);
+  border: 1.5px solid var(--border);
+  border-radius: 16px;
+  padding: 14px 8px 12px;
+  display: flex; flex-direction: column;
+  align-items: center; gap: 7px;
+  cursor: pointer;
+  transition: all .2s;
+  position: relative; overflow: hidden;
+}
+.skill-tile::before {
+  content: '';
+  position: absolute; inset: 0;
+  background: var(--a-light);
+  opacity: 0; transition: opacity .2s;
+}
+.skill-tile.selected { border-color: var(--accent); background: rgba(108,99,255,.1); }
+.skill-tile.selected::before { opacity: 1; }
+.skill-tile:active { transform: scale(.95); }
+.st-emoji { font-size: 28px; line-height: 1; }
+.st-name { font-size: 11px; font-weight: 600; text-align: center; color: var(--sub); line-height: 1.3; }
+.skill-tile.selected .st-name { color: var(--accent); }
+.skill-tile.other-tile { border-style: dashed; }
+.skill-tile.other-tile .st-emoji { font-size: 22px; color: var(--sub); }
+
+/* ── Quick Mode ────────────────────────────────────────── */
+.qm-bar {
+  display: flex; align-items: center; gap: 10px;
+  background: linear-gradient(135deg, var(--a-light), rgba(108,99,255,.05));
+  border: 1.5px solid var(--accent);
+  border-radius: 18px;
+  padding: 12px 14px;
+  margin-bottom: 16px;
+  cursor: pointer;
+  transition: transform .15s;
+  width: 100%;
+  box-sizing: border-box;
+  min-width: 0;
+}
+.qm-bar:active { transform: scale(.97); }
+.qm-bar-icon {
+  font-size: 18px;
+  width: 34px; height: 34px;
+  border-radius: 10px;
+  background: var(--accent);
+  display: flex; align-items: center; justify-content: center;
+  flex-shrink: 0;
+}
+.qm-bar-text { flex: 1; min-width: 0; overflow: hidden; }
+.qm-bar-title { font-size: 13px; font-weight: 700; color: var(--text); }
+.qm-bar-sub {
+  font-size: 11px; color: var(--sub); margin-top: 2px;
+  white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+  max-width: 100%;
+}
+.qm-bar-mic { font-size: 16px; flex-shrink: 0; opacity: .8; }
+
+.qm-overlay {
+  position: absolute; inset: 0;
+  background: var(--bg);
+  z-index: 200;
+  opacity: 0; pointer-events: none;
+  transition: opacity .25s;
+}
+.qm-overlay.show { opacity: 1; pointer-events: auto; }
+.qm-sheet {
+  position: absolute; bottom: 0;
+  left: 0; right: 0;
+  width: 100%;
+  background: var(--card);
+  border-radius: 24px 24px 0 0;
+  padding: 22px 20px 32px;
+  z-index: 201;
+  transform: translateY(100%);
+  transition: transform .3s cubic-bezier(.22,1,.36,1);
+  max-height: 88%;
+  overflow-y: auto;
+}
+.qm-sheet.open { transform: translateY(0); }
+.qm-sheet-handle {
+  width: 36px; height: 4px; border-radius: 2px;
+  background: var(--border);
+  margin: 0 auto 16px;
+}
+.qm-title { font-size: 18px; font-weight: 700; margin-bottom: 4px; }
+.qm-sub { font-size: 12px; color: var(--sub); margin-bottom: 16px; line-height: 1.5; }
+.qm-input-wrap {
+  position: relative;
+  margin-bottom: 14px;
+}
+.qm-textarea {
+  width: 100%;
+  background: var(--card2);
+  border: 1.5px solid var(--border);
+  border-radius: 16px;
+  padding: 14px 52px 14px 14px;
+  font-size: 14px;
+  color: var(--text);
+  resize: none;
+  min-height: 84px;
+  font-family: inherit;
+  line-height: 1.5;
+  box-sizing: border-box;
+}
+.qm-textarea:focus { outline: none; border-color: var(--accent); }
+.qm-mic-btn {
+  position: absolute;
+  right: 10px; bottom: 10px;
+  width: 38px; height: 38px;
+  border-radius: 50%;
+  background: var(--accent);
+  border: none;
+  color: #fff;
+  font-size: 16px;
+  display: flex; align-items: center; justify-content: center;
+  cursor: pointer;
+  transition: all .2s;
+}
+.qm-mic-btn.listening {
+  background: #ff4d6d;
+  animation: qm-pulse 1.2s ease-in-out infinite;
+}
+@keyframes qm-pulse {
+  0%,100% { box-shadow: 0 0 0 0 rgba(255,77,109,.5); }
+  50% { box-shadow: 0 0 0 10px rgba(255,77,109,0); }
+}
+.qm-examples {
+  display: flex; flex-wrap: wrap; gap: 6px;
+  margin-bottom: 18px;
+}
+.qm-example-chip {
+  font-size: 11px; color: var(--sub);
+  background: var(--card2);
+  border: 1px solid var(--border);
+  border-radius: 999px;
+  padding: 6px 11px;
+  cursor: pointer;
+}
+.qm-example-chip:active { background: var(--border); }
+.qm-status {
+  font-size: 12px; color: var(--accent);
+  margin-bottom: 12px; min-height: 16px;
+  display: flex; align-items: center; gap: 6px;
+}
+.qm-parsed-card {
+  display: none;
+  background: var(--card2);
+  border: 1px solid var(--border);
+  border-radius: 16px;
+  padding: 14px;
+  margin-bottom: 16px;
+}
+.qm-parsed-row {
+  display: flex; justify-content: space-between;
+  font-size: 12.5px; padding: 5px 0;
+  border-bottom: 1px solid var(--border);
+}
+.qm-parsed-row:last-child { border-bottom: none; }
+.qm-parsed-label { color: var(--sub); }
+.qm-parsed-val { font-weight: 600; }
+.discovery-sheet {
+  position: absolute;
+  inset: 0;
+  background: var(--card);
+  border-radius: 28px 28px 0 0;
+  padding: 20px 20px 32px;
+  transform: translateY(100%);
+  transition: transform .4s cubic-bezier(0.4,0,0.2,1);
+  overflow-y: auto; overflow-x: hidden;
+  z-index: 10;
+}
+.discovery-sheet::-webkit-scrollbar { display: none; }
+.discovery-sheet.ds-open { transform: translateY(0); }
+.ds-handle { width: 36px; height: 4px; background: var(--border); border-radius: 2px; margin: 0 auto 18px; }
+.ds-back {
+  display: inline-flex; align-items: center; gap: 5px;
+  font-size: 13px; font-weight: 600; color: var(--accent);
+  background: none; border: none; cursor: pointer;
+  font-family: var(--font); margin-bottom: 16px;
+}
+.ds-skill-badge {
+  display: inline-flex; align-items: center; gap: 8px;
+  background: var(--a-light); border: 1px solid rgba(108,99,255,.3);
+  border-radius: 12px; padding: 8px 14px;
+  margin-bottom: 16px;
+}
+.ds-badge-emoji { font-size: 20px; }
+.ds-badge-name  { font-size: 15px; font-weight: 700; color: var(--accent); }
+.ds-question { font-size: 18px; font-weight: 800; letter-spacing: -.4px; margin-bottom: 6px; }
+.ds-sub      { font-size: 13px; color: var(--sub); margin-bottom: 16px; line-height: 1.5; }
+.direction-list { display: flex; flex-direction: column; gap: 8px; margin-bottom: 18px; }
+.direction-item {
+  display: flex; align-items: center; gap: 12px;
+  background: var(--card2); border: 1.5px solid var(--border);
+  border-radius: 14px; padding: 12px 14px;
+  cursor: pointer; transition: all .15s;
+}
+.direction-item.selected { border-color: var(--accent); background: rgba(108,99,255,.1); }
+.direction-item:active { transform: scale(.98); }
+.di-icon  { font-size: 20px; flex-shrink: 0; }
+.di-text  { flex: 1; }
+.di-title { font-size: 13px; font-weight: 600; }
+.di-sub   { font-size: 11px; color: var(--sub); margin-top: 2px; }
+.di-check {
+  width: 20px; height: 20px; border: 2px solid var(--border);
+  border-radius: 6px; flex-shrink: 0; transition: all .15s;
+  display: flex; align-items: center; justify-content: center; font-size: 11px;
+}
+.direction-item.selected .di-check { background: var(--accent); border-color: var(--accent); color: #fff; }
+
+/* ── SETTINGS GEAR BUTTON ────────────────────────────────── */
+.settings-gear-btn {
+  width: 36px; height: 36px;
+  background: rgba(255,255,255,.07);
+  border: 1px solid rgba(255,255,255,.12);
+  border-radius: 12px;
+  display: flex; align-items: center; justify-content: center;
+  font-size: 16px; cursor: pointer;
+  transition: background .15s, transform .15s;
+  flex-shrink: 0;
+}
+.settings-gear-btn:active { background: rgba(255,255,255,.14); transform: rotate(30deg); }
+
+/* ── SETTINGS PANEL ──────────────────────────────────────── */
+.settings-overlay-bg {
+  position: absolute; inset: 0;
+  background: rgba(0,0,0,.55);
+  z-index: 340;
+  display: none;
+  backdrop-filter: blur(3px);
+}
+.settings-overlay-bg.show { display: block; }
+.settings-panel {
+  position: absolute;
+  bottom: 0; left: 0; right: 0;
+  background: #0e0c1e;
+  border: 1px solid rgba(255,255,255,.1);
+  border-bottom: none;
+  border-radius: 24px 24px 0 0;
+  padding: 20px 22px 40px;
+  z-index: 350;
+  transform: translateY(100%);
+  transition: transform .35s cubic-bezier(0.4,0,0.2,1);
+  max-height: 85%;
+  overflow-y: auto;
+}
+.settings-panel::-webkit-scrollbar { display: none; }
+.settings-panel.open { transform: translateY(0); }
+.sp-handle { width: 36px; height: 4px; background: var(--border); border-radius: 2px; margin: 0 auto 20px; }
+.sp-title { font-size: 17px; font-weight: 800; margin-bottom: 4px; }
+.sp-sub { font-size: 12px; color: var(--sub); margin-bottom: 20px; line-height: 1.5; }
+.sp-key-row { margin-bottom: 16px; }
+.sp-key-row .field-lbl { margin-bottom: 6px; }
+.sp-key-row .field-input { margin-bottom: 0; font-size: 13px; padding: 12px 14px; }
+.sp-save-btn {
+  width: 100%; padding: 15px;
+  background: var(--accent); border: none;
+  border-radius: 14px; color: #fff;
+  font-family: var(--font); font-size: 14px; font-weight: 700;
+  cursor: pointer; transition: opacity .15s;
+  margin-top: 6px;
+}
+.sp-save-btn:active { opacity: .8; }
+.sp-divider { height: 1px; background: var(--border); margin: 20px 0; }
+
+/* Debug panel */
+.debug-panel {
+  display: none;
+  margin-top: 14px;
+  background: rgba(0,0,0,.5);
+  border: 1px solid rgba(255,80,80,.3);
+  border-radius: 12px;
+  padding: 10px 12px;
+  max-height: 160px;
+  overflow-y: auto;
+}
+.debug-panel.visible { display: block; }
+.debug-panel::-webkit-scrollbar { display: none; }
+.debug-panel-lbl { font-size: 10px; font-weight: 700; text-transform: uppercase; letter-spacing: .08em; color: rgba(255,80,80,.7); margin-bottom: 6px; }
+.debug-entry { font-size: 10px; font-family: monospace; line-height: 1.6; border-bottom: 1px solid rgba(255,255,255,.04); padding: 2px 0; }
+.debug-entry:last-child { border-bottom: none; }
+.debug-error { color: #ff7070; }
+.debug-warn  { color: var(--amber); }
+.debug-info  { color: var(--sub); }
+.debug-ok    { color: var(--green); }
+
+</style>
+<link rel="stylesheet" href="theme.css">
+</head>
+<body>
+<!-- skillpath-launch:start -->
+<div data-skillpath-launch style="position:fixed;inset:0;z-index:2147483647;background:#b9b7a8"></div>
+<script defer src="./assets/homepage/index-DE_JYm_E.js"></script>
+<script>
+// Fail open if the launch bundle is unavailable; the Demo remains usable.
+setTimeout(function () {
+  var launch = document.querySelector('[data-skillpath-launch]');
+  if (!launch) return;
+  launch.remove();
+  var phone = document.querySelector('[data-launch-inert]');
+  if (phone) { phone.removeAttribute('inert'); phone.removeAttribute('data-launch-inert'); }
+}, 4000);
+</script>
+<!-- skillpath-launch:end -->
+
+
+<div class="phone">
+  <div class="status-bar">
+    <span id="status-time" aria-label="Current time">9:41</span>
+    <div class="notch" aria-hidden="true"></div>
+    <div class="status-icons" aria-hidden="true">
+      <svg width="16" height="12" viewBox="0 0 16 12" fill="currentColor"><rect x="0" y="8" width="3" height="4" rx=".6"/><rect x="4" y="5" width="3" height="7" rx=".6"/><rect x="8" y="2" width="3" height="10" rx=".6"/><rect x="12" width="3" height="12" rx=".6"/></svg>
+      <svg width="16" height="12" viewBox="0 0 16 12" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"><path d="M1 3a11 11 0 0 1 14 0M4 6a6 6 0 0 1 8 0M7 9a1.5 1.5 0 0 1 2 0"/></svg>
+      <svg width="24" height="12" viewBox="0 0 24 12" fill="none" stroke="currentColor"><rect x=".5" y=".5" width="20" height="11" rx="3"/><rect x="3" y="3" width="15" height="6" rx="1" fill="currentColor" stroke="none"/><path d="M23 4v4" stroke-width="2"/></svg>
+    </div>
+  </div>
+
+  <!-- APP BODY -->
+  <div class="app-body">
+
+    <!-- ░░ ONBOARDING ░░ -->
+    <div class="screen active" id="s-onboard">
+      <div class="ob-hero-full">
+        <div class="ob-hero-top">
+          <div class="app-logo" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M5 19h4v-5h5V9h5V4"/><path d="M14 4h5v5"/></svg></div>
+          <div class="ob-wordmark">SkillPath</div>
+          <div class="ob-tagline">Learn anything. One day at a time.</div>
+        </div>
+
+        <!-- Step 0: Popular skill picker -->
+        <div class="ob-sheet" id="ob-sheet-0">
+          <div class="picker-step"><span>GETTING STARTED</span><span class="step-track" aria-hidden="true"><i></i><i></i><i></i></span></div>
+          <h1 class="picker-title">What do you want to learn?</h1>
+          <p class="picker-desc">Choose a skill. We’ll help you build a plan.</p>
+
+          <div class="ob-section-lbl">FIND YOUR STARTING POINT</div>
+          <div class="skill-grid" id="skill-grid">
+            <button type="button" class="skill-tile" data-skill="Skateboarding" data-emoji="🛹" onclick="selectSkillTile(this)" aria-pressed="false"><span class="st-emoji"><svg class="" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.35" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="4" y="7" width="16" height="8" rx="4" transform="rotate(-25 12 11)"/><path d="m7 16 1 2m8-6 1 2"/><circle cx="8" cy="19" r="1"/><circle cx="18" cy="15" r="1"/></svg></span><span class="st-name">Skateboarding</span></button>
+            <button type="button" class="skill-tile" data-skill="Guitar" data-emoji="🎸" onclick="selectSkillTile(this)" aria-pressed="false"><span class="st-emoji"><svg class="" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.35" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m14 10 6-6m-4-1 5 5M14 10c-1-4-4-4-5-1-4-1-7 2-5 6l5 5c4 2 7-1 6-5 3-1 3-4-1-5Z"/><circle cx="10" cy="14" r="2"/></svg></span><span class="st-name">Guitar</span></button>
+            <button type="button" class="skill-tile" data-skill="Drawing" data-emoji="🎨" onclick="selectSkillTile(this)" aria-pressed="false"><span class="st-emoji"><svg class="" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.35" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m4 17 1-4L16 2l5 5-11 11-4 1-2-2Zm9-12 5 5M4 22h16"/><path d="m5 13 5 5"/></svg></span><span class="st-name">Drawing</span></button>
+            <button type="button" class="skill-tile" data-skill="Coding" data-emoji="💻" onclick="selectSkillTile(this)" aria-pressed="false"><span class="st-emoji"><svg class="" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.35" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m7 7-5 5 5 5m10-10 5 5-5 5M14 4l-4 16"/></svg></span><span class="st-name">Coding</span></button>
+            <button type="button" class="skill-tile" data-skill="Photography" data-emoji="📷" onclick="selectSkillTile(this)" aria-pressed="false"><span class="st-emoji"><svg class="" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.35" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 7h3l2-3h6l2 3h3a1 1 0 0 1 1 1v11a1 1 0 0 1-1 1H4a1 1 0 0 1-1-1V8a1 1 0 0 1 1-1Z"/><circle cx="12" cy="13" r="4"/><path d="M18 10h.01"/></svg></span><span class="st-name">Photography</span></button>
+            <button type="button" class="skill-tile" data-skill="Cooking" data-emoji="🍳" onclick="selectSkillTile(this)" aria-pressed="false"><span class="st-emoji"><svg class="" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.35" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 11a4 4 0 0 1 1-8 4 4 0 0 1 7-1 4 4 0 0 1 5 3 4 4 0 0 1 1 8v7H5v-9Zm0 5h14"/><path d="M9 8v3m5-3v3M5 23h14"/></svg></span><span class="st-name">Cooking</span></button>
+            <button type="button" class="skill-tile" data-skill="Piano" data-emoji="🎹" onclick="selectSkillTile(this)" aria-pressed="false"><span class="st-emoji"><svg class="" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.35" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="4" width="18" height="16" rx="2"/><path d="M9 12v8m6-8v8M7 4v8h4V4m2 0v8h4V4"/></svg></span><span class="st-name">Piano</span></button>
+            <button type="button" class="skill-tile" data-skill="Yoga" data-emoji="🧘" onclick="selectSkillTile(this)" aria-pressed="false"><span class="st-emoji"><svg class="" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.35" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="5" r="2"/><path d="m7 10 5 3 5-3M12 13v4m0 0-5-2-4 4c3 3 7 2 9 0 2 2 6 3 9 0l-4-4-5 2Z"/></svg></span><span class="st-name">Yoga</span></button>
+            <button type="button" class="skill-tile other-tile" data-skill="" data-emoji="✨" onclick="selectOtherSkill()" aria-pressed="false"><span class="st-emoji"><svg class="" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.35" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 5v14M5 12h14"/></svg></span><span class="st-name">Other</span></button>
+          </div>
+          <div id="other-input-wrap" style="display:none;margin-bottom:14px">
+            <label class="field-lbl">Enter your skill</label>
+            <input class="field-input" id="inp-skill-custom" type="text" placeholder="e.g. Surfing, Watercolour, Chess…" oninput="onCustomSkillInput()" />
+          </div>
+          <!-- Tell us your goal: one-sentence + voice plan generation -->
+          <button type="button" class="qm-bar" id="qm-bar" onclick="openQuickMode()">
+            <div class="qm-bar-icon"><svg class="" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.35" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M21 11.5a8.4 8.4 0 0 1-.9 3.8 8.5 8.5 0 0 1-7.6 4.7 8.4 8.4 0 0 1-3.8-.9L3 21l1.9-5.7a8.4 8.4 0 0 1-.9-3.8 8.5 8.5 0 0 1 4.7-7.6 8.4 8.4 0 0 1 3.8-.9h.5a8.5 8.5 0 0 1 8 8v.5Z"/><path d="M8 10h8m-8 4h5"/></svg></div>
+            <div class="qm-bar-text">
+              <div class="qm-bar-title">Already have a goal in mind?</div>
+              <div class="qm-bar-sub">Tell us in a sentence. We’ll take it from there.</div>
+            </div>
+            <div class="qm-bar-mic" aria-hidden="true">↗</div>
+          </button>
+          <button class="btn-cta" id="ob0-continue" onclick="obPickerNext()" disabled style="opacity:.4;cursor:default"><img class="rt-arrow" src="./assets/figma/arrow-right.svg" width="20" height="20" alt="" aria-hidden="true"><span>Let’s make a plan</span></button>
+          <p class="picker-note">Built around your time, at your pace.</p>
+        </div>
+
+        <!-- Step 1: Discovery -->
+        <div class="discovery-sheet" id="discovery-sheet">
+          <div class="ds-handle"></div>
+          <button class="ds-back" onclick="closeDiscovery()">← Back</button>
+          <div class="ds-skill-badge">
+            <div class="ds-badge-emoji" id="ds-badge-emoji">🛹</div>
+            <div class="ds-badge-name" id="ds-badge-name">Skateboarding</div>
+          </div>
+          <div class="ds-question">Where would you like to start?</div>
+          <div class="ds-sub">Pick a direction below, or type your own focus area. We'll build a plan around it.</div>
+          <label class="field-lbl">Your specific goal (optional)</label>
+          <input class="field-input" id="inp-skill" type="text" placeholder="e.g. Learn kickflips, fingerpicking, portraits…" style="margin-bottom:16px" />
+          <div class="ob-section-lbl">A FEW DIRECTIONS TO EXPLORE</div>
+          <div class="direction-list" id="direction-list"></div>
+          <label class="field-lbl">Your current level</label>
+          <div class="chip-row" id="cr-level">
+            <button class="chip on" data-v="complete beginner">Beginner</button>
+            <button class="chip" data-v="some experience">Some exp.</button>
+            <button class="chip" data-v="intermediate">Intermediate</button>
+          </div>
+          <button class="btn-cta" onclick="obNext(1)">Set up my schedule →</button>
+        </div>
+
+        <!-- Step 2: Schedule -->
+        <div class="discovery-sheet" id="schedule-sheet">
+          <div class="ds-handle"></div>
+          <button class="ds-back" onclick="closeSchedule()">← Back</button>
+          <div class="ds-question">Make time for learning</div>
+          <div class="ds-sub">We'll spread sessions across your week so progress feels effortless.</div>
+          <label class="field-lbl">Duration</label>
+          <select class="field-input" id="sel-dur" style="margin-bottom:14px">
+            <option>2 weeks</option>
+            <option selected>1 month</option>
+            <option>3 months</option>
+            <option>6 months</option>
+          </select>
+          <label class="field-lbl">Training days</label>
+          <div class="chip-row" id="cr-days" style="margin-bottom:14px">
+            <button class="chip on" data-dow="1">Mon</button>
+            <button class="chip" data-dow="2">Tue</button>
+            <button class="chip on" data-dow="3">Wed</button>
+            <button class="chip" data-dow="4">Thu</button>
+            <button class="chip on" data-dow="5">Fri</button>
+            <button class="chip" data-dow="6">Sat</button>
+            <button class="chip" data-dow="0">Sun</button>
+          </div>
+          <label class="field-lbl">Session length</label>
+          <div class="chip-row" id="cr-len">
+            <button class="chip" data-v="15 min">15 min</button>
+            <button class="chip on" data-v="30 min">30 min</button>
+            <button class="chip" data-v="45 min">45 min</button>
+            <button class="chip" data-v="60 min">60 min</button>
+          </div>
+          <label class="field-lbl">Style</label>
+          <div class="chip-row" id="cr-style">
+            <button class="chip on" data-v="visual demos">Visual demos</button>
+            <button class="chip" data-v="step-by-step">Step-by-step</button>
+            <button class="chip" data-v="quick tips">Quick tips</button>
+          </div>
+          <label class="field-lbl">Platforms</label>
+          <div class="chip-row" id="cr-plat">
+            <button class="chip on" data-v="B站">B站</button>
+            <button class="chip" data-v="YouTube">YouTube</button>
+          </div>
+          <label style="display:flex;gap:9px;align-items:center;font-size:12px;margin-bottom:18px"><input id="include-xiaohongshu" type="checkbox" checked>同时匹配小红书补充教程（打开原帖）</label>
+          <!-- Public service access -->
+          <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:16px;padding:12px 14px;background:var(--a-light);border:1px solid var(--a-light);border-radius:14px">
+            <div>
+              <div style="font-size:12px;font-weight:700">教程资源已接入</div>
+              <div style="font-size:10px;color:var(--sub);margin-top:2px" id="key-status-hint">生成时自动匹配，无需配置 API</div>
+            </div>
+          </div>
+          <button class="btn-cta" onclick="startGenerate()" style="margin-top:4px"><span class="rt-primary-label"><img class="rt-arrow" src="./assets/figma/arrow-right-light.svg" width="20" height="20" alt="" aria-hidden="true">Build my plan</span></button>
+        </div>
+      </div>
+    </div>
+
+    <!-- ░░ QUICK MODE ░░ -->
+    <div class="qm-overlay" id="qm-overlay" onclick="closeQuickMode()"></div>
+    <div class="qm-sheet" id="qm-sheet">
+      <div class="qm-sheet-handle"></div>
+      <div class="qm-title">Tell us your goal</div>
+      <div class="qm-sub">Say or type one sentence — AI figures out the skill, timeline, and urgency, and builds your full plan.</div>
+
+      <div class="qm-input-wrap">
+        <textarea class="qm-textarea" id="qm-textarea"
+          placeholder="e.g. I want to learn longboarding in 10 days"></textarea>
+        <button class="qm-mic-btn" id="qm-mic-btn" onclick="toggleQuickModeMic()" title="Speak instead">🎙️</button>
+      </div>
+
+      <div class="qm-examples">
+        <div class="qm-example-chip" onclick="qmFillExample(this)">I want to learn longboarding in 10 days</div>
+        <div class="qm-example-chip" onclick="qmFillExample(this)">Teach me guitar, total beginner, no rush</div>
+        <div class="qm-example-chip" onclick="qmFillExample(this)">I need to learn Python fast for a job interview in 3 weeks</div>
+      </div>
+
+      <div class="qm-status" id="qm-status"></div>
+
+      <div class="qm-parsed-card" id="qm-parsed-card">
+        <div class="qm-parsed-row"><span class="qm-parsed-label">Skill</span><span class="qm-parsed-val" id="qm-p-skill">—</span></div>
+        <div class="qm-parsed-row"><span class="qm-parsed-label">Level</span><span class="qm-parsed-val" id="qm-p-level">—</span></div>
+        <div class="qm-parsed-row"><span class="qm-parsed-label">Timeline</span><span class="qm-parsed-val" id="qm-p-duration">—</span></div>
+        <div class="qm-parsed-row"><span class="qm-parsed-label">Pace</span><span class="qm-parsed-val" id="qm-p-pace">—</span></div>
+      </div>
+
+      <button class="btn-cta" id="qm-submit-btn" onclick="submitQuickMode()">Build my plan →</button>
+    </div>
+
+    <!-- ░░ LOADING ░░ -->
+    <div class="screen" id="s-loading">
+      <div class="load-orb"></div>
+      <div class="load-title">Building your plan…</div>
+      <div class="load-msg" id="load-msg">正在为你准备课程…</div>
+      <div class="load-bar-wrap"><div class="load-bar" id="load-bar"></div></div>
+    </div>
+
+    <!-- ░░ HOME ░░ -->
+    <div class="screen" id="s-home">
+      <div class="home-header">
+        <div class="home-header-inner">
+          <div>
+            <div class="home-greeting">Today</div>
+            <div class="home-date" id="home-date-lbl"></div>
+          </div>
+          <div style="display:flex;align-items:center;gap:8px">
+            <div class="focus-badge on" id="focus-badge" onclick="openFocusSettings()">Focus on</div>
+            <button class="settings-gear-btn" onclick="openYtImport()" aria-label="导入 B站 / YouTube 教程" title="导入 B站 / YouTube 教程" style="font-size:18px">＋</button>
+            <button class="settings-gear-btn" onclick="openSettings()" title="API Settings" aria-label="Settings"><svg class="" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.35" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m9 3-1 3-3 1-2 3 2 2v3l3 2 1 4h6l1-4 3-2v-3l2-2-2-3-3-1-1-3H9Z"/><circle cx="12" cy="12" r="3"/></svg></button>
+            <div class="avatar" id="home-avatar">S</div>
+          </div>
+        </div>
+        <div class="progress-strip" id="prog-strip">
+          <div class="prog-ring-wrap">
+            <svg class="prog-ring" viewBox="0 0 44 44">
+              <circle class="pr-bg" cx="22" cy="22" r="20"/>
+              <circle class="pr-fill" id="pr-fill" cx="22" cy="22" r="20"/>
+            </svg>
+            <div class="prog-pct" id="prog-pct-lbl">0%</div>
+          </div>
+          <div class="prog-text">
+            <div class="prog-title" id="prog-skill-name">Skill</div>
+            <div class="prog-sub" id="prog-sub-lbl">0 of 0 sessions done</div>
+            <div class="prog-bar-thin"><div class="prog-bar-thin-fill" id="prog-bar-thin" style="width:0%"></div></div>
+          </div>
+        </div>
+      </div>
+      <div class="section-head">Up Next</div>
+      <div id="today-card-wrap"></div>
+      <div class="section-head">Upcoming</div>
+      <div id="upcoming-list"></div>
+    </div>
+
+    <!-- ░░ CALENDAR ░░ -->
+    <div class="screen" id="s-calendar">
+      <div class="cal-header">
+        <div class="cal-header-row">
+          <div class="cal-title-h" id="cal-month-lbl">March 2026</div>
+          <div class="cal-nav-btns">
+            <button class="cal-nav-btn" onclick="chMonth(-1)">‹</button>
+            <button class="cal-nav-btn" onclick="chMonth(1)">›</button>
+          </div>
+        </div>
+        <div class="cal-day-labels">
+          <div>S</div><div>M</div><div>T</div><div>W</div>
+          <div>T</div><div>F</div><div>S</div>
+        </div>
+      </div>
+      <div class="cal-grid" id="cal-grid"></div>
+      <div id="day-panel"></div>
+    </div>
+
+    <!-- ░░ PLAN LIST ░░ -->
+    <div class="screen" id="s-plan">
+      <div class="plan-header">
+        <div style="display:flex;justify-content:space-between;align-items:center">
+          <div>
+            <div class="plan-header-title">Your learning plan</div>
+            <div class="plan-header-sub" id="plan-header-sub">0 sessions</div>
+          </div>
+          <button class="settings-gear-btn" onclick="openYtImport()" aria-label="导入 B站 / YouTube 教程" title="导入 B站 / YouTube 教程" style="font-size:18px">＋</button>
+        </div>
+      </div>
+      <div id="plan-list-wrap"></div>
+    </div>
+
+    <!-- ░░ LESSON DETAIL ░░ -->
+    <div class="screen" id="s-lesson">
+      <div class="lesson-header">
+        <button class="back-btn" id="lesson-back-btn">← Back</button>
+        <div class="l-type-tag" id="l-type-tag">Basics</div>
+        <div class="l-title" id="l-title">Lesson</div>
+        <div class="l-date-row">
+          <span id="l-date">Date</span>
+          <span id="l-dur">30 min</span>
+          <span id="l-dur-badge"></span>
+        </div>
+      </div>
+      <div class="lesson-body">
+        <!-- Embedded YouTube Player -->
+        <div class="yt-player-wrap" id="yt-player-wrap">
+          <div id="yt-host"><div id="yt-player-container"></div></div>
+          <iframe id="bili-player" title="B站视频播放器" hidden allow="fullscreen; autoplay; encrypted-media; picture-in-picture" allowfullscreen referrerpolicy="strict-origin-when-cross-origin"></iframe>
+          <div class="yt-player-info">
+            <div class="yt-now-title" id="yt-now-title">Loading…</div>
+            <div style="display:flex;justify-content:space-between;align-items:center;margin-top:2px">
+              <div class="yt-playlist-status" id="yt-playlist-status">Video 1 of 1</div>
+              <div class="yt-autoplay-note" id="video-playback-note"></div>
+            </div>
+            <a id="yt-external" target="_blank" rel="noopener" hidden>在 YouTube 打开当前视频 →</a>
+          </div>
+        </div>
+
+        <div class="l-section-lbl">课程视频</div>
+        <form class="lesson-video-search" onsubmit="event.preventDefault();searchLessonVideos()">
+          <label for="lesson-video-query">搜索 B 站教程</label>
+          <div class="video-search-row"><input id="lesson-video-query" type="search" maxlength="120" placeholder="教程关键词，或 B站完整视频链接" oninput="updateBiliSearchLink()" required><button id="lesson-video-search-btn" type="submit">搜索</button></div>
+          <p class="video-search-help">输入关键词搜索，或粘贴 B站完整视频链接，添加到本课。</p>
+          <a id="bili-search-external" target="_blank" rel="noopener noreferrer">去 B站搜索这些关键词 ↗</a>
+          <p id="lesson-video-search-status" role="status"></p>
+          <div id="lesson-video-results"></div>
+        </form>
+        <div id="l-videos"></div>
+        <div class="l-section-lbl">小红书 · 补充教程</div>
+        <form class="lesson-video-search" onsubmit="event.preventDefault();searchLessonNotes()">
+          <label for="lesson-note-query">按本课目标找教程</label>
+          <div class="video-search-row"><input id="lesson-note-query" type="search" maxlength="50" placeholder="学习目标或教程关键词" required><button id="lesson-note-search-btn" type="submit">匹配教程</button></div>
+          <p id="lesson-note-status" role="status"></p>
+        </form>
+        <div id="l-resources"></div>
+        <div class="l-section-lbl">Practice notes</div>
+        <div id="l-tips"></div>
+
+        <div class="l-section-lbl">My notes</div>
+        <div class="qm-input-wrap" style="margin-bottom:4px">
+          <textarea class="qm-textarea" id="l-notes" style="min-height:90px;padding:14px" placeholder="What clicked? What didn't? Questions for next time…" oninput="onLessonNotesInput()"></textarea>
+        </div>
+        <div style="font-size:11px;color:var(--sub);min-height:16px;margin-bottom:4px" id="notes-save-hint"></div>
+      </div>
+
+      <!-- Video Countdown Timer -->
+      <div class="vid-countdown" id="vid-countdown">
+        <div class="vc-header" id="vc-drag-handle">
+          <div class="vc-label">⏱ Session timer</div>
+          <div class="vc-ctrl-row">
+            <button class="vc-ctrl-btn" id="vc-pause-btn" title="Pause" onclick="vcTogglePause()">⏸</button>
+            <button class="vc-ctrl-btn" id="vc-min-btn"   title="Minimise" onclick="vcToggleMin()">−</button>
+          </div>
+        </div>
+        <div class="vc-body" id="vc-body">
+          <div class="vc-ring-wrap">
+            <svg class="vc-ring-svg" viewBox="0 0 80 80">
+              <circle class="vc-ring-bg"   cx="40" cy="40" r="33"/>
+              <circle class="vc-ring-fill" id="vc-ring" cx="40" cy="40" r="33"/>
+            </svg>
+            <div class="vc-ring-center">
+              <div class="vc-time" id="vc-time">00:00</div>
+              <div class="vc-unit">left</div>
+            </div>
+          </div>
+          <div class="vc-bar-wrap"><div class="vc-bar-fill" id="vc-bar"></div></div>
+          <div class="vc-status" id="vc-status">Watching your lesson</div>
+          <div class="vc-actions">
+            <button class="vc-btn-done" onclick="vcDone()">✓ Done</button>
+            <button class="vc-btn-add"  onclick="vcAddTime(5)">+5 min</button>
+          </div>
+        </div>
+        <div class="vc-mini" id="vc-mini">
+          <div class="vc-mini-time" id="vc-mini-time">00:00</div>
+          <div class="vc-mini-lbl">remaining</div>
+        </div>
+      </div>
+
+      <div class="lesson-footer">
+        <button class="done-btn" id="done-btn" onclick="markDone()">✓ Mark as complete</button>
+      </div>
+    </div>
+
+    <!-- ░░ REVIEW SCREEN ░░ -->
+    <div class="screen" id="s-review">
+      <div class="plan-header">
+        <div class="plan-header-title">Review</div>
+        <div class="plan-header-sub">A moment to look back at what you’ve learned</div>
+      </div>
+      <div style="padding:0 16px 14px">
+        <button class="btn-cta" id="review-gen-btn" onclick="generateReviewSummary()">Reflect on my progress</button>
+      </div>
+      <div id="review-summary-wrap" style="display:none;margin:0 16px 18px"></div>
+      <div class="section-head">Lesson notes</div>
+      <div id="review-notes-list"></div>
+    </div>
+
+    <!-- TOAST -->
+    <div class="toast" id="toast"></div>
+
+    <!-- SESSION TIMER BAR -->
+    <div class="session-timer-bar" id="session-timer-bar">
+      <div class="stb-fill" id="stb-fill"></div>
+    </div>
+
+    <!-- FLOATING FOCUS REMINDER -->
+    <div class="focus-bubble" id="focus-bubble">
+      <div class="fb-top">
+        <div class="fb-icon" id="fb-icon">🧠</div>
+        <div class="fb-title" id="fb-title">Focus Check</div>
+        <button class="fb-close" onclick="dismissReminder()">✕</button>
+      </div>
+      <div class="fb-msg" id="fb-msg">Stay on track with your learning session.</div>
+      <div class="fb-actions">
+        <button class="fb-btn-primary" onclick="reminderGoToLesson()">Open my lesson →</button>
+        <button class="fb-btn-ghost" onclick="dismissReminder()">Snooze</button>
+      </div>
+    </div>
+
+    <!-- DISTRACTION BLOCK OVERLAY -->
+    <div class="distraction-overlay" id="distraction-overlay">
+      <div class="do-icon">🧘</div>
+      <div class="do-title">Time to Focus</div>
+      <div class="do-sub" id="do-sub">Your learning session starts soon. Take a breath and get ready.</div>
+      <div class="do-timer" id="do-timer">0:10</div>
+      <button class="do-btn" onclick="closeDistractionOverlay()">I'm ready — Start session</button>
+      <button class="do-skip" onclick="closeDistractionOverlay()">Skip countdown</button>
+    </div>
+
+    <!-- FOCUS SETTINGS -->
+    <div class="focus-overlay-bg" id="focus-overlay-bg" onclick="closeFocusSettings()"></div>
+    <div class="focus-settings" id="focus-settings">
+      <div class="fs-handle"></div>
+      <div class="fs-title">Find your focus</div>
+      <div class="fs-sub">Anti-distraction reminders to keep you on track</div>
+      <div class="fs-row">
+        <div><div class="fs-row-label">Session reminders</div><div class="fs-row-sub">Remind me when a session is due</div></div>
+        <div class="toggle on" id="tog-reminders" onclick="toggleSetting('reminders')"></div>
+      </div>
+      <div class="fs-row">
+        <div><div class="fs-row-label">Focus countdown</div><div class="fs-row-sub">Show a breathing timer before sessions</div></div>
+        <div class="toggle on" id="tog-countdown" onclick="toggleSetting('countdown')"></div>
+      </div>
+      <div class="fs-row">
+        <div><div class="fs-row-label">Session timer bar</div><div class="fs-row-sub">Progress bar while you study</div></div>
+        <div class="toggle on" id="tog-timerbar" onclick="toggleSetting('timerbar')"></div>
+      </div>
+      <div class="fs-row">
+        <div><div class="fs-row-label">Reminder frequency</div><div class="fs-row-sub">How often to check in</div></div>
+        <select class="fs-select" id="sel-freq-reminder">
+          <option value="15">Every 15 min</option>
+          <option value="30" selected>Every 30 min</option>
+          <option value="60">Every hour</option>
+          <option value="120">Every 2 hours</option>
+        </select>
+      </div>
+      <div class="fs-row" style="border-bottom:none; padding-top:16px;">
+        <div><div class="fs-row-label">Test reminder</div><div class="fs-row-sub">Preview what it looks like</div></div>
+        <button class="fb-btn-primary" style="width:auto;padding:8px 14px;font-size:11px" onclick="triggerReminder('test')">Preview</button>
+      </div>
+    </div>
+
+    <!-- ⚙️ SETTINGS PANEL -->
+    <div class="settings-overlay-bg" id="settings-overlay-bg" onclick="closeSettings()"></div>
+    <div class="settings-panel" id="settings-panel">
+      <div class="sp-handle"></div>
+      <div class="sp-title">应用设置</div><p class="sp-sub">iPhone：用 Safari 的分享菜单选择“添加到主屏幕”，即可从桌面打开。</p>
+      <div class="sp-sub">当前计划和笔记保存在本机，清除浏览器数据会丢失记录。网页版目前同时保存一份计划。联网功能通过应用后端使用 Groq、B站、YouTube 和小红书；B站与小红书搜索由 Qovia 提供，不需要你填写 API 密钥。</div>
+      <p class="sp-sub">生成或搜索时自动接入服务，必要时会提示完成访问验证。生成计划会发送学习目标和时间安排，搜索会发送技能与查询词；笔记仅在你确认生成回顾后发送。验证凭证最长有效两小时，不代表账号或跨设备同步。</p>
+      <p class="sp-sub" id="web-connection-status" role="status">教程服务已统一接入，无需配置 API</p>
+      <p class="sp-sub" id="local-service-notice" hidden>当前地址是本地界面预览，正式服务只允许已发布的网页访问。<a href="https://skillpath-entry.pages.dev/app/" target="_blank" rel="noopener noreferrer" style="color:var(--accent);text-decoration:underline">打开正式联网版</a></p>
+      <button class="text-button" onclick="WebAPI.disconnect();updateKeyStatusHint()">清除本次访问验证</button>
+
+      <div class="sp-divider"></div>
+      <div style="font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.08em;color:var(--sub);margin-bottom:8px">Debug Log</div>
+      <div id="debug-panel" class="debug-panel">
+        <div class="debug-panel-lbl">API Events</div>
+      </div>
+      <div style="margin-top:10px;display:flex;gap:8px">
+        <button onclick="clearDebugPanel()" style="background:rgba(255,255,255,.06);border:1px solid var(--border);border-radius:10px;color:var(--sub);font-family:var(--font);font-size:11px;font-weight:600;padding:7px 12px;cursor:pointer">Clear log</button>
+        <button onclick="testApiKeys()" style="background:var(--a-light);border:1px solid var(--border);border-radius:10px;color:var(--accent);font-family:var(--font);font-size:11px;font-weight:700;padding:7px 12px;cursor:pointer">检查服务入口</button>
+      </div>
+    </div>
+
+    <!-- YT IMPORT OVERLAY -->
+    <div class="settings-overlay-bg" id="yt-import-bg" onclick="closeYtImport()"></div>
+    <div class="settings-panel" id="yt-import-sheet">
+      <div class="sp-handle"></div>
+      <div class="sp-title">Import a lesson</div>
+      <div class="sp-sub">粘贴 B站或 YouTube 视频链接，加入学习计划。</div>
+
+      <!-- URL row -->
+      <label class="field-lbl" for="yt-import-url">视频链接</label>
+      <div style="display:flex;gap:8px;margin-bottom:18px">
+        <input class="field-input" id="yt-import-url" type="url"
+          placeholder="bilibili.com/video/BV… 或 YouTube 链接"
+          style="margin-bottom:0;flex:1" oninput="onYtUrlInput()" />
+        <button id="yt-fetch-btn" onclick="ytImportFetch()"
+          style="background:var(--accent);border:none;border-radius:16px;color:#fff;
+                 font-family:var(--font);font-size:14px;font-weight:700;
+                 padding:0 18px;cursor:pointer;white-space:nowrap;flex-shrink:0">
+          读取
+        </button>
+      </div>
+
+      <!-- No-key manual fallback (hidden by default) -->
+      <div id="yt-import-nokey" style="display:none;
+        background:rgba(251,191,36,.08);border:1px solid rgba(251,191,36,.25);
+        border-radius:12px;padding:12px 14px;margin-bottom:16px;font-size:12px;color:var(--amber)">
+        <span id="video-manual-hint">视频资料暂时无法读取，请输入标题。B站链接仍可用官方播放器观看。</span>
+        <input class="field-input" id="yt-manual-title" type="text"
+          placeholder="Video title" style="margin-top:10px;margin-bottom:0" />
+      </div>
+
+      <!-- Preview + options (hidden until Fetch succeeds) -->
+      <div id="yt-import-preview" style="display:none">
+        <!-- Thumbnail + metadata card -->
+        <div style="display:flex;gap:12px;align-items:flex-start;
+          background:var(--card2);border:1px solid var(--border);
+          border-radius:16px;padding:12px;margin-bottom:14px">
+          <img id="yt-imp-thumb" src="" alt=""
+            style="width:80px;height:54px;object-fit:cover;border-radius:10px;
+                   flex-shrink:0;background:var(--border)" />
+          <div style="flex:1;min-width:0">
+            <div id="yt-imp-title"
+              style="font-size:13px;font-weight:600;line-height:1.4;margin-bottom:4px"></div>
+            <div id="yt-imp-meta" style="font-size:11px;color:var(--sub)"></div>
+          </div>
+        </div>
+
+        <!-- AI summary is offered only for a connected service. -->
+        <div id="yt-ai-row" style="display:flex;justify-content:space-between;
+          align-items:center;padding:12px 14px;margin-bottom:14px;
+          background:var(--card2);border:1px solid var(--border);border-radius:14px">
+          <div>
+            <div style="font-size:13px;font-weight:600">✦ AI description</div>
+            <div style="font-size:11px;color:var(--sub);margin-top:2px">
+              Groq generates a lesson summary &amp; tip
+            </div>
+          </div>
+          <div class="toggle on" id="yt-ai-toggle"
+            onclick="this.classList.toggle('on')"></div>
+        </div>
+        <div id="yt-nogroq-note" style="display:none;
+          font-size:11px;color:var(--sub);margin-bottom:14px">
+          课程简介服务暂不可用，仍可添加视频。
+        </div>
+
+        <!-- Date chips -->
+        <label class="field-lbl">Schedule for</label>
+        <div class="chip-row" id="yt-date-chips" style="margin-bottom:10px">
+          <button class="chip on" data-v="today" onclick="ytDateChip(this)">Today</button>
+          <button class="chip" data-v="pick" onclick="ytDateChip(this)">Pick a date</button>
+        </div>
+        <input type="date" id="yt-date-pick"
+          class="field-input" style="display:none;margin-bottom:14px" />
+
+        <!-- Type chips -->
+        <label class="field-lbl">Lesson type</label>
+        <div class="chip-row" id="yt-type-chips" style="margin-bottom:18px">
+          <button class="chip" data-v="basics" onclick="ytTypeChip(this)">Basics</button>
+          <button class="chip" data-v="technique" onclick="ytTypeChip(this)">Technique</button>
+          <button class="chip on" data-v="practice" onclick="ytTypeChip(this)">Practice</button>
+          <button class="chip" data-v="review" onclick="ytTypeChip(this)">Review</button>
+        </div>
+
+        <button class="btn-cta" id="yt-add-btn" onclick="ytImportAdd()">Add to Plan</button>
+      </div>
+    </div>
+
+  </div><!-- end app-body -->
+
+  <!-- BOTTOM NAV -->
+  <nav aria-label="Main navigation" class="bottom-nav" id="bottom-nav" style="display:none">
+    <div class="nav-liquid" id="nav-liquid"></div>
+    <button type="button" class="nav-tab active" id="tab-home" onclick="goTab('home')">
+      <span class="nav-icon"><svg class="" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.35" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m3 10 9-7 9 7v10a1 1 0 0 1-1 1h-6v-7h-4v7H4a1 1 0 0 1-1-1V10Z"/></svg></span>
+      <div class="nav-label">Today</div>
+      <div class="nav-dot"></div>
+    </button>
+    <button type="button" class="nav-tab" id="tab-calendar" onclick="goTab('calendar')">
+      <span class="nav-icon"><svg class="" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.35" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="5" width="18" height="16" rx="2"/><path d="M7 3v4m10-4v4M3 11h18m-13 5h.01M12 16h.01M16 16h.01"/></svg></span>
+      <div class="nav-label">Calendar</div>
+      <div class="nav-dot"></div>
+    </button>
+    <button type="button" class="nav-tab" id="tab-plan" onclick="goTab('plan')">
+      <span class="nav-icon"><svg class="" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.35" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M9 6h12M9 12h12M9 18h12m-18-13 1 1 2-2m-3 7 1 1 2-2m-3 7 1 1 2-2"/></svg></span>
+      <div class="nav-label">Plan</div>
+      <div class="nav-dot"></div>
+    </button>
+    <button type="button" class="nav-tab" id="tab-review" onclick="goTab('review')">
+      <span class="nav-icon"><svg class="" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.35" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 6c-3-2-6-3-10-2v15c4-1 7 0 10 2 3-2 6-3 10-2V4c-4-1-7 0-10 2Zm0 0v15"/></svg></span>
+      <div class="nav-label">Review</div>
+      <div class="nav-dot"></div>
+    </button>
+    <button type="button" class="nav-tab" id="tab-new" onclick="resetToOnboard()">
+      <span class="nav-icon"><svg class="" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.35" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 5v14M5 12h14"/></svg></span>
+      <div class="nav-label">New Skill</div>
+      <div class="nav-dot"></div>
+    </button>
+  </nav>
+</div>
+
+<script>
+// ═══════════════════════════════════════════════════════════
+// STATE
+// ═══════════════════════════════════════════════════════════
+const S = {
+  skill: '', level: 'complete beginner',
+  duration: '1 month', freq: 3, selectedDates: [], len: '30 min',
+  style: 'visual demos', platforms: ['B站'], includeXiaohongshu:true,
+  lessons: [], done: new Set(), serviceWarnings: [],
+  curLesson: null, prevTab: 'home',
+  calMonth: new Date().getMonth(), calYear: new Date().getFullYear(),
+  selDay: null,
+  focus: {
+    reminders: true, countdown: true, timerbar: true,
+    freqMins: 30,
+  },
+  sessionTimerStart: null,
+  sessionTimerDuration: 30,
+  sessionTimerInterval: null,
+  reminderInterval: null,
+};
+
+// ═══════════════════════════════════════════════════════════
+// APPLICATION-MANAGED SERVICES
+// ═══════════════════════════════════════════════════════════
+function hasAIService() { return WebAPI.services.ai !== false; }
+function hasVideoService() { return WebAPI.services.bilibili !== false || WebAPI.services.youtube !== false; }
+
+// ── YT IMPORT ───────────────────────────────────────────────
+function extractYtVideoId(url) {
+  let m;
+  if ((m = url.match(/youtu\.be\/([A-Za-z0-9_-]{11})/))) return m[1];
+  if ((m = url.match(/[?&]v=([A-Za-z0-9_-]{11})/))) return m[1];
+  if ((m = url.match(/shorts\/([A-Za-z0-9_-]{11})/))) return m[1];
+  if ((m = url.match(/embed\/([A-Za-z0-9_-]{11})/))) return m[1];
+  return null;
+}
+
+function insertLessonByDate(lesson) {
+  const idx = S.lessons.findIndex(l => l.date > lesson.date);
+  if (idx === -1) S.lessons.push(lesson);
+  else S.lessons.splice(idx, 0, lesson);
+}
+
+function openYtImport() {
+  window._ytImp=null;document.getElementById('yt-manual-title').value='';
+  document.getElementById('yt-import-url').value = '';
+  document.getElementById('yt-import-preview').style.display = 'none';
+  document.getElementById('yt-import-nokey').style.display = 'none';
+  document.getElementById('yt-date-pick').value = fmtDate(new Date());
+  document.querySelectorAll('#yt-date-chips .chip').forEach(c => c.classList.remove('on'));
+  document.querySelector('#yt-date-chips .chip[data-v="today"]').classList.add('on');
+  document.getElementById('yt-date-pick').style.display = 'none';
+  document.querySelectorAll('#yt-type-chips .chip').forEach(c => c.classList.remove('on'));
+  document.querySelector('#yt-type-chips .chip[data-v="practice"]').classList.add('on');
+  const hasGroq = !!hasAIService();
+  document.getElementById('yt-ai-row').style.display = hasGroq ? 'flex' : 'none';
+  document.getElementById('yt-nogroq-note').style.display = hasGroq ? 'none' : 'block';
+  if (hasGroq) document.getElementById('yt-ai-toggle').classList.add('on');
+  document.getElementById('yt-import-sheet').classList.add('open');
+  document.getElementById('yt-import-bg').classList.add('show');
+  setTimeout(() => document.getElementById('yt-import-url').focus(), 300);
+}
+
+function closeYtImport() {
+  document.getElementById('yt-import-sheet').classList.remove('open');
+  document.getElementById('yt-import-bg').classList.remove('show');
+}
+
+function onYtUrlInput() {
+  window._ytImp=null;
+  document.getElementById('yt-import-preview').style.display='none';
+  document.getElementById('yt-import-nokey').style.display='none';
+  const ok=!!SkillPathVideos.parse(document.getElementById('yt-import-url').value);
+  document.getElementById('yt-fetch-btn').style.opacity=ok?'1':'0.5';
+}
+
+function ytDateChip(el) {
+  document.querySelectorAll('#yt-date-chips .chip').forEach(c => c.classList.remove('on'));
+  el.classList.add('on');
+  document.getElementById('yt-date-pick').style.display = el.dataset.v === 'pick' ? 'block' : 'none';
+}
+
+function ytTypeChip(el) {
+  document.querySelectorAll('#yt-type-chips .chip').forEach(c => c.classList.remove('on'));
+  el.classList.add('on');
+}
+
+async function ytImportFetch() {
+  const url=document.getElementById('yt-import-url').value.trim(),button=document.getElementById('yt-fetch-btn'),parsed=SkillPathVideos.parse(url);
+  if(!parsed){showToast('请粘贴完整的 B站 BV 视频链接或 YouTube 视频链接；B站短链接请先打开再复制完整网址');return;}
+  button.disabled=true;button.textContent='读取中…';window._ytImp=null;
+  try{
+    let video;
+    try{({video}=await WebAPI.run('videoDetails',{url}));}
+    catch(error){
+      if(parsed.platform!=='B站')throw error;
+      video={...parsed,t:'B站视频 · '+parsed.bvid,c:'',durMins:null,manual:true};
+      document.getElementById('yt-import-nokey').style.display='block';
+      document.getElementById('video-manual-hint').textContent=error.message+'。可填写视频标题后添加，仍使用 B站官方播放器。';
+    }
+    window._ytImp={...video,title:video.t,channel:video.c,ytDesc:video.description||'',inputURL:url};
+    const thumb=document.getElementById('yt-imp-thumb');thumb.src=SkillPathVideos.thumbnail(video);thumb.hidden=!thumb.getAttribute('src');
+    document.getElementById('yt-imp-title').textContent=video.t;
+    document.getElementById('yt-imp-meta').textContent=(video.platform||'YouTube')+' · '+(video.c||'')+(video.durMins?' · '+video.durMins+' min':'');
+    document.getElementById('yt-import-preview').style.display='block';
+  }catch(error){document.getElementById('yt-import-preview').style.display='none';showToast(error.message);}
+  finally{button.disabled=false;button.textContent='读取';}
+}
+
+// ═══════════════════════════════════════════════════════════
+// QUICK MODE — one-sentence + voice plan generation
+// ═══════════════════════════════════════════════════════════
+let qmRecognition = null;
+let qmListening = false;
+let qmParsed = null; // last successfully parsed result, used by submitQuickMode
+
+function openQuickMode() {
+  document.getElementById('qm-overlay').classList.add('show');
+  document.getElementById('qm-sheet').classList.add('open');
+  document.getElementById('qm-status').textContent = '';
+  document.getElementById('qm-parsed-card').style.display = 'none';
+  qmParsed = null;
+  setTimeout(() => document.getElementById('qm-textarea').focus(), 300);
+}
+function closeQuickMode() {
+  document.getElementById('qm-overlay').classList.remove('show');
+  document.getElementById('qm-sheet').classList.remove('open');
+  if (qmListening) toggleQuickModeMic();
+}
+function qmFillExample(el) {
+  document.getElementById('qm-textarea').value = el.textContent;
+  document.getElementById('qm-status').textContent = '';
+  document.getElementById('qm-parsed-card').style.display = 'none';
+  qmParsed = null;
+}
+
+// ── Voice input via the browser's native Web Speech API ─────
+const QM_MIC_ERR_MSG = {
+  'not-allowed':   '⚠ Microphone access was blocked. Allow mic access for this page in your browser\'s site settings, then try again.',
+  'service-not-allowed': '⚠ Microphone access was blocked. Allow mic access for this page in your browser\'s site settings, then try again.',
+  'no-speech':     '⚠ Didn\'t catch that — no speech detected. Try again and speak right after the mic turns red.',
+  'audio-capture': '⚠ No microphone was found. Check that a mic is connected and not in use by another app.',
+  'network':       '⚠ Voice recognition needs an internet connection (it relies on your browser\'s speech service).',
+  'aborted':       '',
+};
+
+function toggleQuickModeMic() {
+  const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+  if (!SpeechRecognition) {
+    document.getElementById('qm-status').textContent = '⚠ Voice input isn\'t supported in this browser — try typing instead.';
+    return;
+  }
+  if (location.protocol !== 'https:' && location.hostname !== 'localhost' && location.protocol !== 'file:') {
+    document.getElementById('qm-status').textContent = '⚠ Voice input requires HTTPS (or localhost). Try typing instead.';
+    return;
+  }
+
+  const btn = document.getElementById('qm-mic-btn');
+  const ta  = document.getElementById('qm-textarea');
+  const statusEl = document.getElementById('qm-status');
+
+  if (qmListening) {
+    qmRecognition?.stop();
+    return;
+  }
+
+  // Explicitly request mic permission first. On some browsers/setups
+  // SpeechRecognition.start() fails silently (no error event, no result)
+  // if the underlying mic permission was never actually granted — asking
+  // via getUserMedia forces the real permission prompt and lets us show
+  // a clear message if the user denies or has no mic, instead of the
+  // recognizer just sitting there capturing nothing.
+  const beginRecognition = () => {
+    qmRecognition = new SpeechRecognition();
+    qmRecognition.lang = (navigator.language || 'en-US');
+    qmRecognition.interimResults = true;
+    qmRecognition.continuous = true;
+    qmRecognition.maxAlternatives = 1;
+
+    let finalTranscript = '';
+    let gotAnySpeech = false;
+
+    qmRecognition.onstart = () => {
+      qmListening = true;
+      btn.classList.add('listening');
+      statusEl.textContent = '🎙️ Listening… speak now';
+    };
+    qmRecognition.onresult = (e) => {
+      gotAnySpeech = true;
+      let interim = '';
+      for (let i = e.resultIndex; i < e.results.length; i++) {
+        const transcript = e.results[i][0].transcript;
+        if (e.results[i].isFinal) finalTranscript += transcript + ' ';
+        else interim += transcript;
+      }
+      ta.value = (finalTranscript + interim).trim();
+      statusEl.textContent = '🎙️ Listening… tap the mic again to stop';
+    };
+    qmRecognition.onerror = (e) => {
+      dbg(`Voice input error: ${e.error}`, 'error');
+      const friendly = QM_MIC_ERR_MSG[e.error];
+      if (friendly === undefined) statusEl.textContent = `⚠ Voice input error: ${e.error}`;
+      else if (friendly) statusEl.textContent = friendly;
+    };
+    qmRecognition.onend = () => {
+      qmListening = false;
+      btn.classList.remove('listening');
+      if (ta.value.trim()) statusEl.textContent = '';
+      else if (!gotAnySpeech) statusEl.textContent = '⚠ No speech captured. Check your mic input level and try again.';
+    };
+
+    try {
+      qmRecognition.start();
+    } catch (e) {
+      statusEl.textContent = `⚠ ${e.message}`;
+    }
+  };
+
+  if (navigator.mediaDevices?.getUserMedia) {
+    statusEl.textContent = '🎙️ Requesting microphone access…';
+    navigator.mediaDevices.getUserMedia({ audio: true })
+      .then((stream) => {
+        stream.getTracks().forEach(t => t.stop()); // we only needed the permission grant
+        beginRecognition();
+      })
+      .catch((err) => {
+        dbg(`getUserMedia failed: ${err.name}`, 'error');
+        if (err.name === 'NotAllowedError' || err.name === 'PermissionDeniedError') {
+          statusEl.textContent = QM_MIC_ERR_MSG['not-allowed'];
+        } else if (err.name === 'NotFoundError' || err.name === 'DevicesNotFoundError') {
+          statusEl.textContent = QM_MIC_ERR_MSG['audio-capture'];
+        } else {
+          statusEl.textContent = `⚠ Couldn't access microphone: ${err.message || err.name}`;
+        }
+      });
+  } else {
+    beginRecognition();
+  }
+}
+
+// ── AI parsing of the free-text sentence into structured plan fields ──
+async function parseQuickPrompt(sentence) {
+  const {parsed:p}=await WebAPI.run('parseQuick',{sentence,today:fmtDate(new Date())});
+  return {skill:p.skill,goal:p.goal,level:p.level,duration:({2:'2 weeks',4:'1 month',12:'3 months',24:'6 months'})[p.weeks],urgency:p.urgency,freqPerWeek:p.freqPerWeek,sessionMinutes:p.minutes+' min',tone:p.tone};
+}
+
+async function submitQuickMode() {
+  const sentence = document.getElementById('qm-textarea').value.trim();
+  const statusEl = document.getElementById('qm-status');
+  const btn = document.getElementById('qm-submit-btn');
+
+  if (!sentence) { statusEl.textContent = '⚠ Say or type what you want to learn first.'; return; }
+  if (!hasAIService()) {
+    statusEl.textContent = 'AI 服务暂不可用，请稍后重试。';
+    return;
+  }
+
+  btn.disabled = true;
+  btn.textContent = 'Understanding you…';
+  statusEl.textContent = '✦ Parsing your sentence…';
+  document.getElementById('qm-parsed-card').style.display = 'none';
+
+  try {
+    const parsed = await parseQuickPrompt(sentence);
+    qmParsed = parsed;
+
+    // Show what the AI understood, briefly, before generating
+    document.getElementById('qm-p-skill').textContent = parsed.skill;
+    document.getElementById('qm-p-level').textContent = parsed.level;
+    document.getElementById('qm-p-duration').textContent = parsed.duration;
+    document.getElementById('qm-p-pace').textContent = `${parsed.tone} · ${parsed.freqPerWeek}x/week`;
+    document.getElementById('qm-parsed-card').style.display = 'block';
+    statusEl.textContent = '✓ Got it — building your plan…';
+
+    // Populate global state S exactly like the manual flow does
+    S.skill = parsed.skill;
+    S.goal = parsed.goal || '';
+    S.level = parsed.level || 'complete beginner';
+    S.duration = ['2 weeks','1 month','3 months','6 months'].includes(parsed.duration) ? parsed.duration : '1 month';
+    S.freq = Math.min(7, Math.max(2, parseInt(parsed.freqPerWeek) || 3));
+    S.len = ['15 min','30 min','45 min','60 min'].includes(parsed.sessionMinutes) ? parsed.sessionMinutes : '30 min';
+    S.style = 'visual demos';
+    S.platforms = ['B站'];
+    S.includeXiaohongshu = true;
+
+    // Build session dates. For "urgent" requests, schedule near-daily
+    // sessions starting tomorrow regardless of weekday, since the user
+    // implied a tight real-world deadline (e.g. "in 10 days").
+    const weeks = getDurWeeks();
+    const maxSessions = Math.min(weeks * S.freq, 48);
+    S.selectedDates = [];
+    const cur = new Date(); cur.setDate(cur.getDate() + 1); cur.setHours(0,0,0,0);
+    if (parsed.urgency === 'urgent') {
+      // Pack sessions on consecutive days first
+      while (S.selectedDates.length < maxSessions) {
+        S.selectedDates.push(fmtDate(cur));
+        cur.setDate(cur.getDate() + 1);
+      }
+    } else {
+      // Spread across the week like the manual flow (Mon/Wed/Fri-style cadence)
+      const pattern = [1,3,5,2,4,6,0].slice(0, S.freq).sort((a,b)=>a-b);
+      const patternSet = new Set(pattern);
+      while (S.selectedDates.length < maxSessions) {
+        if (patternSet.has(cur.getDay())) S.selectedDates.push(fmtDate(cur));
+        cur.setDate(cur.getDate() + 1);
+      }
+    }
+
+    await new Promise(r => setTimeout(r, 700)); // let the user see the parsed summary
+    closeQuickMode();
+    await runGeneration();
+
+  } catch (err) {
+    statusEl.textContent = `✗ ${err.message}`;
+    dbg(`Quick Mode parse failed: ${err.message}`, 'error');
+  } finally {
+    btn.disabled = false;
+    btn.textContent = 'Build my plan →';
+  }
+}
+
+async function generateLessonMeta(title, channel, ytDesc) {
+  if(!hasAIService())return null;
+  try{return await WebAPI.run('lessonMeta',{video:{t:title,c:channel,description:ytDesc}});}
+  catch(error){dbg(error.message,'warn');return null;}
+}
+
+async function ytImportAdd() {
+  const d      = window._ytImp;
+  if(!d || !SkillPathVideos.valid(d) || d.inputURL!==document.getElementById('yt-import-url').value.trim()){showToast('请先读取当前视频链接');return;}
+  const manual = document.getElementById('yt-manual-title')?.value?.trim();
+  const title  = d.manual ? manual : d.title;
+  if (!title)  { showToast('请先填写视频标题'); return; }
+
+  const dateMode = document.querySelector('#yt-date-chips .chip.on')?.dataset.v;
+  let date = fmtDate(new Date());
+  if (dateMode === 'pick') {
+    const picked = document.getElementById('yt-date-pick').value;
+    if (picked) date = picked;
+  }
+
+  const type    = document.querySelector('#yt-type-chips .chip.on')?.dataset.v || 'practice';
+  const durMins = d.durMins || 30;
+
+  let description = `Watch "${title}" and apply the concepts to your ${S.skill || 'skill'} practice.`;
+  let tip = 'Pause at key moments and attempt the technique before continuing.';
+
+  const aiOn = document.getElementById('yt-ai-toggle')?.classList.contains('on');
+  if (aiOn && hasAIService()) {
+    const btn = document.getElementById('yt-add-btn');
+    btn.textContent = 'Generating…'; btn.disabled = true;
+    const meta = await generateLessonMeta(title, d?.channel||'', d?.ytDesc||'');
+    if (meta?.description) description = meta.description;
+    if (meta?.tip) tip = meta.tip;
+    btn.textContent = 'Add to Plan'; btn.disabled = false;
+  }
+
+  const lesson = {
+    id:            `custom_${Date.now()}`,
+    title,
+    type,
+    date,
+    duration:      `${durMins} min`,
+    description,
+    tip,
+    videos: [{...d,t:title,c:d.channel||'',platform:d.platform||'YouTube'}],
+    totalVideoMins: d?.durMins || 0,
+  };
+
+  insertLessonByDate(lesson);
+  saveCurrentPlan();
+  renderProgress(); renderHome(); renderCalendar(); renderPlanList();
+  showToast('✓ Lesson added to plan!');
+  closeYtImport();
+  window._ytImp = null;
+}
+
+function openSettings() {
+  document.getElementById('settings-panel').classList.add('open');
+  document.getElementById('settings-overlay-bg').classList.add('show');
+  updateKeyStatusHint();
+}
+
+function closeSettings() {
+  document.getElementById('settings-panel').classList.remove('open');
+  document.getElementById('settings-overlay-bg').classList.remove('show');
+}
+function updateKeyStatusHint() {
+  const message=WebAPI.connected?'教程服务可用':'生成时自动匹配教程，无需配置 API';
+  const hint=document.getElementById('key-status-hint');if(hint)hint.textContent=message;
+  const status=document.getElementById('web-connection-status');if(status)status.textContent=message;
+  const notice=document.getElementById('local-service-notice');if(notice)notice.hidden=!['localhost','127.0.0.1',''].includes(location.hostname);
+}
+async function testApiKeys() {
+  try{const result=await WebAPI.status();document.getElementById('web-connection-status').textContent=result.available?'教程服务可用，生成和搜索时自动接入':'教程服务暂不可用，请稍后重试';}
+  catch(error){document.getElementById('web-connection-status').textContent=error.message;}
+}
+
+// ═══════════════════════════════════════════════════════════
+// DEBUG LOGGER
+// ═══════════════════════════════════════════════════════════
+function dbg(msg, type = 'info') {
+  const ts = new Date().toLocaleTimeString();
+  const label = `[SkillPath ${ts}] ${msg}`;
+  if (type === 'error') console.error(label);
+  else if (type === 'warn') console.warn(label);
+  else console.log(label);
+
+  const panel = document.getElementById('debug-panel');
+  if (!panel) return;
+  panel.classList.add('visible');
+  const entry = document.createElement('div');
+  entry.className = `debug-entry debug-${type}`;
+  entry.textContent = `[${ts}] ${msg}`;
+  panel.appendChild(entry);
+  panel.scrollTop = panel.scrollHeight;
+}
+function clearDebugPanel() {
+  const panel = document.getElementById('debug-panel');
+  if (!panel) return;
+  panel.innerHTML = '<div class="debug-panel-lbl">API Events</div>';
+  panel.classList.remove('visible');
+}
+
+// ═══════════════════════════════════════════════════════════
+// STATUS BAR CLOCK
+// ═══════════════════════════════════════════════════════════
+function tickClock() {
+  const n = new Date();
+  document.getElementById('status-time').textContent =
+    `${n.getHours()}:${String(n.getMinutes()).padStart(2,'0')}`;
+}
+tickClock(); setInterval(tickClock, 10000);
+
+// ═══════════════════════════════════════════════════════════
+// ONBOARDING
+// ═══════════════════════════════════════════════════════════
+let obStep = 0;
+let _selectedTile = null;
+let _selectedEmoji = '🎯';
+
+const SKILL_DIRECTIONS = {
+  'Skateboarding': [
+    { icon:'🛹', title:'Learn the basics & safety', sub:'Pushing, stopping, turning' },
+    { icon:'🔥', title:'Master ollies & kickflips', sub:'Core street tricks' },
+    { icon:'🏟️', title:'Bowl & ramp skating',       sub:'Transitions and vert' },
+    { icon:'🎥', title:'Film & skate culture',       sub:'Creative & lifestyle' },
+  ],
+  'Guitar': [
+    { icon:'🎵', title:'Beginner chords & strumming', sub:'G, C, D, Em basics' },
+    { icon:'🎸', title:'Lead guitar & soloing',       sub:'Scales, bends, riffs' },
+    { icon:'🎶', title:'Fingerpicking & acoustic',    sub:'Melodic picking styles' },
+    { icon:'🤘', title:'Electric & rock styles',      sub:'Distortion, power chords' },
+  ],
+  'Drawing': [
+    { icon:'✏️', title:'Fundamentals: line & form',  sub:'Shapes, shading, perspective' },
+    { icon:'👤', title:'Figure & portrait drawing',   sub:'Anatomy and faces' },
+    { icon:'🏙️', title:'Urban sketching',             sub:'Architecture & environments' },
+    { icon:'🦋', title:'Nature & illustration',       sub:'Plants, animals, detail' },
+  ],
+  'Coding': [
+    { icon:'🌐', title:'Web development',             sub:'HTML, CSS, JavaScript' },
+    { icon:'🐍', title:'Python programming',          sub:'Data, automation, AI' },
+    { icon:'📱', title:'Mobile app development',      sub:'iOS or Android basics' },
+    { icon:'🎮', title:'Game development',            sub:'Unity, Godot, Pygame' },
+  ],
+  'Photography': [
+    { icon:'📸', title:'Camera basics & exposure',   sub:'ISO, aperture, shutter' },
+    { icon:'🌇', title:'Street & travel photography', sub:'Candid, light, storytelling' },
+    { icon:'🖼️', title:'Portrait photography',        sub:'Lighting, posing, editing' },
+    { icon:'🌿', title:'Nature & macro',              sub:'Wildlife and close-up shots' },
+  ],
+  'Cooking': [
+    { icon:'🔪', title:'Knife skills & basics',       sub:'Prep, technique, safety' },
+    { icon:'🍝', title:'Italian & pasta dishes',      sub:'Sauces, fresh pasta, risotto' },
+    { icon:'🍱', title:'Asian cuisine',               sub:'Stir-fry, sushi, curries' },
+    { icon:'🍰', title:'Baking & pastry',             sub:'Bread, cakes, pastry' },
+  ],
+  'Piano': [
+    { icon:'🎹', title:'Reading music & hand position', sub:'Notes, scales, posture' },
+    { icon:'🎼', title:'Classical pieces',            sub:'Bach, Beethoven, Chopin' },
+    { icon:'🎷', title:'Jazz & improvisation',        sub:'Chords, voicings, feel' },
+    { icon:'🎵', title:'Pop & contemporary',          sub:'Play songs you love' },
+  ],
+  'Yoga': [
+    { icon:'🧘', title:'Beginner foundations',        sub:'Basic poses & breathing' },
+    { icon:'💪', title:'Strength & flow yoga',        sub:'Vinyasa & power sequences' },
+    { icon:'🌅', title:'Morning & restorative',       sub:'Gentle, calming practice' },
+    { icon:'🤸', title:'Flexibility & splits',        sub:'Hip openers, backbends' },
+  ],
+};
+const DEFAULT_DIRECTIONS = [
+  { icon:'⭐', title:'Start from the very beginning', sub:'No experience needed' },
+  { icon:'🎯', title:'Focus on a specific technique',  sub:'Target one core skill' },
+  { icon:'🔄', title:'Build a consistent habit',       sub:'Short daily sessions' },
+  { icon:'🏆', title:'Reach a milestone goal',         sub:'Work toward something concrete' },
+];
+
+function selectSkillTile(el) {
+  document.querySelectorAll('.skill-tile').forEach(t => { t.classList.remove('selected'); t.setAttribute('aria-pressed', 'false'); });
+  el.classList.add('selected');
+  el.setAttribute('aria-pressed', 'true');
+  _selectedTile = el;
+  _selectedEmoji = el.dataset.emoji;
+  document.getElementById('other-input-wrap').style.display = 'none';
+  document.getElementById('inp-skill-custom').value = '';
+  const btn = document.getElementById('ob0-continue');
+  btn.disabled = false; btn.style.opacity = '1'; btn.style.cursor = 'pointer';
+}
+function selectOtherSkill() {
+  document.querySelectorAll('.skill-tile').forEach(t => { t.classList.remove('selected'); t.setAttribute('aria-pressed', 'false'); });
+  document.querySelector('.other-tile').classList.add('selected');
+  document.querySelector('.other-tile').setAttribute('aria-pressed', 'true');
+  _selectedTile = document.querySelector('.other-tile');
+  _selectedEmoji = '✨';
+  document.getElementById('other-input-wrap').style.display = 'block';
+  document.getElementById('inp-skill-custom').focus();
+  const btn = document.getElementById('ob0-continue');
+  btn.disabled = true; btn.style.opacity = '.4'; btn.style.cursor = 'default';
+}
+function onCustomSkillInput() {
+  const val = document.getElementById('inp-skill-custom').value.trim();
+  const btn = document.getElementById('ob0-continue');
+  if (val.length > 0) { btn.disabled = false; btn.style.opacity = '1'; btn.style.cursor = 'pointer'; }
+  else { btn.disabled = true; btn.style.opacity = '.4'; btn.style.cursor = 'default'; }
+}
+function obPickerNext() {
+  const isOther = document.querySelector('.other-tile')?.classList.contains('selected');
+  const skillName = isOther
+    ? document.getElementById('inp-skill-custom').value.trim()
+    : _selectedTile?.dataset.skill || '';
+  if (!skillName) return;
+  S.skill = skillName;
+  document.getElementById('ds-badge-emoji').textContent = _selectedEmoji;
+  document.getElementById('ds-badge-name').textContent  = skillName;
+  document.getElementById('inp-skill').placeholder = 'e.g. Be specific about your goal…';
+  const dirs = SKILL_DIRECTIONS[skillName] || DEFAULT_DIRECTIONS;
+  const list = document.getElementById('direction-list');
+  list.innerHTML = dirs.map(d => `
+    <button type="button" class="direction-item" aria-pressed="false" onclick="toggleDirection(this)">
+      <div class="di-icon">${d.icon}</div>
+      <div class="di-text"><div class="di-title">${d.title}</div><div class="di-sub">${d.sub}</div></div>
+      <div class="di-check"></div>
+    </button>`).join('');
+  document.querySelector('.ob-hero-full').scrollTop = 0;
+  document.getElementById('discovery-sheet').classList.add('ds-open');
+}
+function toggleDirection(el) {
+  el.classList.toggle('selected');
+  el.setAttribute('aria-pressed', String(el.classList.contains('selected')));
+  el.querySelector('.di-check').textContent = el.classList.contains('selected') ? '✓' : '';
+}
+function closeDiscovery() { document.getElementById('discovery-sheet').classList.remove('ds-open'); }
+function closeSchedule()  { document.getElementById('schedule-sheet').classList.remove('ds-open'); }
+function obNext(n) {
+  if (n === 1) {
+    const customGoal = document.getElementById('inp-skill').value.trim();
+    const selectedDirs = [...document.querySelectorAll('.direction-item.selected')]
+      .map(el => el.querySelector('.di-title').textContent);
+    if (customGoal) S.skill = S.skill + ' — ' + customGoal;
+    else if (selectedDirs.length) S.skill = S.skill + ' (' + selectedDirs[0] + ')';
+    S.level = chipVal('cr-level') || 'complete beginner';
+    document.getElementById('schedule-sheet').classList.add('ds-open');
+    updateKeyStatusHint();
+  }
+}
+function chipVal(id) {
+  const el = document.querySelector(`#${id} .chip.on`);
+  return el ? el.dataset.v : null;
+}
+document.querySelectorAll('.chip-row').forEach(cr => {
+  cr.addEventListener('click', e => {
+    if (!e.target.classList.contains('chip')) return;
+    if (cr.id === 'cr-plat') { e.target.classList.toggle('on'); }
+    else if (cr.id === 'cr-days') {
+      const isOn = e.target.classList.contains('on');
+      if (isOn && cr.querySelectorAll('.chip.on').length <= 1) return; // keep ≥1 day
+      e.target.classList.toggle('on');
+    }
+    else { cr.querySelectorAll('.chip').forEach(c => c.classList.remove('on')); e.target.classList.add('on'); }
+  });
+});
+
+// ═══════════════════════════════════════════════════════════
+// GENERATE — AI + FALLBACK
+// ═══════════════════════════════════════════════════════════
+async function startGenerate() {
+  S.duration = document.getElementById('sel-dur').value;
+  const selDow = new Set(
+    [...document.querySelectorAll('#cr-days .chip.on')].map(c => parseInt(c.dataset.dow))
+  );
+  if (!selDow.size) { showToast('⚠ Select at least one training day'); return; }
+  S.freq = selDow.size;
+  // Generate all session dates by repeating the weekly pattern over the full duration
+  const maxSessions = Math.min(getDurWeeks() * S.freq, 48);
+  S.selectedDates = [];
+  const cur = new Date(); cur.setDate(cur.getDate()+1); cur.setHours(0,0,0,0);
+  while (S.selectedDates.length < maxSessions) {
+    if (selDow.has(cur.getDay())) S.selectedDates.push(fmtDate(cur));
+    cur.setDate(cur.getDate()+1);
+  }
+  S.len = chipVal('cr-len') || '30 min';
+  S.style = chipVal('cr-style') || 'visual demos';
+  S.platforms = [...document.querySelectorAll('#cr-plat .chip.on')].map(c => c.dataset.v);
+  S.includeXiaohongshu=document.getElementById('include-xiaohongshu').checked;
+  if (!S.platforms.length) S.platforms = ['B站'];
+
+  await runGeneration();
+}
+
+// Shared generation + loading-screen pipeline. Assumes S.skill, S.level,
+// S.duration, S.freq, S.selectedDates, S.len, S.style, S.platforms are
+// already populated by the caller (manual form OR Quick Mode parser).
+let generationStarting=false;
+async function runGeneration() {
+  if(generationStarting)return;
+  generationStarting=true;
+  try{await WebAPI.connect();updateKeyStatusHint();}
+  catch(error){generationStarting=false;showToast(error.message);return;}
+  S.planId = crypto.randomUUID().replace(/-/g,'');
+  S.serviceWarnings=[];
+  showScreen('loading');
+  document.getElementById('bottom-nav').style.display = 'none';
+  generationStarting=false;
+
+  const msgs = [
+    '正在了解你的学习目标…',
+    '正在安排适合你的课程…',
+    '正在整理学习内容…',
+    '正在梳理学习顺序…',
+    '正在安排学习时间…',
+    '正在为你准备课程…',
+    '课程正在准备中，请稍候…',
+  ];
+  const bar = document.getElementById('load-bar');
+  const msg = document.getElementById('load-msg');
+  bar.style.width = '0%';
+  let i = 0;
+  const iv = setInterval(() => {
+    if (i < msgs.length) {
+      msg.textContent = msgs[i];
+      bar.style.width = `${Math.round(((i+1)/msgs.length)*100)}%`;
+      i++;
+    } else clearInterval(iv);
+  }, 900);
+
+  try {
+    const aiLessons = await generateWithAI();
+    if (aiLessons && aiLessons.length > 0) S.lessons = aiLessons;
+    else S.lessons = buildPlan();
+  } catch(err) {
+    dbg('AI generation did not finish', 'warn');
+    S.serviceWarnings.push('AI 课程未生成：'+err.message);
+    S.lessons = buildPlan();
+  }
+
+  S.done = new Set();
+  try {
+    saveCurrentPlan();
+    msg.textContent = '正在为你准备课程…';
+    S.lessons = await resolveAllLessonVideos(S.lessons);
+  } catch(err) {
+    dbg('Video search did not finish','warn');
+    S.serviceWarnings.push('视频未匹配：'+err.message);
+  }
+
+  if(S.includeXiaohongshu!==false){
+    try{S.lessons=await resolveAllLessonNotes(S.lessons);}
+    catch(err){S.serviceWarnings.push('小红书教程暂未匹配：'+err.message);}
+  }
+  clearInterval(iv);
+  bar.style.width='100%';
+  S.done = new Set();
+  setTimeout(() => {
+    buildMainApp();
+    document.getElementById('bottom-nav').style.display = 'flex';
+    initFocusSystem();
+    positionNavLiquid('home');
+    goTab('home');
+  }, 0);
+}
+
+// ── AI generation via Groq (llama-3.3-70b-versatile) ────────
+async function generateWithAI() {
+  if(!hasAIService())throw new Error('AI 服务暂不可用，请稍后重试');
+  const base=buildPlan(),lessons=[];
+  for(let offset=0;offset<base.length;offset+=8){
+    const result=await WebAPI.run('generatePlan',{skill:S.skill,goal:S.goal||'',level:S.level,style:S.style,platforms:S.platforms,minutes:parseInt(S.len)||30,count:Math.min(8,base.length-offset),offset,totalCount:base.length,previousTopics:lessons.map(l=>l.title)});
+    lessons.push(...result.lessons.map((row,i)=>({...base[offset+i],...row,id:base[offset+i].id,date:base[offset+i].date,duration:base[offset+i].duration,videos:[]})));
+  }
+  return lessons;
+}
+
+// ═══════════════════════════════════════════════════════════
+// VIDEO RESOLUTION — Duration Padding + Quality Weighting
+// ═══════════════════════════════════════════════════════════
+function isoToMins(iso) {
+  const m = (iso || '').match(/PT(?:(\d+)H)?(?:(\d+)M)?(?:(\d+)S)?/);
+  if (!m) return null;
+  return (parseInt(m[1]||0)*60) + parseInt(m[2]||0) + Math.ceil(parseInt(m[3]||0)/60);
+}
+
+
+
+function simplifyQuery(q, skill) {
+  const clean = q.replace(/[()[\]&+#@!?]/g, ' ').replace(/\s{2,}/g, ' ').trim();
+  const words = clean.split(' ').filter(w => w.length > 2);
+  const short = words.slice(0, 6).join(' ');
+  const skillWord = skill.toLowerCase().split(' ')[0];
+  return short.toLowerCase().includes(skillWord) ? short : `${skill} ${short}`;
+}
+
+// Educational channel keywords for quality weighting
+const EDU_KEYWORDS = ['academy','tutorial','learn','course','school','education','lessons','teach','masterclass','coach','training','institute','university','workshop','how to','skillshare'];
+
+const ytSearchCache = new Map();
+
+async function resolveAllLessonVideos(lessons) {
+  if(!hasVideoService())throw new Error('教程搜索服务暂不可用，请稍后重试');
+  const platforms=S.platforms?.length?[...S.platforms]:['B站'];
+  const usesBili=platforms.includes('B站'),batchSize=usesBili?6:48,planId=S.planId;
+  const skill=S.skill,goal=S.goal||'',level=S.level,minutes=parseInt(S.len)||30;
+  const hasVideo=l=>(l.videos||[]).some(v=>!v.noVideo&&SkillPathVideos.valid(v));
+  const key=l=>(usesBili?SkillPathVideos.searchQuery(skill,l):l.query||skill+' '+l.title).trim().replace(/\s+/g,' ').toLowerCase();
+  let output=lessons.map(l=>({...l}));const groups=new Map(),available=new Map();
+  const persist=()=>{
+    if(S.planId!==planId)return;
+    const current=new Map((S.lessons||lessons).map(l=>[l.id,l]));
+    output=output.map(l=>{
+      const saved=current.get(l.id);if(!saved)return l;
+      return hasVideo(saved)?saved:{...saved,videos:l.videos,totalVideoMins:l.totalVideoMins,videoMatchState:l.videoMatchState};
+    });
+    S.lessons=output;saveCurrentPlan();
+  };
+  for(const l of output)if(hasVideo(l)&&!available.has(key(l)))available.set(key(l),l);
+  // Repeated practice of the same topic can share this plan's actual matched video.
+  // Existing videos are never replaced by a repair or by an empty search response.
+  output=output.map(l=>{
+    if(hasVideo(l))return l;
+    const prior=available.get(key(l));
+    if(!prior){if(!groups.has(key(l)))groups.set(key(l),[]);groups.get(key(l)).push(l);return l;}
+    return {...l,videos:prior.videos.filter(v=>!v.noVideo&&SkillPathVideos.valid(v)).map(v=>({...v})),totalVideoMins:Math.min(lessonTotalMins(prior),parseInt(l.duration)||minutes),videoMatchState:'matched'};
+  });
+  const pending=[...groups.values()];
+  persist();
+  for(let offset=0;offset<pending.length;offset+=batchSize){
+    if(S.planId!==planId)return output;
+    const batch=pending.slice(offset,offset+batchSize),message=document.getElementById('load-msg');
+    if(message)message.textContent='正在为你准备课程…';
+    const excludedVideoIds=[...new Set(output.flatMap(l=>(l.videos||[]).filter(v=>!v.noVideo&&SkillPathVideos.valid(v)&&SkillPathVideos.isBili(v)).map(v=>(v.bvid||v.videoId)+':'+(v.page||1))))];
+    let result;
+    try{result=await WebAPI.run('resolveVideos',{skill,goal,level,platforms,minutes,excludedVideoIds,lessons:batch.map(([l])=>({id:l.id,title:l.title,query:l.query||skill+' '+l.title,bilibiliQuery:usesBili?SkillPathVideos.searchQuery(skill,l):'',videoQueries:l.videoQueries||[],minutes:parseInt(l.duration)||minutes}))});}
+    catch(error){
+      if(S.planId!==planId)return output;
+      S.serviceWarnings.push('视频匹配未完成：'+error.message);
+      // Quota/auth refusals require a later user retry; do not spend more jobs.
+      if([400,401,402,403,429].includes(error.status)||/额度|余额|密钥|权限|验证|取消/.test(error.message))break;
+      continue;
+    }
+    if(S.planId!==planId)return output;
+    if(result.warnings?.length)S.serviceWarnings.push(...result.warnings);
+    const rows=new Map((result.lessons||[]).map(row=>[row.id,row])),updates=new Map();
+    for(const group of batch){
+      const row=rows.get(group[0].id);
+      const videos=(row?.videos||[]).filter(v=>!v.noVideo&&SkillPathVideos.valid(v)&&(!SkillPathVideos.isBili(v)||v.source==='live-search')).map(v=>({...v,platform:SkillPathVideos.isBili(v)?'B站':'YouTube'}));
+      for(const l of group)updates.set(l.id,{videos:videos.map(v=>({...v})),totalVideoMins:Math.min(Number(row?.totalVideoMins)||0,parseInt(l.duration)||minutes),videoMatchState:videos.length?'matched':'unmatched'});
+    }
+    output=output.map(l=>updates.has(l.id)?{...l,...updates.get(l.id)}:l);
+    persist();
+  }
+  if(S.planId===planId&&S.lessons)output=S.lessons;
+  return output;
+}
+
+let videoRepairPlan=null,videoRepairMessage=null;
+async function repairPlanVideos(){
+  if(videoRepairPlan||!S.lessons?.length)return;
+  const planId=S.planId,warningStart=S.serviceWarnings.length;videoRepairPlan=planId||'current';videoRepairMessage=null;renderHome();
+  const initialMissing=S.lessons.filter(l=>!(l.videos||[]).some(v=>!v.noVideo&&SkillPathVideos.valid(v))).length;
+  try{
+    const output=await resolveAllLessonVideos(S.lessons);
+    if(S.planId!==planId)return;
+    S.lessons=output;saveCurrentPlan();
+    const missing=output.filter(l=>!(l.videos||[]).some(v=>!v.noVideo&&SkillPathVideos.valid(v))).length;
+    const warning=S.serviceWarnings.slice(warningStart).at(-1);
+    videoRepairMessage=missing?{planId,text:warning||'暂未找到适合部分课时的教程，可稍后再试。'}:null;
+    showToast(!missing?'课程视频已补全':missing<initialMissing?'已补充课程视频，部分课时仍待匹配':videoRepairMessage.text);
+  }catch(error){if(S.planId===planId){videoRepairMessage={planId,text:error.message};showToast(error.message);}}
+  finally{
+    videoRepairPlan=null;
+    if(S.planId===planId){renderHome();renderPlanList();renderCalendar();}
+  }
+}
+
+async function resolveAllLessonNotes(lessons){
+  const planId=S.planId;let output=lessons.map(l=>({...l}));
+  for(let offset=0;offset<lessons.length;offset+=2){
+    const batch=lessons.slice(offset,offset+2);
+    const result=await WebAPI.run('resolveNotes',{skill:S.skill,lessons:batch.map(l=>({id:l.id,title:l.title,bilibiliQuery:SkillPathVideos.searchQuery(S.skill,l).slice(0,50)}))});
+    if(result.warnings?.length)S.serviceWarnings.push(...result.warnings);
+    const rows=new Map((result.lessons||[]).map(l=>[l.id,l]));
+    output=output.map(l=>{const row=rows.get(l.id);return row&&!row.failed?{...l,resources:[...(l.resources||[]).filter(r=>r.kind!=='xiaohongshu'),...(row.resources||[]).filter(r=>SkillPathVideos.noteURL(r))],notesMatchedAt:new Date().toISOString()}:l;});
+    if(S.planId!==planId)return output;
+    S.lessons=output;saveCurrentPlan();
+    if(result.lessons?.every(l=>l.failed))break;
+  }
+  return output;
+}
+function renderLessonResources(lesson){
+  const notes=(lesson.resources||[]).filter(r=>SkillPathVideos.noteURL(r));
+  document.getElementById('l-resources').innerHTML=notes.length?notes.map(n=>`<a class="vid-card" href="${escapeHTML(SkillPathVideos.noteURL(n))}" target="_blank" rel="noopener noreferrer" style="display:block;text-decoration:none;color:var(--text);padding:16px"><div style="font-size:10px;color:var(--accent);margin-bottom:7px">小红书 · ${n.noteType==='video'?'视频笔记':'图文笔记'}</div><div class="vid-title">${escapeHTML(n.title)}</div><div class="vid-meta" style="margin-top:7px">${escapeHTML(n.author||'小红书作者')} · 打开原帖 ↗</div></a>`).join(''):'<p style="font-size:12px;color:var(--sub);line-height:1.7">暂未匹配到补充教程，可点击上方「匹配教程」再找找。</p>';
+}
+async function searchLessonNotes(){
+  const lesson=S.curLesson,planId=S.planId;
+  if(!lesson)return;
+  const query=document.getElementById('lesson-note-query').value.trim(),button=document.getElementById('lesson-note-search-btn'),status=document.getElementById('lesson-note-status');
+  if(!query)return;
+  button.disabled=true;status.textContent='正在为你寻找教程…';
+  try{
+    const result=await WebAPI.run('searchNotes',{query});
+    if(S.planId!==planId||S.curLesson?.id!==lesson.id)return;
+    const notes=(result.notes||[]).filter(r=>SkillPathVideos.noteURL(r)).slice(0,6);
+    lesson.resources=[...(lesson.resources||[]).filter(r=>r.kind!=='xiaohongshu'),...notes];
+    lesson.notesMatchedAt=new Date().toISOString();saveCurrentPlan();renderLessonResources(lesson);
+    status.textContent=notes.length?'已找到补充教程，点击卡片打开原帖。':'暂未找到相关教程，试试更具体的关键词。';
+  }catch(error){if(S.planId===planId&&S.curLesson?.id===lesson.id)status.textContent=error.message||'暂时无法匹配，请稍后重试。';}
+  finally{button.disabled=false;}
+}
+
+function getDurWeeks() {
+  return { '2 weeks':2,'1 month':4,'3 months':12,'6 months':24 }[S.duration] || 4;
+}
+function buildPlan() {
+  const dates = (S.selectedDates && S.selectedDates.length)
+    ? S.selectedDates.slice(0, 48)
+    : (() => {
+        const fd = new Set([1,3,5]); const res = [];
+        const fc = new Date(); fc.setDate(fc.getDate()+1);
+        while (res.length < Math.min(getDurWeeks()*3, 48)) { if (fd.has(fc.getDay())) res.push(fmtDate(fc)); fc.setDate(fc.getDate()+1); }
+        return res;
+      })();
+  const total = dates.length;
+  return dates.map((dateStr, si) => {
+    const pct = si / total;
+    let type = pct < .25 ? 'basics' : pct < .55 ? 'technique' : pct < .80 ? 'practice' : 'review';
+    if (si > 0 && (si + 1) % 5 === 0) type = 'review';
+    return makeLesson(S.skill, si, type, new Date(dateStr + 'T12:00:00'), total);
+  });
+}
+function getSubTopic(skill, idx, type, total) {
+  const name = skill.toLowerCase();
+  const tracks = [
+    [/guitar|吉他/, ['Tuning and guitar parts','Holding the guitar and picking posture','Open-string rhythm','First open chords','Changing between two chords','Simple strumming patterns','Playing a short melody','Recording and reviewing your progress']],
+    [/skate|longboard|滑板/, ['Equipment and a safe practice area','Stance and stepping off safely','Pushing on flat ground','Controlled stopping','Gentle turns','Linking pushes and turns','A short controlled route','Reviewing balance and control']],
+    [/draw|画/, ['Pencil grip and line control','Simple shapes','Proportion and observation','Light and shadow','Perspective basics','A small still life','A complete sketch','Comparing sketches and choosing a focus']],
+    [/cod|python|program|编程/, ['Setting up a practice environment','Values and variables','Conditions and branching','Loops and repetition','Functions and small reusable steps','Reading errors and debugging','A small working project','Reviewing and improving your project']],
+    [/photo|摄影/, ['Camera controls and holding position','Exposure and light','Focusing on your subject','Composition and framing','Photographing the same subject in different light','Choosing a small photo series','Simple editing and export','Reviewing your strongest images']],
+    [/cook|烹饪|做饭/, ['Kitchen hygiene and safe preparation','Measuring and preparing ingredients','Basic knife skills at a safe pace','Controlling heat','Following a simple recipe','Seasoning and tasting','Preparing a complete simple meal','Reviewing timing and results']],
+    [/piano|钢琴/, ['Keyboard layout and posture','Finding notes on the keyboard','A steady pulse','Simple right-hand melodies','Left-hand patterns','Hands together slowly','A short complete piece','Recording and reviewing your playing']],
+    [/yoga|瑜伽/, ['Comfortable breathing and a safe practice space','Gentle warm-up within a comfortable range','Foundational standing poses','Balance with support available','Gentle seated stretches','Linking a few comfortable poses','A short gentle sequence','Reviewing comfort and consistency']],
+  ];
+  const match=tracks.find(([pattern])=>pattern.test(name));
+  const topics=match?match[1]:['Define your starting point','Choose one reliable introductory resource','Try one small foundational task','Repeat and note what is difficult','Practise one focused technique','Apply it to a small exercise','Complete a small project','Review your progress and choose the next step'];
+  return topics[Math.min(topics.length-1,Math.floor(idx/Math.max(1,total)*topics.length))];
+}
+function makeLesson(skill, idx, type, date, total) {
+  const sub=getSubTopic(skill,idx,type,total);
+  return {
+    id:`l${idx+1}_${S.planId||'legacy'}`,title:sub,type,date:fmtDate(date),duration:S.len,
+    description:`Self-guided ${S.len} session for ${skill}. Focus on ${sub.toLowerCase()}. This is a local outline; AI and video matching have not been completed.`,
+    tip:'Work at a comfortable pace. Write down what you tried, what improved, and one question for your next session.',
+    query:skill+' '+sub+' beginner tutorial',videos:[],
+  };
+}
+function buildVideos() { return []; }
+
+function toTitleCase(s) { return s.replace(/\b\w/g, c => c.toUpperCase()); }
+function fmtDate(d) { return `${d.getFullYear()}-${pad(d.getMonth()+1)}-${pad(d.getDate())}`; }
+function pad(n) { return String(n).padStart(2,'0'); }
+
+// ═══════════════════════════════════════════════════════════
+// YOUTUBE IFRAME PLAYER
+// ═══════════════════════════════════════════════════════════
+let ytPlayer        = null;
+let ytPlaylist      = [];   // [{videoId, watchSecs, t, watchNote}]
+let ytPlaylistIdx   = 0;
+let ytTargetMins    = 30;
+let ytPlayerReady   = false;
+let ytInstanceReady = false;
+let ytPending = null;
+let ytWaitTimer = null;
+let ytLessonTimer = null;
+let activeVideoProvider = '';
+function playCurrentVideo(v){
+  if(SkillPathVideos.isBili(v)){
+    activeVideoProvider='B站';ytPending=null;clearTimeout(ytWaitTimer);
+    if(ytPlayer&&ytInstanceReady)ytPlayer.stopVideo();
+    document.getElementById('yt-host').hidden=true;
+    const frame=document.getElementById('bili-player');frame.hidden=false;frame.src=SkillPathVideos.embed(v);
+    document.getElementById('yt-player-wrap').classList.add('visible');
+    const external=document.getElementById('yt-external');external.href=SkillPathVideos.url(v);external.textContent='在 B站打开当前视频 →';external.hidden=false;
+  }else ytInitPlayer(v.videoId,0,v.watchSecs||0);
+}
+
+// Called by YouTube IFrame API when script is loaded
+function onYouTubeIframeAPIReady() {
+  ytPlayerReady = true;
+  dbg('YouTube IFrame API ready ✓', 'ok');
+  if (ytPending) ytInitPlayer(ytPending.videoId, ytPending.startSecs, ytPending.endSecs);
+}
+
+function ytInitPlayer(videoId, startSecs = 0, endSecs = 0) {
+  if (!/^[A-Za-z0-9_-]{11}$/.test(videoId || '')) return;
+  activeVideoProvider='YouTube';
+  document.getElementById('yt-host').hidden=false;
+  const biliFrame=document.getElementById('bili-player');biliFrame.hidden=true;biliFrame.removeAttribute('src');
+  const wrap = document.getElementById('yt-player-wrap');
+  wrap.classList.add('visible');
+  const external = document.getElementById('yt-external');
+  external.href = 'https://www.youtube.com/watch?v=' + videoId;
+  external.hidden = false;external.textContent='在 YouTube 打开当前视频 →';
+  ytPending = {videoId, startSecs, endSecs};
+  clearTimeout(ytWaitTimer);
+  if (typeof YT === 'undefined' || !YT.Player) {
+    ytUpdateStatus('正在加载播放器…');
+    ytWaitTimer = setTimeout(() => {
+      if (ytPending) ytUpdateStatus('播放器未能加载，请检查网络，或使用下方原始视频链接。');
+    }, 12000);
+    return;
+  }
+  const options = {videoId, startSeconds:startSecs || 0};
+  if (endSecs > startSecs) options.endSeconds = endSecs;
+  if (ytPlayer) {
+    if (ytInstanceReady) ytPlayer.loadVideoById(options);
+    return;
+  }
+  ytPlayer = new YT.Player('yt-player-container', {
+    height:'220', width:'100%', videoId,
+    playerVars:{start:startSecs || 0, end:endSecs || undefined, autoplay:0, playsinline:1, rel:0, origin:location.origin},
+    events:{
+      onReady:() => {
+        ytInstanceReady = true;
+        if (!ytPending) { ytPlayer.stopVideo(); return; }
+        const pending = ytPending;
+        const selected = {videoId:pending.videoId, startSeconds:pending.startSecs || 0};
+        if (pending.endSecs > pending.startSecs) selected.endSeconds = pending.endSecs;
+        ytPlayer.loadVideoById(selected);
+        ytUpdateInfo();
+      },
+      onStateChange:onYtStateChange,
+      onError:onYtError,
+      onAutoplayBlocked:() => ytUpdateStatus('点击播放器中的播放按钮开始观看。'),
+    },
+  });
+}
+
+function onYtStateChange(event) {
+  // YT.PlayerState.ENDED === 0
+  if (activeVideoProvider==='YouTube' && event.data === 0) {
+    const nextIdx = ytPlaylistIdx + 1;
+    if (nextIdx < ytPlaylist.length) {
+      ytPlaylistIdx = nextIdx;
+      const next = ytPlaylist[ytPlaylistIdx];
+      playCurrentVideo(next);
+      ytUpdateInfo();
+      ytHighlightCard(ytPlaylistIdx);
+      dbg(`Auto-advancing to video ${ytPlaylistIdx + 1}: ${next.t}`, 'info');
+    } else {
+      dbg('All playlist videos finished ✓', 'ok');
+      ytUpdateStatus('All videos watched! ✓');
+    }
+  }
+}
+
+function onYtError(event) {
+  const codes = {2:'视频标识无效',5:'当前环境无法播放',100:'视频已删除或不可见',101:'作者关闭了嵌入播放',150:'作者关闭了嵌入播放',153:'播放器身份校验未通过'};
+  ytUpdateStatus(codes[event.data] || '视频暂时无法播放，请选择其他教程或打开原始链接。');
+  dbg('YouTube player error ' + event.data, 'warn');
+}
+
+function ytPlayLesson(lesson) {
+  ytPlaylist    = (lesson.videos || []).filter(SkillPathVideos.valid);
+  ytPlaylistIdx = 0;
+  ytTargetMins  = parseInt(lesson.duration) || 30;
+
+  if (!ytPlaylist.length) {
+    document.getElementById('yt-player-wrap').classList.remove('visible');
+    return;
+  }
+
+  const first = ytPlaylist[0];
+  playCurrentVideo(first);
+  ytUpdateInfo();
+  ytHighlightCard(0);
+}
+
+function ytJumpTo(idx) {
+  if (!ytPlaylist[idx]) return;
+  ytPlaylistIdx = idx;
+  const vid = ytPlaylist[idx];
+  playCurrentVideo(vid);
+  ytUpdateInfo();
+  ytHighlightCard(idx);
+}
+
+function ytUpdateInfo() {
+  const vid = ytPlaylist[ytPlaylistIdx];
+  if (!vid) return;
+  document.getElementById('video-playback-note').textContent=SkillPathVideos.isBili(vid)?'B站 · 分集请点下方卡片切换':'播完自动切换';
+  document.getElementById('yt-now-title').textContent     = vid.t || 'Playing…';
+  document.getElementById('yt-playlist-status').textContent =
+    `Video ${ytPlaylistIdx + 1} of ${ytPlaylist.length}` +
+    (vid.watchNote ? ' · ' + vid.watchNote : '');
+}
+
+function ytUpdateStatus(msg) {
+  document.getElementById('yt-playlist-status').textContent = msg;
+}
+
+function ytHighlightCard(activeIdx) {
+  document.querySelectorAll('#l-videos .vid-card').forEach((card, i) => {
+    card.classList.toggle('playing', i === activeIdx);
+  });
+}
+
+function ytHide() {
+  activeVideoProvider='';
+  const biliFrame=document.getElementById('bili-player');biliFrame.hidden=true;biliFrame.removeAttribute('src');
+  ytPending = null; clearTimeout(ytWaitTimer); clearTimeout(ytLessonTimer);
+  const wrap = document.getElementById('yt-player-wrap');
+  if (wrap) wrap.classList.remove('visible');
+  if (ytPlayer && typeof ytPlayer.stopVideo === 'function') {
+    ytPlayer.stopVideo();
+  }
+  document.querySelectorAll('#l-videos .vid-card').forEach(c => c.classList.remove('playing'));
+}
+
+// ═══════════════════════════════════════════════════════════
+// BUILD MAIN APP
+// ═══════════════════════════════════════════════════════════
+function saveCurrentPlan() {
+  try { const raw = SkillPathSession.encode(S); if (raw) localStorage.setItem(SkillPathSession.KEY, raw); }
+  catch (error) { showToast("学习计划保存失败，请检查浏览器存储空间。"); }
+}
+
+function buildMainApp() {
+  const now = new Date();
+  document.getElementById('home-date-lbl').textContent =
+    now.toLocaleDateString('en-US',{weekday:'long',month:'long',day:'numeric'});
+  document.getElementById('home-avatar').textContent = S.skill.charAt(0).toUpperCase() || 'S';
+  renderProgress();
+  renderHome();
+  renderCalendar();
+  renderPlanList();
+}
+function escapeHTML(value) { return String(value==null?'':value).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c])); }
+function skillEmoji() {
+  const icons = {skate:'🛹',guitar:'🎸',piano:'🎹',cook:'🍳',draw:'🎨',paint:'🖌',swim:'🏊',run:'🏃',yoga:'🧘',code:'💻',photo:'📷',dance:'💃',sing:'🎤',chess:'♟',tennis:'🎾',surf:'🏄',climb:'🧗',box:'🥊'};
+  const kw = S.skill.toLowerCase();
+  const m = Object.keys(icons).find(k => kw.includes(k));
+  return m ? icons[m] : '🎯';
+}
+
+// Helper: total watchable minutes for a lesson
+function lessonTotalMins(l) {
+  const videos = (l.videos || []).filter(v => !v.noVideo && SkillPathVideos.valid(v));
+  if (!videos.length) return 0;
+  const cached = Number(l.totalVideoMins);
+  if (Number.isFinite(cached) && cached > 0) return cached;
+  return videos.reduce((sum, v) => {
+    const seconds = Number(v.watchSecs), minutes = Number(v.durMins);
+    if (Number.isFinite(seconds) && seconds > 0) return sum + Math.ceil(seconds / 60);
+    return sum + (Number.isFinite(minutes) && minutes > 0 ? minutes : 0);
+  }, 0);
+}
+
+// Duration badge HTML: "XX min / YY min"
+function durBadgeHtml(lesson) {
+  const hasVideo = (lesson.videos || []).some(v => !v.noVideo && SkillPathVideos.valid(v));
+  if (!hasVideo) {
+    const hasPost = (lesson.resources || []).some(r => SkillPathVideos.noteURL(r));
+    return `<span class="dur-badge none">${hasPost ? '已匹配原帖' : '待匹配教程'}</span>`;
+  }
+  const actual = lessonTotalMins(lesson);
+  const target = parseInt(lesson.duration) || 30;
+  if (!actual) return `<span class="dur-badge">已匹配视频</span>`;
+  const pct = actual / target;
+  const cls = pct >= 0.9 ? '' : ' short';
+  return `<span class="dur-badge${cls}">📹 ${actual} min / ${target} min</span>`;
+}
+
+// ── Progress ────────────────────────────────────────────────
+function renderProgress() {
+  const total = S.lessons.length, done = S.done.size;
+  const pct = total ? Math.round((done/total)*100) : 0;
+  document.getElementById('prog-pct-lbl').textContent = `${pct}%`;
+  document.getElementById('prog-skill-name').textContent = S.skill;
+  document.getElementById('prog-sub-lbl').textContent = `${done} of ${total} sessions done`;
+  document.getElementById('prog-bar-thin').style.width = `${pct}%`;
+  const circ = 2 * Math.PI * 20;
+  const fill = document.getElementById('pr-fill');
+  fill.style.strokeDasharray = circ;
+  fill.style.strokeDashoffset = circ - (pct/100)*circ;
+}
+
+// ── Home ────────────────────────────────────────────────────
+function renderHome() {
+  let notice=document.getElementById('plan-service-status');
+  if(!notice){notice=document.createElement('p');notice.id='plan-service-status';notice.className='web-plan-notice';document.getElementById('today-card-wrap').before(notice);}
+  const missing=S.lessons.filter(l=>!(l.videos||[]).some(v=>!v.noVideo&&SkillPathVideos.valid(v))).length;
+  notice.hidden=!missing;
+  const savedVideoWarning=(S.serviceWarnings||[]).filter(w=>/视频匹配|视频未匹配|后续课时|^B站：|^YouTube：/.test(w)).at(-1);
+  const matchMessage=videoRepairMessage?.planId===S.planId?videoRepairMessage.text:savedVideoWarning||'部分课程尚未匹配视频。';
+  notice.innerHTML=missing?`<span>${videoRepairPlan?'正在为你准备课程视频…':escapeHTML(matchMessage)}</span> <button type="button" class="text-button" onclick="repairPlanVideos()" ${videoRepairPlan?'disabled':''}>${videoRepairPlan?'正在匹配…':'补全课程视频'}</button>`:'';
+
+  const today = fmtDate(new Date());
+  const DAYS = ['Sun','Mon','Tue','Wed','Thu','Fri','Sat'];
+  const nextLesson = S.lessons.find(l => !S.done.has(l.id));
+  const tcWrap = document.getElementById('today-card-wrap');
+
+  if (nextLesson) {
+    const d = new Date(nextLesson.date+'T12:00:00');
+    const isToday = nextLesson.date === today;
+    const label = isToday ? '🔥 Today\'s session' : `📅 ${d.toLocaleDateString('en-US',{weekday:'short',month:'short',day:'numeric'})}`;
+    tcWrap.innerHTML = `
+      <div class="today-card" onclick="openLesson('${nextLesson.id}','home')">
+        <div class="tc-badge">${label}</div>
+        <div class="tc-title">${escapeHTML(nextLesson.title)}</div>
+        <div class="tc-meta">
+          <span>⏱ ${nextLesson.duration}</span>
+          <span>📹 ${nextLesson.videos?.filter(v=>!v.noVideo).length||0} videos</span>
+          ${durBadgeHtml(nextLesson)}
+          <span class="type-dot ${nextLesson.type}" style="display:inline-block"></span>
+          <span style="text-transform:capitalize">${nextLesson.type}</span>
+        </div>
+        <div class="tc-arrow">›</div>
+      </div>`;
+  } else {
+    tcWrap.innerHTML = `<div class="today-card"><div class="tc-badge">🎉 All done!</div><div class="tc-title">You've completed your ${escapeHTML(S.skill)} plan!</div></div>`;
+  }
+
+  const upcoming = S.lessons.filter(l => !S.done.has(l.id) && l !== nextLesson).slice(0,5);
+  const ul = document.getElementById('upcoming-list');
+  if (!upcoming.length) { ul.innerHTML = '<div style="padding:12px 22px;font-size:13px;color:var(--sub)">Nothing else scheduled.</div>'; return; }
+  ul.innerHTML = upcoming.map(l => {
+    const d = new Date(l.date+'T12:00:00');
+    return `
+      <div class="upcoming-item" onclick="openLesson('${l.id}','home')">
+        <div class="up-date-box">
+          <div class="up-day">${DAYS[d.getDay()]}</div>
+          <div class="up-num">${d.getDate()}</div>
+        </div>
+        <div class="up-info">
+          <div class="up-title">${escapeHTML(l.title)}</div>
+          <div class="up-meta">⏱ ${escapeHTML(l.duration)} · ${durBadgeHtml(l)}</div>
+        </div>
+        <div class="type-dot ${l.type}"></div>
+      </div>`;
+  }).join('');
+}
+
+// ── Calendar drag-and-drop ──────────────────────────────────
+let _drag = null;
+
+function initDayPanelDrag() {
+  document.querySelectorAll('#day-panel .dlp-item[data-lid]').forEach(item => {
+    const handle = item.querySelector('.dlp-chevron');
+    if (!handle) return;
+    handle.addEventListener('click', e => e.stopPropagation());
+
+    handle.addEventListener('pointerdown', e => {
+      e.preventDefault();
+      e.stopPropagation();
+      const lid = item.dataset.lid;
+      const startX = e.clientX, startY = e.clientY;
+      let dragging = false;
+
+      function startDrag(e2) {
+        dragging = true;
+        const rect = item.getBoundingClientRect();
+        const ghost = item.cloneNode(true);
+        ghost.id = 'drag-ghost';
+        ghost.style.cssText = `position:fixed;left:${rect.left}px;top:${rect.top}px;width:${rect.width}px;z-index:9999;pointer-events:none;`;
+        document.body.appendChild(ghost);
+        item.classList.add('dragging');
+        document.body.style.overflow = 'hidden';
+        document.body.style.touchAction = 'none';
+        _drag = { lid, ghost, ox: e2.clientX - rect.left, oy: e2.clientY - rect.top, item };
+        if (navigator.vibrate) navigator.vibrate(8);
+      }
+
+      function onMove(e2) {
+        if (!dragging && (Math.abs(e2.clientX-startX) > 6 || Math.abs(e2.clientY-startY) > 6)) {
+          startDrag(e2);
+        }
+        if (dragging && _drag) {
+          _drag.ghost.style.left = (e2.clientX - _drag.ox) + 'px';
+          _drag.ghost.style.top  = (e2.clientY - _drag.oy) + 'px';
+          _drag.ghost.style.visibility = 'hidden';
+          const under = document.elementFromPoint(e2.clientX, e2.clientY);
+          _drag.ghost.style.visibility = '';
+          document.querySelectorAll('.cal-cell.drag-over').forEach(c => c.classList.remove('drag-over'));
+          const cell = under?.closest('.cal-cell[data-date]');
+          if (cell && !cell.classList.contains('other-m')) cell.classList.add('drag-over');
+        }
+      }
+
+      function onUp(e2) {
+        document.removeEventListener('pointermove', onMove);
+        document.removeEventListener('pointerup', onUp);
+        document.removeEventListener('pointercancel', onUp);
+        document.body.style.overflow = '';
+        document.body.style.touchAction = '';
+        if (!dragging || !_drag) { _drag = null; return; }
+        _drag.ghost.style.visibility = 'hidden';
+        const under = document.elementFromPoint(e2.clientX, e2.clientY);
+        _drag.ghost.remove();
+        _drag.item.classList.remove('dragging');
+        document.querySelectorAll('.cal-cell.drag-over').forEach(c => c.classList.remove('drag-over'));
+        const cell = under?.closest('.cal-cell[data-date]');
+        if (cell && !cell.classList.contains('other-m')) {
+          const newDate = cell.dataset.date;
+          const lesson  = S.lessons.find(l => l.id === _drag.lid);
+          if (lesson && lesson.date !== newDate) {
+            lesson.date = newDate;
+            S.lessons.sort((a,b) => a.date.localeCompare(b.date));
+            calSel = newDate;
+            renderCalendar();
+            renderHome();
+            renderPlanList();
+            showToast('✓ Moved to ' + newDate);
+          } else {
+            renderDayPanel(cell.dataset.date);
+          }
+        }
+        _drag = null;
+      }
+
+      document.addEventListener('pointermove', onMove);
+      document.addEventListener('pointerup', onUp);
+      document.addEventListener('pointercancel', onUp);
+    });
+  });
+}
+
+// ── Calendar ────────────────────────────────────────────────
+let calSel = null;
+function renderCalendar() {
+  const MONTHS = ['January','February','March','April','May','June','July','August','September','October','November','December'];
+  const { calMonth: m, calYear: y } = S;
+  document.getElementById('cal-month-lbl').textContent = `${MONTHS[m]} ${y}`;
+  const grid = document.getElementById('cal-grid');
+  grid.innerHTML = '';
+  const firstDay  = new Date(y,m,1).getDay();
+  const daysInM   = new Date(y,m+1,0).getDate();
+  const daysInPrev = new Date(y,m,0).getDate();
+  const todayStr  = fmtDate(new Date());
+  const total     = Math.ceil((firstDay+daysInM)/7)*7;
+  for (let i = 0; i < total; i++) {
+    let dn, cm, cy;
+    if (i < firstDay) { dn = daysInPrev-firstDay+i+1; cm = m-1; cy = m===0?y-1:y; }
+    else if (i >= firstDay+daysInM) { dn = i-firstDay-daysInM+1; cm = m+1; cy = m===11?y+1:y; }
+    else { dn = i-firstDay+1; cm = m; cy = y; }
+    const ds = `${cy}-${pad(cm+1)}-${pad(dn)}`;
+    const lessons = S.lessons.filter(l => l.date === ds);
+    const isToday = ds === todayStr;
+    const isOther = cm !== m;
+    const isSel   = ds === calSel;
+    const cell = document.createElement('div');
+    cell.className = 'cal-cell'+(isOther?' other-m':'')+(isToday?' is-today':'');
+    cell.dataset.date = ds;
+    if (isSel) cell.style.background = 'var(--card2)';
+    cell.innerHTML = `<div class="cal-cell-num">${dn}</div>`;
+    if (lessons.length) {
+      const pips = document.createElement('div');
+      pips.className = 'cal-pips';
+      lessons.forEach(l => {
+        const pip = document.createElement('div');
+        pip.className = `cal-pip type-${l.type}`;
+        if (S.done.has(l.id)) pip.style.opacity = '.3';
+        pips.appendChild(pip);
+      });
+      cell.appendChild(pips);
+    }
+    cell.addEventListener('click', () => { calSel = ds; renderCalendar(); renderDayPanel(ds); });
+    grid.appendChild(cell);
+  }
+  renderDayPanel(calSel || todayStr);
+}
+function renderDayPanel(ds) {
+  const panel = document.getElementById('day-panel');
+  const lessons = S.lessons.filter(l => l.date === ds);
+  const d = new Date(ds+'T12:00:00');
+  const lbl = d.toLocaleDateString('en-US',{weekday:'long',month:'short',day:'numeric'});
+  if (!lessons.length) {
+    panel.innerHTML = `<div class="day-lessons-panel"><div class="dlp-header">${lbl} — No sessions</div></div>`;
+    return;
+  }
+  const typeColors = { basics:'var(--accent)', technique:'var(--pink)', practice:'var(--green)', review:'var(--amber)' };
+  panel.innerHTML = `
+    <div class="day-lessons-panel">
+      <div class="dlp-header">${lbl}</div>
+      ${lessons.map(l => `
+        <div class="dlp-item" data-lid="${l.id}" onclick="openLesson('${l.id}','calendar')">
+          <div class="dlp-color" style="background:${typeColors[l.type]};opacity:${S.done.has(l.id)?'.3':'1'}"></div>
+          <div class="dlp-info">
+            <div class="dlp-title" style="${S.done.has(l.id)?'text-decoration:line-through;opacity:.5':''}">${escapeHTML(l.title)}</div>
+            <div class="dlp-meta">⏱ ${escapeHTML(l.duration)} · ${durBadgeHtml(l)} · <span style="text-transform:capitalize">${escapeHTML(l.type)}</span></div>
+          </div>
+          <div class="dlp-chevron">⠿</div>
+        </div>`).join('')}
+    </div>`;
+  initDayPanelDrag();
+}
+function chMonth(dir) {
+  S.calMonth += dir;
+  if (S.calMonth > 11) { S.calMonth = 0; S.calYear++; }
+  if (S.calMonth < 0)  { S.calMonth = 11; S.calYear--; }
+  calSel = null;
+  renderCalendar();
+}
+
+// ── Plan list ───────────────────────────────────────────────
+function renderPlanList() {
+  saveCurrentPlan();
+  document.getElementById('plan-header-sub').textContent = `${S.lessons.length} sessions · ${S.duration}`;
+  const wrap = document.getElementById('plan-list-wrap');
+  const DAYS = ['Sun','Mon','Tue','Wed','Thu','Fri','Sat'];
+  let lastW = -1, html = '';
+  S.lessons.forEach((l,i) => {
+    const firstDate  = S.lessons[0]?.date ? new Date(S.lessons[0].date+'T12:00:00') : new Date();
+    const lessonDate = new Date(l.date+'T12:00:00');
+    const wk = Math.max(0, Math.floor((lessonDate - firstDate) / (7 * 24 * 3600 * 1000)));
+    if (wk !== lastW) { html += `<div class="week-label">Week ${wk+1}</div>`; lastW = wk; }
+    const d = new Date(l.date+'T12:00:00');
+    const ck = S.done.has(l.id);
+    html += `
+      <div class="plan-row${ck?' done-row':''}" onclick="openLesson('${l.id}','plan')">
+        <div class="pr-date">
+          <div class="pr-day">${DAYS[d.getDay()]}</div>
+          <div class="pr-num">${d.getDate()}</div>
+        </div>
+        <div class="pr-info">
+          <div class="pr-title">${escapeHTML(l.title)}</div>
+          <div class="pr-meta">⏱ ${escapeHTML(l.duration)} · ${durBadgeHtml(l)}</div>
+        </div>
+        <div class="pr-check ${ck?'ck':''}" onclick="toggleDone('${l.id}',event)">${ck?'✓':''}</div>
+      </div>`;
+  });
+  wrap.innerHTML = html;
+}
+
+// ── Lesson detail ───────────────────────────────────────────
+let lessonSearchVersion=0,lessonSearchResults=[];
+function updateBiliSearchLink(){
+  const value=document.getElementById('lesson-video-query').value.trim();
+  document.getElementById('bili-search-external').href='https://search.bilibili.com/all?keyword='+encodeURIComponent(value.slice(0,120));
+  document.getElementById('lesson-video-search-btn').textContent=SkillPathVideos.parse(value)?.platform==='B站'?'添加':'搜索';
+}
+function resetLessonVideoSearch(lesson){
+  lessonSearchVersion++;lessonSearchResults=[];
+  document.getElementById('lesson-video-query').value=SkillPathVideos.searchQuery(S.skill,lesson);
+  updateBiliSearchLink();
+  document.getElementById('lesson-video-search-status').textContent='';
+  document.getElementById('lesson-video-results').innerHTML='';
+  document.getElementById('lesson-video-search-btn').disabled=false;
+}
+async function searchLessonVideos(){
+  if(!S.curLesson)return;
+  const query=document.getElementById('lesson-video-query').value.trim();if(!query){showToast('请输入教程搜索词');return;}
+  const parsed=SkillPathVideos.parse(query);
+  if(parsed?.platform==='B站'){
+    lessonSearchResults=[{...parsed,t:'B站视频 · '+parsed.bvid+(parsed.page>1?' · 第 '+parsed.page+' 集':''),c:'B站',durMins:null}];
+    addLessonSearchVideo(0);return;
+  }
+  const version=++lessonSearchVersion,lessonId=S.curLesson.id,button=document.getElementById('lesson-video-search-btn'),status=document.getElementById('lesson-video-search-status');
+  button.disabled=true;status.textContent='正在搜索 B站教程…';document.getElementById('lesson-video-results').innerHTML='';lessonSearchResults=[];
+  try{
+    const result=await WebAPI.run('searchVideos',{platform:'B站',query,skill:S.skill});
+    if(version!==lessonSearchVersion||S.curLesson?.id!==lessonId)return;
+    lessonSearchResults=(result.videos||[]).filter(SkillPathVideos.valid);
+    status.textContent=lessonSearchResults.length?'实时搜索找到 '+lessonSearchResults.length+' 个视频，选择后添加到本课并播放。'+(result.searchedAt?'（本次联网结果）':''):'没有找到教程，请缩短关键词或粘贴视频链接。';
+    document.getElementById('lesson-video-results').innerHTML=lessonSearchResults.map((v,i)=>`<button type="button" class="video-search-result" onclick="addLessonSearchVideo(${i})"><span>${escapeHTML(v.t)}</span><small>${escapeHTML(v.c)}${v.durMins?' · '+v.durMins+' min':''}</small><em>添加并播放 →</em></button>`).join('');
+  }catch(error){if(version===lessonSearchVersion)status.textContent=/412|限制/.test(error.message)?'B站暂时限制了自动搜索。可点击上方入口在 B站搜索，再把完整视频链接粘贴到这里添加。':error.message;}
+  finally{if(version===lessonSearchVersion)button.disabled=false;}
+}
+function addLessonSearchVideo(index){
+  const video=lessonSearchResults[index],lesson=S.curLesson;if(!video||!lesson||!SkillPathVideos.valid(video))return;
+  const existing=(lesson.videos||[]).findIndex(v=>SkillPathVideos.identity(v)===SkillPathVideos.identity(video));
+  if(existing<0){lesson.videos= [...(lesson.videos||[]),video];delete lesson.totalVideoMins;saveCurrentPlan();}
+  const playKey=SkillPathVideos.identity(video),from=S.prevTab;
+  openLesson(lesson.id,from);clearTimeout(ytLessonTimer);ytPlayLesson(lesson);
+  const idx=ytPlaylist.findIndex(v=>SkillPathVideos.identity(v)===playKey);if(idx>=0)ytJumpTo(idx);
+  showToast(existing<0?'已添加 B站教程':'已选择这个视频');
+}
+
+function openLesson(id, from) {
+  flushPendingNote();if(pendingNote)return;
+  const l = S.lessons.find(x => x.id === id);
+  if (!l) return;
+  S.curLesson = l;
+  resetLessonVideoSearch(l);
+  S.prevTab = from || 'home';
+
+  document.getElementById('lesson-back-btn').onclick = () => {
+    ytHide();
+    const dest = ['plan','calendar','review'].includes(S.prevTab) ? S.prevTab : 'home';
+    showScreen(dest);
+    setActiveTab(dest);
+    if (dest === 'review') renderReview();
+    vcHide();
+  };
+
+  const typeColors = { basics:'var(--a-light)', technique:'rgba(244,114,182,.15)', practice:'rgba(52,211,153,.12)', review:'rgba(251,191,36,.12)' };
+  const typeText   = { basics:'var(--accent)',  technique:'var(--pink)',            practice:'var(--green)',          review:'var(--amber)' };
+
+  const tag = document.getElementById('l-type-tag');
+  tag.textContent = l.type.charAt(0).toUpperCase()+l.type.slice(1);
+  tag.style.background = typeColors[l.type];
+  tag.style.color = typeText[l.type];
+
+  document.getElementById('l-title').textContent = l.title;
+  document.getElementById('lesson-note-query').value=SkillPathVideos.searchQuery(S.skill,l).slice(0,50);
+  document.getElementById('lesson-note-status').textContent='原帖将在新窗口打开，部分内容可能需要登录小红书。';
+  renderLessonResources(l);
+  const d = new Date(l.date+'T12:00:00');
+  document.getElementById('l-date').textContent = d.toLocaleDateString('en-US',{weekday:'long',month:'long',day:'numeric'});
+  document.getElementById('l-dur').textContent = `⏱ ${l.duration}`;
+  document.getElementById('l-dur-badge').innerHTML = durBadgeHtml(l);
+
+  const gradients = ['#e8ecf5', '#ececf0', '#e5eaf0'];
+
+  const playableVideos = (l.videos || []).filter(SkillPathVideos.valid);
+
+  document.getElementById('l-videos').innerHTML = (l.videos||[]).map((v,i) => {
+    const pc = SkillPathVideos.isBili(v) ? 'plat-bili' : 'plat-yt';
+
+    if (!SkillPathVideos.valid(v)) {
+      return `
+        <div class="vid-card" style="opacity:.45;cursor:default">
+          <div class="vid-thumb" style="background:${gradients[i%gradients.length]};position:relative;overflow:hidden">
+            <div class="vid-platform-chip ${pc}">${escapeHTML(v.platform||'YouTube')}</div>
+            <div style="font-size:28px;opacity:.4">🎬</div>
+          </div>
+          <div class="vid-info">
+            <div class="vid-title" style="color:var(--sub)">Video unavailable</div>
+            <div class="vid-meta">Could not be matched at this time</div>
+          </div>
+        </div>`;
+    }
+
+    // Find index in playable playlist for click handler
+    const playIdx = playableVideos.findIndex(pv => SkillPathVideos.identity(pv) === SkillPathVideos.identity(v));
+    const thumb = SkillPathVideos.thumbnail(v);
+    const durLabel = v.watchNote
+      ? v.watchNote
+      : v.durMins ? `${v.durMins} min` : v.d || '';
+    const watchNote = v.watchNote
+      ? `<div class="vid-watch-note">⏩ ${escapeHTML(v.watchNote)}</div>` : '';
+
+    return `
+      <div class="vid-card" id="vid-card-${i}" role="button" tabindex="0" aria-label="播放 ${escapeHTML(v.t)}" onclick="ytJumpTo(${playIdx})" onkeydown="if(event.key==='Enter'||event.key===' '){event.preventDefault();ytJumpTo(${playIdx})}">
+        <div class="vid-thumb" style="background:${gradients[i%gradients.length]};position:relative;overflow:hidden">
+          <img src="${escapeHTML(thumb)}" alt="" referrerpolicy="no-referrer" style="position:absolute;inset:0;width:100%;height:100%;object-fit:cover;" onerror="this.style.display='none'">
+          <div class="vid-platform-chip ${pc}">${escapeHTML(SkillPathVideos.isBili(v)?'B站':'YouTube')}</div>
+          <div class="vid-dur-chip">${escapeHTML(durLabel)}</div>
+          <div class="vid-play" style="position:relative;z-index:2">▶</div>
+        </div>
+        <div class="vid-info">
+          <div class="vid-title">${escapeHTML(v.t)}</div>
+          <div class="vid-meta">${escapeHTML(v.c)}${v.source==='live-search'?' · 实时搜索':v.source==='verified-catalog'?' · 已保存的教程库资料':''}</div>
+          ${watchNote}
+        </div>
+      </div>`;
+  }).join('') || '<p class="web-plan-notice">这一课尚未匹配视频。可在上方搜索 B站教程，或用＋导入 B站 / YouTube 链接。</p>';
+
+  document.getElementById('l-tips').innerHTML = `
+    <div class="tip-box">
+      <strong>Focus:</strong> ${escapeHTML(l.description)}<br><br>
+      <strong>Practice tip:</strong> ${escapeHTML(l.tip)}
+    </div>`;
+
+  document.getElementById('l-notes').value = (getAllNotes()[l.id]?.text) || '';
+  document.getElementById('notes-save-hint').textContent = '';
+
+  const btn = document.getElementById('done-btn');
+  if (S.done.has(l.id)) {
+    btn.textContent = '✓ Completed'; btn.className = 'done-btn completed';
+  } else {
+    btn.textContent = '✓ Mark as complete'; btn.className = 'done-btn';
+  }
+
+  showScreen('lesson');
+
+  // Auto-start embedded player
+  ytHide();
+  if (playableVideos.length > 0) {
+    ytLessonTimer=setTimeout(() => { if(document.getElementById('s-lesson').classList.contains('active') && S.curLesson?.id===l.id) ytPlayLesson(l); }, 100);
+  }
+
+  // Start focus countdown / session timer
+  if (!S.done.has(l.id)) {
+    if (S.focus.countdown) showDistractionOverlay(l);
+    else vcStart(l.duration);
+  } else {
+    vcHide();
+  }
+}
+
+function markDone() {
+  if (!S.curLesson) return;
+  const id = S.curLesson.id;
+  if (!S.done.has(id)) {
+    S.done.add(id);
+    showToast('🎉 Session complete!');
+    renderProgress(); renderHome(); renderCalendar(); renderPlanList();
+  }
+  document.getElementById('done-btn').textContent = '✓ Completed';
+  document.getElementById('done-btn').className = 'done-btn completed';
+  stopSessionTimer();
+}
+function toggleDone(id, e) {
+  e.stopPropagation();
+  if (S.done.has(id)) S.done.delete(id);
+  else { S.done.add(id); showToast('🎉 Done!'); }
+  renderProgress(); renderHome(); renderCalendar(); renderPlanList();
+}
+
+// ═══════════════════════════════════════════════════════════
+// FOCUS SHIELD SYSTEM
+// ═══════════════════════════════════════════════════════════
+function openFocusSettings() {
+  document.getElementById('focus-settings').classList.add('open');
+  document.getElementById('focus-overlay-bg').classList.add('show');
+}
+function closeFocusSettings() {
+  document.getElementById('focus-settings').classList.remove('open');
+  document.getElementById('focus-overlay-bg').classList.remove('show');
+}
+function toggleSetting(key) {
+  S.focus[key] = !S.focus[key];
+  saveCurrentPlan();
+  const el = document.getElementById(`tog-${key}`);
+  if (el) el.classList.toggle('on', S.focus[key]);
+  updateFocusBadge();
+  if (key === 'reminders') {
+    if (S.focus.reminders) startReminderCycle();
+    else stopReminderCycle();
+  }
+}
+function updateFocusBadge() {
+  const badge = document.getElementById('focus-badge');
+  if (!badge) return;
+  const anyOn = S.focus.reminders || S.focus.countdown || S.focus.timerbar;
+  badge.textContent = anyOn ? 'Focus on' : 'Focus off';
+  badge.className = 'focus-badge' + (anyOn ? ' on' : ' off');
+}
+
+const REMINDER_MSGS = [
+  { icon:'🎯', title:'Learning check-in',   msg:'Are you on track with your practice today?' },
+  { icon:'⏱️', title:'Time check',           msg:'Still watching educational content? Great! If not, switch back.' },
+  { icon:'🧠', title:'Deep work reminder',   msg:'The best learning happens in focused blocks. Close other tabs and go deep.' },
+  { icon:'🔥', title:'Streak at stake',      msg:'A short session is better than none. Don\'t break your streak.' },
+  { icon:'📵', title:'Distraction alert',    msg:'Social feeds are designed to keep you scrolling. Your skills won\'t build themselves.' },
+  { icon:'💡', title:'Did you know?',        msg:'Consistent 20-minute sessions beat irregular 2-hour marathons for skill building.' },
+  { icon:'🏆', title:'Progress reminder',    msg:'Every session compounds. The best time to practise was earlier — second best is now.' },
+];
+let reminderIdx = 0;
+
+function initFocusSystem() {
+  if (S.focus.reminders) startReminderCycle();
+  ['reminders','countdown','timerbar'].forEach(k => {
+    const el = document.getElementById(`tog-${k}`);
+    if (el) el.classList.toggle('on', S.focus[k]);
+  });
+  updateFocusBadge();
+}
+function startReminderCycle() {
+  stopReminderCycle();
+  const freqMs = (parseInt(document.getElementById('sel-freq-reminder')?.value || 30)) * 60 * 1000;
+  S.reminderTimeout = setTimeout(() => {
+    triggerReminder('scheduled');
+    S.reminderInterval = setInterval(() => triggerReminder('scheduled'), freqMs);
+  }, freqMs);
+}
+function stopReminderCycle() {
+  clearTimeout(S.reminderTimeout);
+  clearInterval(S.reminderInterval);
+}
+function triggerReminder(source) {
+  if (!S.focus.reminders && source !== 'test') return;
+  const r = source === 'test'
+    ? { icon:'🛡️', title:'Focus Shield active', msg:`Reminders working! ${S.lessons.filter(l=>!S.done.has(l.id)).length} sessions remaining in your ${escapeHTML(S.skill)} plan.` }
+    : REMINDER_MSGS[reminderIdx % REMINDER_MSGS.length];
+  reminderIdx++;
+  document.getElementById('fb-icon').textContent  = r.icon;
+  document.getElementById('fb-title').textContent = r.title;
+  document.getElementById('fb-msg').textContent   = r.msg;
+  const bubble = document.getElementById('focus-bubble');
+  bubble.classList.add('visible');
+  clearTimeout(bubble._autoDismiss);
+  bubble._autoDismiss = setTimeout(dismissReminder, 8000);
+}
+function dismissReminder() { document.getElementById('focus-bubble').classList.remove('visible'); }
+function reminderGoToLesson() {
+  dismissReminder(); closeFocusSettings();
+  const next = S.lessons.find(l => !S.done.has(l.id));
+  if (next) openLesson(next.id, 'home');
+}
+
+// ── Session countdown overlay ─────────────────────────────
+function showDistractionOverlay(lesson) {
+  let secs = 10;
+  document.getElementById('do-sub').textContent = `Your ${lesson.duration} ${S.skill} session is starting. Take a breath.`;
+  document.getElementById('do-timer').textContent = `0:${String(secs).padStart(2,'0')}`;
+  document.getElementById('distraction-overlay').classList.add('show');
+  const interval = setInterval(() => {
+    secs--;
+    document.getElementById('do-timer').textContent = `0:${String(secs).padStart(2,'0')}`;
+    if (secs <= 0) {
+      clearInterval(interval);
+      closeDistractionOverlay();
+      startSessionTimer(lesson.duration);
+    }
+  }, 1000);
+  document.getElementById('distraction-overlay')._interval = interval;
+}
+function closeDistractionOverlay() {
+  clearInterval(document.getElementById('distraction-overlay')._interval);
+  document.getElementById('distraction-overlay').classList.remove('show');
+  if (S.curLesson) vcStart(S.curLesson.duration);
+}
+
+// ── Session progress timer bar ────────────────────────────
+function startSessionTimer(durationStr) {
+  if (!S.focus.timerbar) return;
+  stopSessionTimer();
+  const totalSecs = (parseInt(durationStr) || 30) * 60;
+  S.sessionTimerStart = Date.now();
+  S.sessionTimerDuration = totalSecs;
+  const bar = document.getElementById('session-timer-bar');
+  const fill = document.getElementById('stb-fill');
+  bar.classList.add('active');
+  fill.style.width = '0%';
+  S.sessionTimerInterval = setInterval(() => {
+    const elapsed = (Date.now() - S.sessionTimerStart) / 1000;
+    const pct = Math.min((elapsed / totalSecs) * 100, 100);
+    fill.style.width = `${pct}%`;
+    if (pct >= 100) { stopSessionTimer(); showToast('⏱ Session time reached!'); }
+  }, 2000);
+}
+function stopSessionTimer() {
+  clearInterval(S.sessionTimerInterval);
+  document.getElementById('session-timer-bar').classList.remove('active');
+  document.getElementById('stb-fill').style.width = '0%';
+}
+
+// ═══════════════════════════════════════════════════════════
+// NOTES & REVIEW (NotebookLM-style recap)
+// ═══════════════════════════════════════════════════════════
+function getAllNotes() {
+  const notes=JSON.parse(localStorage.getItem('sp_notes') || '{}');
+  if(!notes||typeof notes!=='object'||Array.isArray(notes))throw new Error('保存的笔记格式异常，请先备份浏览器数据');
+  return notes;
+}
+function saveNote(lessonId, text, lesson) {
+  const notes=getAllNotes();
+  if(text.trim())notes[lessonId]={text:text.trim(),updatedAt:Date.now(),skill:lesson.skill,title:lesson.title,date:lesson.date};
+  else delete notes[lessonId];
+  localStorage.setItem('sp_notes',JSON.stringify(notes));
+  localStorage.removeItem('sp_review_summary');
+}
+let notesSaveTimer=null,pendingNote=null;
+function flushPendingNote(){
+  clearTimeout(notesSaveTimer);if(!pendingNote)return;
+  const pending=pendingNote;
+  try{saveNote(pending.id,pending.text,pending.lesson);pendingNote=null;document.getElementById('notes-save-hint').textContent='✓ Saved';}
+  catch(error){document.getElementById('notes-save-hint').textContent='保存失败，请先复制笔记备份';showToast('笔记尚未保存，请复制备份后重试');}
+}
+function onLessonNotesInput(){
+  if(!S.curLesson)return;
+  pendingNote={id:S.curLesson.id,text:document.getElementById('l-notes').value,lesson:{skill:S.skill,title:S.curLesson.title,date:S.curLesson.date}};
+  document.getElementById('notes-save-hint').textContent='Saving…';
+  clearTimeout(notesSaveTimer);notesSaveTimer=setTimeout(flushPendingNote,500);
+}
+
+function renderReview() {
+  const notes = getAllNotes();
+  const entries = Object.entries(notes).filter(([id])=>S.lessons.some(l=>l.id===id)).sort((a, b) => b[1].updatedAt - a[1].updatedAt);
+  const listEl = document.getElementById('review-notes-list');
+
+  if (!entries.length) {
+    listEl.innerHTML = `
+      <div class="empty-state">
+        <div class="e-icon">📓</div>
+        <div class="e-text">No notes yet. Jot a few lines on any lesson page and they'll show up here, ready to be turned into an AI recap.</div>
+      </div>`;
+  } else {
+    listEl.innerHTML = entries.map(([id, n]) => {
+      const snippet = n.text.length > 90 ? n.text.slice(0, 90) + '…' : n.text;
+      const dateLabel = n.date ? new Date(n.date + 'T12:00:00').toLocaleDateString('en-US', { month: 'short', day: 'numeric' }) : '';
+      return `
+        <div class="plan-row" onclick="openLesson('${id}','review')">
+          <div class="pr-info">
+            <div class="pr-title">${(n.title || 'Lesson').replace(/</g, '&lt;')}</div>
+            <div class="pr-meta">${dateLabel ? dateLabel + ' · ' : ''}${snippet.replace(/</g, '&lt;')}</div>
+          </div>
+        </div>`;
+    }).join('');
+  }
+
+  const cached = localStorage.getItem('sp_review_summary');
+  const wrap = document.getElementById('review-summary-wrap');
+  if (cached) {
+    try {
+      const { summary, ts, skill } = JSON.parse(cached);
+      if (skill === S.skill) { showReviewSummary(summary, ts); return; }
+    } catch {}
+  }
+  wrap.style.display = 'none';
+  wrap.innerHTML = '';
+}
+
+function showReviewSummary(summary, ts) {
+  const wrap = document.getElementById('review-summary-wrap');
+  const bullets = (arr) => (arr || []).map(s => `<li style="margin-bottom:6px">${String(s).replace(/</g, '&lt;')}</li>`).join('');
+  wrap.innerHTML = `
+    <div class="tip-box" style="margin-bottom:0">
+      <div style="font-size:11px;color:var(--sub);margin-bottom:12px">Generated ${new Date(ts).toLocaleString()}</div>
+      <strong>✅ Key takeaways</strong>
+      <ul style="margin:8px 0 14px 18px">${bullets(summary.keyTakeaways)}</ul>
+      <strong style="color:var(--amber)">⚠️ Struggle points</strong>
+      <ul style="margin:8px 0 14px 18px">${bullets(summary.strugglePoints)}</ul>
+      <strong style="color:var(--pink)">🎯 Next focus</strong>
+      <ul style="margin:8px 0 0 18px">${bullets(summary.nextFocus)}</ul>
+    </div>`;
+  wrap.style.display = 'block';
+}
+
+async function generateReviewSummary() {
+  const button=document.getElementById('review-gen-btn');
+  const entries=Object.values(getAllNotes()).filter(n=>n.skill===S.skill&&S.lessons.some(l=>l.title===n.title));
+  if(!entries.length){showToast('先写一些练习笔记');return;}
+  if(!confirm('将当前计划的笔记发送给 AI 整理回顾？请先移除敏感个人信息。'))return;
+  button.disabled=true;button.textContent='正在整理笔记…';
+  try{
+    const {summary}=await WebAPI.run('review',{skill:S.skill,notes:entries.map(n=>({date:n.date,title:n.title,notes:n.text}))});
+    const ts=Date.now();localStorage.setItem('sp_review_summary',JSON.stringify({summary,ts,skill:S.skill}));showReviewSummary(summary,ts);
+  }catch(error){showToast(error.message);}
+  finally{button.disabled=false;button.textContent='Reflect on my progress';}
+}
+
+// ═══════════════════════════════════════════════════════════
+// NAVIGATION
+// ═══════════════════════════════════════════════════════════
+const SCREENS = { home:'s-home', calendar:'s-calendar', plan:'s-plan', lesson:'s-lesson', review:'s-review', onboard:'s-onboard', loading:'s-loading' };
+const TABS    = { home:'tab-home', calendar:'tab-calendar', plan:'tab-plan', review:'tab-review' };
+const TAB_ORDER = ['home','calendar','plan','review','new'];
+
+function showScreen(name) {
+  Object.values(SCREENS).forEach(id => { const el = document.getElementById(id); if (el) el.classList.remove('active'); });
+  const el = document.getElementById(SCREENS[name]);
+  if (el) el.classList.add('active');
+}
+function setActiveTab(name) {
+  Object.values(TABS).forEach(id => document.getElementById(id)?.classList.remove('active'));
+  if (TABS[name]) document.getElementById(TABS[name])?.classList.add('active');
+  document.querySelectorAll('.nav-tab').forEach(tab => {
+    if (tab.id === TABS[name]) tab.setAttribute('aria-current', 'page');
+    else tab.removeAttribute('aria-current');
+  });
+  positionNavLiquid(name);
+}
+function goTab(name) { if(name!=='lesson')ytHide(); showScreen(name); setActiveTab(name); if (name === 'review') renderReview(); }
+
+function positionNavLiquid(name) {
+  const liquid = document.getElementById('nav-liquid');
+  const tabEl  = document.getElementById(TABS[name]);
+  const nav    = document.getElementById('bottom-nav');
+  if (!liquid || !tabEl || !nav) return;
+  const navRect = nav.getBoundingClientRect();
+  const tabRect = tabEl.getBoundingClientRect();
+  liquid.style.left  = (tabRect.left - navRect.left + 4) + 'px';
+  liquid.style.width = (tabRect.width - 8) + 'px';
+}
+
+function resetToOnboard() {
+  flushPendingNote();if(pendingNote)return;
+  if(S.lessons.length&&!confirm('网页版目前保存一份当前计划。创建新计划后会替换它；原有笔记仍保存在此浏览器。确定创建？'))return;
+  saveCurrentPlan();
+  S.lessons = []; S.done = new Set(); window._ytImp = null;
+  stopReminderCycle();
+  stopSessionTimer();
+  ytHide(); vcHide();
+  document.querySelectorAll('.skill-tile').forEach(t => { t.classList.remove('selected'); t.setAttribute('aria-pressed', 'false'); });
+  document.getElementById('other-input-wrap').style.display = 'none';
+  const btn = document.getElementById('ob0-continue');
+  if (btn) { btn.disabled = true; btn.style.opacity = '.4'; btn.style.cursor = 'default'; }
+  document.getElementById('discovery-sheet').classList.remove('ds-open');
+  document.getElementById('schedule-sheet').classList.remove('ds-open');
+  document.getElementById('inp-skill').value = '';
+  document.getElementById('bottom-nav').style.display = 'none';
+  showScreen('onboard');
+}
+
+// ═══════════════════════════════════════════════════════════
+// TOAST
+// ═══════════════════════════════════════════════════════════
+function showToast(msg) {
+  const t = document.getElementById('toast');
+  t.textContent = msg;
+  t.classList.add('show');
+  setTimeout(() => t.classList.remove('show'), 2200);
+}
+
+// ═══════════════════════════════════════════════════════════
+// VIDEO COUNTDOWN TIMER — drag, pause, minimise
+// ═══════════════════════════════════════════════════════════
+const VC = {
+  total:0, left:0, running:false, paused:false,
+  startedAt:null, interval:null,
+  pausedAt:null, totalPausedMs:0, minimised:false,
+  dragging:false, dragOffX:0, dragOffY:0,
+};
+function vcStart(durationStr) {
+  const mins = parseInt(durationStr) || 30;
+  VC.total = mins * 60; VC.left = VC.total;
+  VC.running = true; VC.paused = false;
+  VC.startedAt = Date.now(); VC.totalPausedMs = 0; VC.minimised = false;
+  const el = document.getElementById('vid-countdown');
+  el.classList.remove('vc-urgent','vc-done','vc-paused');
+  const pb = document.getElementById('vc-pause-btn');
+  if (pb) { pb.textContent = '⏸'; pb.title = 'Pause'; }
+  document.getElementById('vc-min-btn').textContent = '−';
+  document.getElementById('vc-body').style.display = 'block';
+  document.getElementById('vc-mini').style.display = 'none';
+  el.style.left = ''; el.style.top = '';
+  el.style.right = '14px'; el.style.bottom = '80px';
+  vcUpdateDisplay();
+  el.classList.add('vc-visible');
+  clearInterval(VC.interval);
+  VC.interval = setInterval(() => {
+    if (VC.paused) return;
+    const elapsed = Math.round((Date.now() - VC.startedAt - VC.totalPausedMs) / 1000);
+    VC.left = Math.max(0, VC.total - elapsed);
+    vcUpdateDisplay();
+    if (VC.left <= 0) { clearInterval(VC.interval); VC.running = false; vcExpired(); }
+  }, 1000);
+  vcInitDrag();
+}
+function vcUpdateDisplay() {
+  const m = Math.floor(VC.left/60), s = VC.left%60;
+  const str = String(m).padStart(2,'0')+':'+String(s).padStart(2,'0');
+  const d = document.getElementById('vc-time');      if (d) d.textContent = str;
+  const n = document.getElementById('vc-mini-time'); if (n) n.textContent = str;
+  const pct = VC.total > 0 ? VC.left/VC.total : 0;
+  const circ = 2*Math.PI*33;
+  const ring = document.getElementById('vc-ring');
+  if (ring) { ring.style.strokeDasharray = circ; ring.style.strokeDashoffset = circ*(1-pct); }
+  const bar = document.getElementById('vc-bar');
+  if (bar) bar.style.width = Math.round((1-pct)*100)+'%';
+  const el = document.getElementById('vid-countdown');
+  el.classList.toggle('vc-urgent', VC.left<=60 && VC.left>0 && !VC.paused);
+  const st = document.getElementById('vc-status');
+  if (st && !VC.paused) st.textContent = VC.left<=0 ? "Time's up!" : VC.left<=60 ? '⚠️ Almost done!' : 'Watching your lesson';
+}
+function vcTogglePause() {
+  const el = document.getElementById('vid-countdown');
+  const pb = document.getElementById('vc-pause-btn');
+  const st = document.getElementById('vc-status');
+  if (!VC.paused) {
+    VC.paused = true; VC.pausedAt = Date.now();
+    if (pb) { pb.textContent = '▶'; pb.title = 'Resume'; }
+    if (st) st.textContent = '⏸ Paused';
+    el.classList.add('vc-paused'); el.classList.remove('vc-urgent');
+  } else {
+    VC.totalPausedMs += Date.now() - VC.pausedAt;
+    VC.paused = false;
+    if (pb) { pb.textContent = '⏸'; pb.title = 'Pause'; }
+    el.classList.remove('vc-paused');
+    vcUpdateDisplay();
+  }
+}
+function vcToggleMin() {
+  VC.minimised = !VC.minimised;
+  document.getElementById('vc-body').style.display = VC.minimised ? 'none' : 'block';
+  document.getElementById('vc-mini').style.display = VC.minimised ? 'flex' : 'none';
+  document.getElementById('vc-min-btn').textContent = VC.minimised ? '+' : '−';
+}
+function vcAddTime(mins) { VC.total += mins*60; VC.left += mins*60; vcUpdateDisplay(); showToast('+'+mins+' min added'); }
+function vcDone() { clearInterval(VC.interval); VC.running = false; VC.paused = false; vcHide(); markDone(); }
+function vcExpired() {
+  document.getElementById('vid-countdown').classList.add('vc-done');
+  document.getElementById('vc-status').textContent = "Time's up!";
+  showToast('⏰ Session time reached!');
+}
+function vcHide() {
+  clearInterval(VC.interval); VC.running = false; VC.paused = false;
+  const el = document.getElementById('vid-countdown');
+  if (el) el.classList.remove('vc-visible');
+}
+function vcInitDrag() {
+  const widget = document.getElementById('vid-countdown');
+  const handle = document.getElementById('vc-drag-handle');
+  if (!widget || !handle) return;
+  function start(cx, cy, e) {
+    if (e.target.closest('.vc-ctrl-btn')) return;
+    VC.dragging = true;
+    const rect = widget.getBoundingClientRect();
+    const phone = widget.closest('.app-body') || document.querySelector('.phone') || document.body;
+    const pr = phone.getBoundingClientRect();
+    widget.style.right = 'auto'; widget.style.bottom = 'auto';
+    widget.style.left  = (rect.left - pr.left)+'px';
+    widget.style.top   = (rect.top  - pr.top)+'px';
+    VC.dragOffX = cx - rect.left;
+    VC.dragOffY = cy - rect.top;
+    widget.style.transition = 'opacity .3s';
+    e.preventDefault();
+  }
+  function move(cx, cy) {
+    if (!VC.dragging) return;
+    const phone = widget.closest('.app-body') || document.querySelector('.phone') || document.body;
+    const pr = phone.getBoundingClientRect();
+    const x = Math.min(Math.max(cx - VC.dragOffX - pr.left, 4), pr.width  - widget.offsetWidth  - 4);
+    const y = Math.min(Math.max(cy - VC.dragOffY - pr.top,  4), pr.height - widget.offsetHeight - 4);
+    widget.style.left = x+'px'; widget.style.top = y+'px';
+  }
+  function end() { VC.dragging = false; widget.style.transition = ''; }
+  handle.onmousedown = (e) => start(e.clientX, e.clientY, e);
+  handle.ontouchstart = (e) => { const t = e.touches[0]; start(t.clientX, t.clientY, e); };
+  document.addEventListener('mousemove', (e) => move(e.clientX, e.clientY));
+  document.addEventListener('mouseup', end);
+  document.addEventListener('touchmove', (e) => { const t=e.touches[0]; move(t.clientX,t.clientY); }, {passive:false});
+  document.addEventListener('touchend', end);
+}
+
+// ── Init ─────────────────────────────────────────────────────
+updateKeyStatusHint();
+WebAPI.status().then(updateKeyStatusHint).catch(()=>{});
+try {
+  const saved = SkillPathSession.decode(localStorage.getItem(SkillPathSession.KEY));
+  if (saved) {
+    Object.assign(S, saved); buildMainApp();
+    document.getElementById('bottom-nav').style.display = 'flex';
+    initFocusSystem(); goTab('home');
+  }
+} catch (error) { showToast('已保存的计划暂时无法读取，原始数据仍保留在浏览器中。'); }
+// The product homepage can prefill a goal; it never replaces a saved plan.
+const homepageGoal = (new URLSearchParams(location.search).get('goal') || '').trim().slice(0, 160);
+if (homepageGoal && !S.lessons.length) {
+  const knownSkill = [['吉他', 'Guitar'], ['摄影', 'Photography'], ['相机', 'Photography'], ['瑜伽', 'Yoga'], ['素描', 'Drawing'], ['编程', 'Coding'], ['烹饪', 'Cooking']].find(([word]) => homepageGoal.includes(word));
+  const tile = knownSkill && document.querySelector(`.skill-tile[data-skill="${knownSkill[1]}"]`);
+  if (tile) selectSkillTile(tile);
+  else {
+    selectOtherSkill();
+    document.getElementById('inp-skill-custom').value = homepageGoal;
+    onCustomSkillInput();
+  }
+  obPickerNext();
+  document.getElementById('inp-skill').value = homepageGoal;
+} else if (homepageGoal) {
+  showToast('已打开你保存的计划。若要新建计划，请点击底部 +，原计划不会自动替换。');
+}
+window.addEventListener('pagehide',()=>{flushPendingNote();saveCurrentPlan();});
+document.addEventListener('visibilitychange', () => {
+  if (document.hidden) {
+    flushPendingNote();
+    saveCurrentPlan();
+    if (ytPlayer && ytInstanceReady) ytPlayer.pauseVideo();
+  }
+});
+</script>
+
+<div id="web-verification" class="web-verification" hidden role="dialog" aria-modal="true" aria-labelledby="web-verification-title">
+  <div class="web-verification-card"><h2 id="web-verification-title">访问验证</h2><p id="web-verification-hint">请完成下方访问验证，即可继续</p><div id="web-verification-widget"></div><button onclick="cancelWebVerification()">取消</button></div>
+</div>
+</body>
+</html>

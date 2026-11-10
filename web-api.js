@@ -1,9 +1,21 @@
 (function(root,factory){
  const api=factory();if(typeof module==='object'&&module.exports)module.exports=api;else root.SkillPathWebAPI=api;
 })(typeof globalThis==='object'?globalThis:this,function(){
- function createClient({base,fetchImpl=fetch,verify,storage,now=Date.now,sleep=ms=>new Promise(r=>setTimeout(r,ms)),newId=()=>Array.from(crypto.getRandomValues(new Uint8Array(16)),x=>x.toString(16).padStart(2,'0')).join('')}={}){
+ function createClient({base,fetchImpl=fetch,verify,beforeConnect,storage,now=Date.now,sleep=ms=>new Promise(r=>setTimeout(r,ms)),newId=()=>Array.from(crypto.getRandomValues(new Uint8Array(16)),x=>x.toString(16).padStart(2,'0')).join('')}={}){
   const url=new URL(base);if(url.protocol!=='https:'||url.pathname!=='/'||url.search||url.hash||url.username||url.password)throw new Error('网页服务地址无效');
-  const key='sp_web_session_v1';let session=null,configuration=null;
+  const key='sp_web_session_v1';let session=null,configuration=null,connecting=null;
+  const submissions=[];let submissionQueue=Promise.resolve();
+  async function reserveSubmission(){
+   const previous=submissionQueue;let release;submissionQueue=new Promise(resolve=>{release=resolve;});
+   await previous;
+   try{
+    while(submissions.length&&submissions[0]<=now()-61000)submissions.shift();
+    // Leave headroom under the server's six-new-jobs-per-minute protection.
+    if(submissions.length>=5)await sleep(Math.max(0,submissions[0]+61000-now()));
+    while(submissions.length&&submissions[0]<=now()-61000)submissions.shift();
+    submissions.push(now());
+   }finally{release();}
+  }
   try{const saved=JSON.parse(storage?.getItem(key)||'null');if(saved&&typeof saved.token==='string'&&saved.token.length<4096&&saved.expiresAt>now())session=saved;}catch(_){}
   const connected=()=>!!(session&&session.expiresAt>now());
   function disconnect(){session=null;try{storage?.removeItem(key);}catch(_){} }
@@ -19,13 +31,26 @@
    if(!response.ok||!result.ok)throw Object.assign(new Error(result.error||'网页服务暂不可用'),{status:response.status,transport:[502,503,504].includes(response.status),...(/^VERIFY_[A-Z_]{1,40}$/.test(result.code||'')?{code:result.code}:{})});
    return result;
   }
-  return {
+  const client={
    get connected(){return connected();},get services(){return configuration?.services||{};},get available(){return !!configuration?.available;},
    async status(){configuration=await request('/web/status');return configuration;},
-   async connect(){const config=await this.status();if(!config.available||!config.sitekey)throw new Error('网页联网服务尚未开放，请先使用本地课程');if(typeof verify!=='function')throw new Error('无法打开访问验证');const token=await verify(config.sitekey);const result=await request('/web/session',{token});if(typeof result.token!=='string'||!Number.isFinite(result.expiresAt))throw new Error('访问验证没有返回有效凭证');session={token:result.token,expiresAt:result.expiresAt};try{storage?.setItem(key,JSON.stringify(session));}catch(_){}return result;},
+   async connect(){
+    if(connected())return {ok:true,expiresAt:session.expiresAt};
+    if(connecting)return connecting;
+    connecting=(async()=>{
+     if(typeof beforeConnect==='function')await beforeConnect();
+     const config=await client.status();if(!config.available||!config.sitekey)throw new Error('教程服务暂不可用，请稍后重试');
+     if(typeof verify!=='function')throw new Error('无法打开访问验证');
+     const token=await verify(config.sitekey),result=await request('/web/session',{token});
+     if(typeof result.token!=='string'||!Number.isFinite(result.expiresAt)||result.expiresAt<=now())throw new Error('访问验证没有返回有效凭证');
+     session={token:result.token,expiresAt:result.expiresAt};try{storage?.setItem(key,JSON.stringify(session));}catch(_){}return result;
+    })();
+    try{return await connecting;}finally{connecting=null;}
+   },
    disconnect,
    async run(action,payload={}){
-    if(!connected())throw new Error('请先在设置中连接联网服务');
+    await client.connect();
+    await reserveSubmission();
     const requestId=newId(),started=now(),body={action,payload,requestId};let result;
     try{result=await request('/web/jobs',body,true);}catch(e){if(!e.transport)throw e;await sleep(500);result=await request('/web/jobs',body,true);}
     let failures=0,delay=1000;
@@ -38,6 +63,7 @@
     return result;
    },
   };
+  return client;
  }
  return {createClient};
 });
