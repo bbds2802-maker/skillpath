@@ -1,0 +1,84 @@
+@import "tailwindcss";
+
+@theme inline { --color-card: #d8d5c5; --color-secondary: #d8d5c5; }
+:root {
+  /* Shared with the app's RT / Soft ABS theme. */
+  --bg: #d8d5c5;
+  --surface: #d8d5c5;
+  --text: #55584e;
+  --sub: #737568;
+  --border: #c4c2b3;
+  --accent: #ac4e28;
+  --radius: 29px;
+  color-scheme: light;
+  font-family: "Noto Sans SC", "PingFang SC", -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+  color: var(--text);
+  background: #b9b7a8;
+  -webkit-font-smoothing: antialiased;
+}
+* { box-sizing: border-box; }
+html, body, #root { margin: 0; width: 100%; min-height: 100%; }
+body { min-width: 280px; }
+#root { min-height: 100dvh; display: grid; place-items: center; padding: 20px; }
+.splash-shell {
+  position: relative;
+  isolation: isolate;
+  overflow: hidden;
+  width: min(370px, calc((100dvh - 40px) / 2.2), calc(100vw - 40px));
+  aspect-ratio: 5 / 11;
+  background: var(--bg);
+  border-radius: 36px;
+  box-shadow: 0 0 0 5px #c3c0b0, 0 0 0 6px #e9e6d8, 0 24px 60px #595c4f33;
+  display: grid;
+  place-items: center;
+}
+.splash-content { display: flex; flex-direction: column; align-items: center; width: 100%; transform: translateY(-12px); }
+.identity-module {
+  width: 146px;
+  height: 146px;
+  position: relative;
+  border: none;
+  border-radius: 29px;
+  background: var(--surface);
+  box-shadow: -7px -7px 17px #fffffa77, 7px 8px 17px #595c4f2b;
+}
+.identity-module > div { border-color: #b7b5a414; }
+.identity-face { position: relative; height: 138px; padding: 20px; display: grid; place-items: center; }
+.emblem-inset { width: 93px; height: 93px; display: grid; place-items: center; border-radius: 19px; background: var(--surface); box-shadow: inset 3px 3px 7px #595c4f22, inset -3px -3px 6px #fffffa6b; }
+.emblem-inset svg { width: 78px; height: 78px; overflow: visible; }
+.emblem-inset path { stroke-linecap: round; stroke-linejoin: round; }
+.path-shadow { stroke: #fffffa99; stroke-width: 5; transform: translate(1px, 1px); }
+.path-track { stroke: var(--accent); stroke-width: 3.3; }
+.path-signal { stroke: #d3a17b; opacity: .6; stroke-width: 3.3; stroke-dasharray: 138; stroke-dashoffset: 138; animation: trace-path .8s .08s cubic-bezier(.3,.6,.25,1) forwards; }
+.path-tip { stroke: var(--accent); stroke-width: 3.3; }
+.module-light { position: absolute; top: 10px; left: 15px; width: 4px; height: 4px; border-radius: 50%; background: #ae6945; box-shadow: inset 0 .5px 1px #fffffa66, 0 0 5px #ac4e281a; }
+.module-grooves { position: absolute; display: flex; gap: 3px; bottom: 9px; right: 13px; }
+.module-grooves i { width: 12px; height: 2px; border-radius: 2px; background: #bebcac; box-shadow: 0 1px 0 #fffffa55; }
+h1 { font-size: 31px; letter-spacing: -1.4px; line-height: 1.2; font-weight: 650; margin: 29px 0 0; color: var(--text); }
+.tagline { margin: 10px 24px 0; font-size: 11px; line-height: 1.8; letter-spacing: 1.8px; color: var(--sub); text-align: center; }
+.entry-status { margin-top: 45px; display: flex; flex-direction: column; align-items: center; gap: 13px; }
+.entry-progress { display: flex; gap: 4px; padding: 4px 5px; border-radius: 8px; background: var(--bg); box-shadow: inset 1px 1px 3px #595c4f22, inset -1px -1px 2px #fffffa77; }
+.entry-progress i { width: 8px; height: 3px; border-radius: 2px; background: #b6b3a1; animation: indicator 1s ease-in-out both; }
+.entry-progress i:nth-child(2) { animation-delay: .06s; }
+.entry-progress i:nth-child(3) { animation-delay: .12s; }
+.entry-progress i:nth-child(4) { animation-delay: .18s; }
+.entry-progress i:nth-child(5) { animation-delay: .24s; }
+.entry-progress i:nth-child(6) { animation-delay: .30s; }
+.entry-progress i:nth-child(7) { animation-delay: .36s; }
+.entry-progress i:nth-child(8) { animation-delay: .42s; }
+.entry-status > span { color: #929383; font-size: 9px; letter-spacing: 2px; }
+.splash-signature { position: absolute; left: 0; right: 0; bottom: 33px; text-align: center; color: #9b9b8a; font-family: "IBM Plex Mono", ui-monospace, monospace; font-size: 6px; letter-spacing: 1.7px; }
+@keyframes trace-path { to { stroke-dashoffset: 0; } }
+@keyframes indicator { 0%, 20% { background: #b6b3a1; } 60%, 100% { background: #a96744; } }
+@media (max-width: 600px) {
+  :root { background: var(--bg); }
+  #root { padding: 0; }
+  .splash-shell { width: 100%; height: 100dvh; min-height: 400px; aspect-ratio: auto; border-radius: 0; box-shadow: none; }
+  .splash-content { transform: translateY(-16px); }
+  .identity-module { width: 158px; height: 158px; }
+  .identity-face { height: 150px; }
+  .emblem-inset { width: 99px; height: 99px; border-radius: 21px; }
+  h1 { font-size: 33px; }
+}
+@media (max-height: 540px) { .identity-module { width: 118px; height: 118px; } .identity-face { height: 110px; padding: 15px; } .emblem-inset { width: 76px; height: 76px; } .emblem-inset svg { width: 60px; height: 60px; } h1 { font-size: 27px; margin-top: 21px; } .entry-status { margin-top: 26px; } .splash-signature { bottom: 20px; } }
+@media (prefers-reduced-motion: reduce) { *, *::before, *::after { animation: none !important; } .path-signal { stroke-dashoffset: 0; } .entry-progress i { background: #a96744; } }
